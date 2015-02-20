@@ -329,9 +329,8 @@ Program MainMCE
 					call genbasis(bset, mup, muq, alcmprss, gridsp, time, initgrid) 
 					!$omp end critical         
 
-					call genD_big(bset, mup, muq, restart)  !Generates the multi config D prefactor 
-					                                        !and single config a & d prefactors
-
+					call genD_big(bset, mup, muq, restart) !Generates the multi config D  
+					                            !prefactor and single config a & d prefactors
 					initnorm = 0.0d0
 					initnorm2 = 0.0d0
 
