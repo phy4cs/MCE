@@ -1,0 +1,57 @@
+# Hamiltonian Parameters File (Parameters are in atomic units)
+
+# Spin Boson Parameters
+SBDelta 1.0d0 
+SBEps 1.0d0
+SBw 7.50d0
+SBwmax 37.50d0
+SBkondo 0.1d0
+SBBeta 5.0d0
+SBupnorm 0.99d0
+SBdownnorm 0.98d0
+
+# Harmonic Potential Parameters
+HPw 1.0d0
+HPupnorm 0.999d0
+HPdownnorm 0.998d0
+
+# Free Particle Parameters
+FPmass 1.0d0
+FPupnorm 0.999d0
+FPdownnorm 0.998d0
+
+# Morse Potential Parameters
+MPw 1.0d0
+MPmass 1.0d0
+MPDissEn 10.25d0
+MPWellParam 0.2209d0
+MPupnorm 0.999d0
+MPdownnorm 0.998d0
+
+# Inverted Gaussian Parameters
+IVm 1.0d0
+IVw 0.05d0
+IVlambda 0.5d0
+IVIntensity 0.1d0
+IVupnorm 0.999999d0
+IVdownnorm 0.999998d0
+
+# Coulomb Potential Parameters
+CPm 1.0d0
+CPfrequency 0.05d0
+CPRc 0.0d0
+CPIntensity 0.1d0
+CPupnorm 0.999999d0
+CPdownnorm 0.999998d0
+
+# Henon-Heiles Parameters
+HHCoupling 0.111803d0
+HHupnorm 0.999d0
+HHdownnorm 0.998d0
+
+#Energy limit parameters
+ECheck No
+Ntries 10
+Ebfmax 5000000.0d0
+Ebfmin -5000000.0d0
+
