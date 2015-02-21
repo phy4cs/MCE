@@ -62,7 +62,7 @@ contains
 
 			if (cmprss.eq."N") then      
 				if ((absnorm.gt.uplimnorm).or.(absnorm.lt.lowlimnorm)) then
-					print "(a,a,e13.5e3)", "Warning. Initial Norm outside established "&
+					print "(a,a,e13.5e3)", "Warning. Initial Norm outside established ",&
 											 "parameters, with a value of ", absnorm
 					print *, ""
 					if ((basis.eq."SWARM").or.(basis.eq."SWTRN")) restart = 1
