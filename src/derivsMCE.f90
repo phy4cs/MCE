@@ -49,7 +49,7 @@ contains
 		allocate (dz(size(bsin),ndim), stat=ierr)
 		if (ierr==0) allocate (dd(size(bsin),npes),stat=ierr)
 		if (ierr==0) allocate (ds(size(bsin),npes),stat=ierr)
-		if (ierr==0) allocate (dD_big(size(bsin)),stat=ierr))
+		if (ierr==0) allocate (dD_big(size(bsin)),stat=ierr)
 		if (ierr/=0) then
 			print *, "Error in derivatives array allocation in deriv"
 			errorflag=1
