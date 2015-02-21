@@ -366,7 +366,7 @@ MODULE Ham
 		absnorm=sqrt(dble(innorm*dconjg(innorm)))
 
 		if ((absnorm.gt.1.2d0).and.(cmprss=="N")) then
-			print *, "Norm is greater than 1.2. Simulation has failed and trajectories "&
+			print *, "Norm is greater than 1.2. Simulation has failed and trajectories ",&
 								"are likely to explode"
 			errorflag = 1
 		end if
