@@ -265,7 +265,7 @@ contains
 		if (ierr==0) allocate (dnew(nbf), stat=ierr)
 		if (ierr==0) deallocate (znew, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in de- and re-allocation of cnew or in allocation of dnew" &
+			print *, "Error in de- and re-allocation of cnew or in allocation of dnew", &
 									 " in reprojection subroutine"
 			errorflag=1
 			return
