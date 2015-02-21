@@ -141,7 +141,7 @@ Program MainMCE
 	integer, dimension(:), allocatable :: clone
 	integer(kind=8) :: ranseed
 	integer:: j, k, r, n, y, x, m, nbf, tnum, recalcs, nchange, nsame, conjrep, restart
-	integer:: reps, cols, genflgistat, intvl, ierr, rprj
+	integer:: reps, cols, genflg, istat, intvl, ierr, rprj
 	character(LEN=100) :: LINE
 	character(LEN=17) :: filenm, myfmt
 	character(LEN=3):: rep
