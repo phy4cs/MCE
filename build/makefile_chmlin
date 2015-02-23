@@ -14,7 +14,7 @@ VPATH=../src
 all: MainMCE avrgpops timehist
 
 MainMCE:BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o dcerf.o cp.o hh.o redirect.o Ham.o outputs.o Chks.o derivsMCE.o propMCE.o bsetgen.o bsetalter.o readpars.o MainMCE.o 
-	 $(F90) $(FFLAGS) -o MainMCE.exe BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o dcerf.o cp.o hh.o redirect.o Ham.o outputs.o Chks.o derivsMCE.o propMCE.o bsetgen.o bsetalter.o readpars.o MainMCE.o $(FLINKS)
+	 $(F90) $(FFLAGS) -o MCE.exe BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o dcerf.o cp.o hh.o redirect.o Ham.o outputs.o Chks.o derivsMCE.o propMCE.o bsetgen.o bsetalter.o readpars.o MainMCE.o $(FLINKS)
 	 
 avrgpops:avrgpops.f90
 	 $(F90) $(FFLAGS) -o avrgpops.exe $<
@@ -98,6 +98,5 @@ MainMCE.o:MainMCE.f90 bsetgen.o bsetalter.o Ham.o vars.o readpars.o outputs.o al
 # This entry allows you to type " make clean " to get rid of
 # all object and module files 
 clean:
-	rm -f -r f_{files,modd}* *.o *.mod *.M *.d V*.inc *.vo \
-	V*.f *.dbg album F.err
+	rm -rf f_{files,modd}* *.o *.mod *.exe ../run/*.exe
   
