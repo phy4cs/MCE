@@ -6,7 +6,7 @@ if [[ $ARCFLG -eq 1 ]]; then
  echo "Compiling with Intel Compiler"
  FC=ifort
  if [[ $1 -eq 1 ]]; then
-  FFLAGS="-O0 -g"
+  FFLAGS="-O2 "
  else
   echo "Compiling with OpenMP functionality"
   FFLAGS="-openmp -O2"
@@ -15,7 +15,7 @@ else
  FC=gfortran
  echo "Compiling with GNU Compiler"
  if [[ $1 -eq 1 ]]; then
-  FFLAGS="-O0 -g"
+  FFLAGS="-O2 "
  else
   echo "Compiling with OpenMP functionality"
   FFLAGS="-fopenmp -O2"
@@ -57,12 +57,10 @@ fi
 
 $FC $FFLAGS -o avrgpops.exe avrgpops.f90
 $FC $FFLAGS -o timehist.exe timehist.f90
-#$FC $FFLAGS -o interpolate.exe neville.f90 interpolate.f90
 
 rm *.mod *.o
 
 mv MCESB.exe ../run/
 mv avrgpops.exe ../run/
 mv timehist.exe ../run/
-#mv interpolate.exe ../run/
 cd ../run/
