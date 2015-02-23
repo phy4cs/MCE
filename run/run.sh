@@ -216,11 +216,11 @@ for a in "${methseq[@]}"; do
  if [[ $HPCFLG -eq 1 ]]; then
   echo "module load mkl" >> $FILE
  fi
- echo "./MCESB.exe" >> $FILE
+ echo "./MCE.exe" >> $FILE
  for i in "${folseq[@]}"; do
   SUBDIR="$EXDIR/$i-run"
   cd "$RUNF"
-  cp inham.dat input.dat MCESB.exe prop.dat $SUBDIR/
+  cp inham.dat input.dat MCE.exe prop.dat $SUBDIR/
   if [[ $gen -eq 0 ]]; then
    if [[ -f "Outbs-001_$i.out" ]]; then 
     echo "Outbs-001_$i.out found in $PWD"
@@ -236,7 +236,7 @@ for a in "${methseq[@]}"; do
   if [ $HSTFLG -eq 0 ]; then
    cd $SUBDIR/
    echo "Program Executing in $EXDIR"
-   ./MCESB.exe #&> $FILE.o1 &
+   ./MCE.exe #&> $FILE.o1 &
    cd $RUNF
   fi
  done
