@@ -5,7 +5,19 @@
 REPS=$(( $1/$3 ))     # number of repeats per folder
 CORES=$2
 FOLDERS=$3
-RUNF="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"   # run folder
+RUNF=$PWD   # run folder
+if [[ -d ../build ]]; then
+ cd ../build
+ BUILD=$PWD
+ cd $RUNF
+else
+ echo "No build folder! What's going on? I'm scared."
+ echo ""
+ echo ""
+ echo ""
+ echo "Hold me."
+ exit 1
+fi
 NUMBER=$RANDOM
 FILE="MCE$NUMBER.sh"
 if [[ ! -z $( command -v qstat ) ]]; then HSTFLG=1; else HSTFLG=0; fi
@@ -22,11 +34,16 @@ if [[ $HPCFLG -eq 0 ]]; then
 else
  EXDIR1="/nobackup/$LOGNAME"
 fi
-echo $EXDIR1 > $RUNF/exdir.dat
 if [[ ! -d "$EXDIR1" ]]; then echo "Cannot find execution directory $EXDIR1. Exitting"; exit 1; fi
 folseq=( `seq 1 $FOLDERS` )
-cd "$RUNF"
-./compile.sh $CORES
+cd $BUILD
+if [[ HPCFLG -eq 1 ]]; then
+ make -f makefile_arc
+else
+ make -f makefile_chmlin
+fi 
+cp *.exe $RUNF 
+cd $RUNF
 if [[ $? -ne 0 ]]; then 
  echo "Compilation Error! Exitting"
  exit 1
