@@ -89,5 +89,5 @@ MainMCE.o:MainMCE.f90 bsetgen.o bsetalter.o Ham.o vars.o readpars.o outputs.o al
 # This entry allows you to type " make clean " to get rid of
 # all object and module files 
 clean:
-	rm -rf f_{files,modd}* *.o *.mod *.exe ../run/*.exe
+	rm -rf f_{files,modd}* *.o *.mod *.exe *~ ../run/*.exe ../run/*~ ../src/*~
   
