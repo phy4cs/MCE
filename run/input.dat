@@ -14,10 +14,10 @@ Runfolder default
 debug 0
 
 #Basis Set Generation flag [YES/NO for generating the basis set]
-gen NO 
+gen YES
 
 #Basis Set Propagation flag [YES/NO for propagating the basis set]
-prop YES
+prop NO
 
 #Flag for adaptive altering of the compression parameter in swarms/grid-swarms/train-swarms or the grid spacing for grids. [YES/NO]
 cmprss YES
@@ -26,7 +26,7 @@ cmprss YES
 method MCEv2
 
 #Number of repeats. Do not need to set manually - this is set by the run command.
-Repeats 1
+Repeats 10
 
 #Conjugate repeats flag. Allows even number repeats to start at the complex conjugate of the previous runs initial position [YES/NO]
 Conjugate_Repeats NO
