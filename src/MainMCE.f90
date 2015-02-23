@@ -435,6 +435,7 @@ Program MainMCE
 						call readbasis(bset, mup, muq, k, time) ! reads and assigns the basis set parameters and values, ready for propagation.
 						timestrt=time
 						nbf = in_nbf
+						print "(a,i0,a)", "Starting from previous file. ", int(real(abs((timeend-timestrt)/dtinit))), " steps remaining."
 					end if
 				end if
 
@@ -605,11 +606,11 @@ Program MainMCE
 																							!Disabled to ensure that small fluctuations aren't disruptive
 					if (mod(x,50)==0) then     !Status reports
 						if (step == "S") then
-							print "(1x,a,i8,a,i8,a,i0)", "Completed step ", x, " of ", int(real(abs((timeend-timestrt)/dt))),&
-											" on rep ", reps
+							print "(1x,a,i8,a,i8,a,i0,a,i0)", "Completed step ", x, " of ", int(real(abs((timeend-timestrt)/dt))),&
+									" on rep ", reps, " of ", reptot
 						else
-							print "(1x,a,i8,a,i8,a,i0)", "Completed step ", x, " of approximately ", &
-										int(real(abs(x*(timeend-timestrt)/(time-timestrt)))), " on rep ", reps
+							print "(1x,a,i8,a,i8,a,i0,a,i0)", "Completed step ", x, " of approximately ", &
+									int(real(abs(x*(timeend-timestrt)/(time-timestrt)))), " on rep ", reps, " of ", reptot
 						end if
 					end if
 
