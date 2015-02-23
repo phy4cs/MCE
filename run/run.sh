@@ -77,13 +77,6 @@ else
  echo "Arguments checked"
  chk=$( echo $HOSTNAME | fgrep -e "arc1" -e "polaris" -e "arc2" )
  if [[ ! -z ${chk} ]]; then module load mkl; fi    # module loads for HPC systems
- if [[ $2 -eq 1 ]]; then
-  echo "Serial Running Starting"
-  ./half.sh $1 $2 $3
- elif [[ ! -z ${chk} ]]; then
-  echo "Parallel Running Starting"
-  ./half.sh $1 $2 $3
- else
-  echo "Parallel Execution Not Supported Elsewhere Than ARC1, ARC2 or POLARIS"
- fi
+ echo "Running Starting"
+ ./start.sh $1 $2 $3
 fi
