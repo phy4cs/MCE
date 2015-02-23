@@ -238,7 +238,7 @@ Program MainMCE
 
 	!$omp parallel private (j, k, r, x, y, m, conjrep, restart, recalcs, reps, & 
 	!$omp                   nrmtmp, nrm2tmp, ndimacf, gridsp, ehrtmp, ierr, mup, & 
-	!$omp                   muq, bset, popt,& acft, initnorm, initnorm2, initehr, &
+	!$omp                   muq, bset, popt, acft, initnorm, initnorm2, initehr, &
 	!$omp                   extmp, nbf, normtemp, norm2temp, ehren, time, dt, dtnext, &
 	!$omp                   dtdone, alcmprss, nchange, nsame)
 	!$omp do reduction (+:pops,absnorm,absnorm2,absehr,acf_t, extra)
@@ -649,7 +649,6 @@ Program MainMCE
 		if (istat/=0) then
 			print "(a,i0)", "Error deallocating mup, muq or popt in repeat ", reps
 			errorflag=1
-			exit
 		end if
 
 	end do ! The main repeat loop
