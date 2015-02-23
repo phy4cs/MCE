@@ -64,12 +64,12 @@ cp $SUBDIR/input.dat $SUBDIR/inham.dat $SUBDIR/prop.dat .
 if [[ -f timehist_1.out ]]; then 
  for i in "${folseq[@]}"; do cat "timesteps_$i.out"; done > timesteps.out
  for i in "${folseq[@]}"; do rm "timesteps_$i.out"; done
- cp ../../run/timehist.exe .
+ cp $RUNF/timehist.exe .
  ./timehist.exe $FOLDERS $2
 fi
 
 if [[ -f normpop_1.out ]]; then
- cp ../../run/avrgpops.exe .
+ cp $RUNF/avrgpops.exe .
  ./avrgpops.exe $FOLDERS $2
 fi
 
