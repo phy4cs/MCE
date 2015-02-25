@@ -48,7 +48,9 @@ for i in "${folseq[@]}"; do
   if [[ -f normpop.out ]]; then
    mv normpop.out "$RESDIR"/normpop_$i.out
   fi
-  if [[ -f Outbs-001.out ]]; then
+  grep -i "prop NO" input.dat > /dev/null
+  propchk=$?
+  if [[ propchk -eq 0 ]]; then
    for p in Outbs-*.out ; do mv $p "$RESDIR"/${p%.out}_$i.out; done
   fi
   if [[ -f timehist.out ]]; then
