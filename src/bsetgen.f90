@@ -6,7 +6,7 @@ MODULE bsetgen
 	use outputs
 	use Chks
 	use redirect
-	use propMCE
+	use propcntrl
 
 !***********************************************************************************!
 !*

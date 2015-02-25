@@ -119,8 +119,8 @@ contains
 
 		if (errorflag .ne. 0) return
 
-		muq(1:ndim) = 5.0d0*sigp
-		mup(1:ndim) = 0.0d0*sigq
+		muq(1:ndim) = 5.0d0*sigq
+		mup(1:ndim) = 0.0d0*sigp
 
 		return
 
@@ -133,14 +133,13 @@ contains
 		implicit none
 		complex(kind=8), dimension (:), intent(in)::z1,z2
 		complex(kind=8), dimension(:,:), intent (inout)::H
-		integer :: m, ierr
 		complex(kind=8), dimension (:), allocatable :: zcomb, Htemp
-		real (kind=8) :: rt2
+		integer :: m, ierr
 
 		if (errorflag .ne. 0) return
 
 		if (npes.ne.1) then
-			print *, "Error! There is more than 1 pes for the Harmonic Potential"
+			print *, "Error! There is more than 1 pes for the Morse Potential"
 			errorflag = 1
 			return
 		end if
@@ -152,16 +151,22 @@ contains
 			errorflag=1
 		end if
 
-		rt2 = sqrt(2.0d0)
-
 		do m=1,ndim
-			zcomb(m) = dconjg(z1(m))+z2(m)
-			Htemp(m) = (-1.0d0/(4.0d0*mass_mp*mass_mp*freq_mp))*(dconjg(z1(m))**2+z2(m)**2-2*dconjg(z1(m))*z2(m)-1)
-			Htemp(m) = Htemp(m) + dissen_mp*(1 + exp(a0_mp**2.0d0-(rt2*a0_mp*zcomb(m))))
-			Htemp(m) = Htemp(m) + dissen_mp*2*exp(((a0_mp**2.0d0)/4.0d0)-(a0_mp*zcomb(m)/rt2))
+			zcomb(m) = (dconjg(z1(m))+z2(m))/sqrt(2.0d0*gam)
+			Htemp(m) = (-1.0d0/(4.0d0*mass_mp*mass_mp*freq_mp))*(dconjg(z1(m))**2+z2(m)**2-2*dconjg(z1(m))*z2(m)-1.0)
+			
+			Htemp(m) = Htemp(m) + dissen_mp*(1 + exp(a0_mp**2.0d0-(2.0d0*a0_mp*zcomb(m))))
+			Htemp(m) = Htemp(m) - dissen_mp*2*exp(((a0_mp**2.0d0)/4.0d0)-(a0_mp*zcomb(m)))
 		end do
 
 		H(1,1) = sum(Htemp(1:ndim))
+		
+		deallocate (zcomb, stat=ierr)
+		if (ierr==0) deallocate (Htemp, stat=ierr)
+		if (ierr/=0) then
+			print *, "Error deallocating zcomb in Hij_mp"
+			errorflag=1
+		end if		
 
 		return   
 
@@ -180,7 +185,7 @@ contains
 
 		if (errorflag .ne. 0) return
 
-		rt2 = sqrt(2.0d0)
+		rt2 = sqrt(2.0d0*gam)
 		fact =dissen_mp*a0_mp*rt2
 
 		do m=1,ndim     

@@ -1,12 +1,12 @@
-MODULE propMCE
+MODULE propcntrl
 
 	 use alarrays
 	 use globvars
-	 use derivsMCE
+	 use derivs
 
 !*************************************************************************************************!
 !*
-!*         Time Propagation (MCE) Module
+!*         Time Propagation Module
 !*           
 !*   Contains subroutines for:
 !*
@@ -409,5 +409,5 @@ contains
 
 !*************************************************************************************************!
 
-end module propMCE
+end module propcntrl
 

@@ -17,7 +17,7 @@ debug 0
 gen YES
 
 #Basis Set Propagation flag [YES/NO for propagating the basis set]
-prop NO
+prop YES
 
 #Flag for adaptive altering of the compression parameter in swarms/grid-swarms/train-swarms or the grid spacing for grids. [YES/NO]
 cmprss YES
@@ -32,7 +32,7 @@ Repeats 1
 Conjugate_Repeats NO
 
 # Number of basis functions 
-in_nbf 120
+in_nbf 50
 
 # Number of dimensions
 ndim 50
@@ -44,7 +44,7 @@ in_PES 1
 npes 2
 
 # determines shape of the initial basis [SWARM/SWTRN/TRAIN/GRID/GRSWM]
-basis SWTRN
+basis SWARM
 
 # Compression parameter (can be tweaked to allow better norm value, or altered automatically)   Used for swarms/swarm-trains/grid-swarms
 ALCMP 30.0d0
@@ -53,7 +53,7 @@ ALCMP 30.0d0
 nbfadapt no
 
 # Flag for cloning basis functions (yes/no)
-Cloning yes
+Cloning no
 
 # Basis set trimming parameter. If overlap is less than this value, basis function is removed. Used when nbfadapt = yes
 nbfepsilon 1.0d-05

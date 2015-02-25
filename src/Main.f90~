@@ -1,4 +1,4 @@
-Program MainMCE
+Program Main
 
 !***********************************************************************************!
 !                                                                                   !
@@ -124,7 +124,7 @@ Program MainMCE
 	use outputs    ! Module to output data
 	use alarrays   ! Array allocation module for defined types
 	use Chks       ! A set of checks which ensure the program is running correctly
-	use propMCE    ! The time propagation controller
+	use prop       ! The time propagation controller
 	use redirect   ! Module which directs functions to the system specific variants
 
 	implicit none
@@ -741,4 +741,4 @@ Program MainMCE
  
 	stop
 
-end program MainMCE
+end program Main
