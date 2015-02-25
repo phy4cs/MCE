@@ -8,21 +8,18 @@
 #       2) The number of parallel threads per folder/node (max 8)
 #       3) The number of folders/nodes
 #
-#    As there are module load commands, the script must be run as source if running on ARC1.
+#    As there are module load commands, the script must be run as source if running on ARC1/ARC2/POLARIS
 #    This means that for a run of 128 repeats using 8 cores per node and 4 nodes, the execution
 #    command would be:
 #
-#    source ./run.sh 128 8 4 for ARC1, or
+#    source ./run.sh 128 8 4 for ARC, or
 #
 #    ./run.sh 128 8 4 elsewhere
 #
-#    Parallel execution is only supported currently on ARC1, ARC2 or POLARIS, as chmlin18 and chmlin45 
-#    have no Open MP support. If running elsewhere than ARC1 or running a single core job on ARC1, the 
-#    program is compiled without openmp flags by the compile.sh script. For portability the program is 
-#    compiled using gfortran when not on ARC1, ARC2 or POLARIS. As such, any changes made to
-#    the program should take this into account and endevour to utilise intrinsic functions rather
-#    than intel specific or GNU specific extensions where possible. PGf95 is not currently supported
-#    for compilation.
+#    For portability the program is compiled using gfortran when not on ARC1, ARC2 or POLARIS. 
+#    As such, any changes made to the program should take this into account and endevour to 
+#    utilise intrinsic functions rather than intel specific or GNU specific extensions where 
+#    possible. PGf95 is not supported for compilation.
 #
 #    Due to the nature of Shared Memory environments, the execution of the program is split 
 #    into separate folders, each one containing a separate executable file which runs on a
