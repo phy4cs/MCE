@@ -133,8 +133,10 @@ contains
 		implicit none
 		complex(kind=8), dimension (:), intent(in)::z1,z2
 		complex(kind=8), dimension(:,:), intent (inout)::H
-		complex(kind=8), dimension (:), allocatable :: zcomb, Htemp
 		integer :: m, ierr
+		complex(kind=8), dimension (:), allocatable :: Htemp
+		complex(kind=8) :: zcomb
+		real (kind=8) :: rt2
 
 		if (errorflag .ne. 0) return
 
@@ -144,29 +146,14 @@ contains
 			return
 		end if
 
-		allocate (zcomb(ndim), stat=ierr)
-		if (ierr==0) allocate (Htemp(ndim), stat=ierr)
-		if (ierr/=0) then
-			print *, "Error allocating zcomb in Hij_mp"
-			errorflag=1
-		end if
-
 		do m=1,ndim
-			zcomb(m) = (dconjg(z1(m))+z2(m))/sqrt(2.0d0*gam)
-			Htemp(m) = (-1.0d0/(4.0d0*mass_mp*mass_mp*freq_mp))*(dconjg(z1(m))**2+z2(m)**2-2*dconjg(z1(m))*z2(m)-1.0)
-			
-			Htemp(m) = Htemp(m) + dissen_mp*(1 + exp(a0_mp**2.0d0-(2.0d0*a0_mp*zcomb(m))))
-			Htemp(m) = Htemp(m) - dissen_mp*2*exp(((a0_mp**2.0d0)/4.0d0)-(a0_mp*zcomb(m)))
+			zcomb    = (dconjg(z1(m))+z2(m))/sqrt(2.0*gam)
+			Htemp(m) = (-1.0d0/(4.0d0*mass_mp*mass_mp*freq_mp))*(dconjg(z1(m))**2+z2(m)**2-2*dconjg(z1(m))*z2(m)-1)
+			Htemp(m) = Htemp(m) + dissen_mp*(1 + exp(a0_mp*(a0_mp-2.0d0*zcomb)))
+			Htemp(m) = Htemp(m) - dissen_mp*2*exp((0.25d0*a0_mp**2.0d0)-(2.0d0*a0_mp*zcomb))
 		end do
 
 		H(1,1) = sum(Htemp(1:ndim))
-		
-		deallocate (zcomb, stat=ierr)
-		if (ierr==0) deallocate (Htemp, stat=ierr)
-		if (ierr/=0) then
-			print *, "Error deallocating zcomb in Hij_mp"
-			errorflag=1
-		end if		
 
 		return   
 
@@ -179,19 +166,19 @@ contains
 		implicit none
 		complex(kind=8),dimension(npes,npes,ndim) :: dh_dz_mp
 		complex(kind=8),dimension(:),intent(in)::z
-		complex(kind=8) :: dhdztmp
+		complex(kind=8) :: dhdztmp, zcomb
 		real(kind=8) :: rt2, fact
 		integer :: m
 
 		if (errorflag .ne. 0) return
 
-		rt2 = sqrt(2.0d0*gam)
-		fact =dissen_mp*a0_mp*rt2
+		fact =2.0d0*dissen_mp*a0_mp/(sqrt(2.0d0*gam))
 
-		do m=1,ndim     
+		do m=1,ndim   
+			zcomb = (dconjg(z(m))+z(m))/sqrt(2.0*gam)  
 			dhdztmp = (-1.0d0/(2.0d0*mass_mp*mass_mp*freq_mp))*(dconjg(z(m))-z(m))
-			dhdztmp = dhdztmp - fact*exp(a0_mp*(a0_mp-rt2*(dconjg(z(m))+z(m))))
-			dhdztmp = dhdztmp + fact*exp(0.25*a0_mp*(a0_mp-2.0*rt2*(dconjg(z(m))+z(m))))
+			dhdztmp = dhdztmp - fact*exp(a0_mp*(a0_mp-2.0d0*zcomb))
+			dhdztmp = dhdztmp + fact*exp((0.25d0*a0_mp**2.0d0)-(2.0d0*a0_mp*zcomb))
 			dh_dz_mp (1,1,m) = dhdztmp
 		end do
 

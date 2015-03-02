@@ -35,7 +35,7 @@ contains
 
 		if (errorflag .ne. 0) return
 
-		if ((basis.eq."GRID").or.(basis.eq."GRSWM").or.(basis.eq."TRAIN")) then
+		if (((basis.eq."GRID").and.(mod(in_nbf,2)==1)).or.(basis.eq."GRSWM").or.(basis.eq."TRAIN")) then
 			uplimnorm = 1.000001d0
 		end if
 		popsum = 0.0d0
@@ -71,7 +71,7 @@ contains
 				if (absnorm.lt.lowlimnorm) then
 					print '(a,es16.8e3)', " Initial Norm too low with a value of ", absnorm
 					if (basis.eq."GRID") then
-						print *, "Reducing grid spacing"
+						print *, "Reducing grid spacing to ", (gridsp * 0.95d0)/sqrt(2.)
 						print *, ""
 						gridsp = gridsp * 0.95d0
 					else if ((basis.eq."SWARM").or.(basis.eq."SWTRN")) then
@@ -83,7 +83,7 @@ contains
 				else if (absnorm.gt.uplimnorm) then
 					print '(a,es16.8e3)', " Initial Norm too high with a value of ", absnorm
 					if (basis.eq."GRID") then
-						print *, "Increasing grid spacing"
+						print *, "Increasing grid spacing to ", (gridsp * 1.05d0)/sqrt(2.)
 						print *, ""
 						gridsp = gridsp * 1.05d0
 					else if ((basis.eq."SWARM").or.(basis.eq."SWTRN")) then

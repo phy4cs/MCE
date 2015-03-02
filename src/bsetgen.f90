@@ -6,7 +6,7 @@ MODULE bsetgen
 	use outputs
 	use Chks
 	use redirect
-	use propcntrl
+	use propMCE
 
 !***********************************************************************************!
 !*
@@ -432,7 +432,7 @@ contains
 			bs(k)=bf
 		end do
 		
-		if (mod(qsizez,2)==0) then
+		if ((mod(qsizez,2)==0).and.(mod(in_nbf,2)==1)) then
 			do m=1,ndim
 				bf%z(m)=cmplx(muq(m),mup(m),kind=8)
 			end do

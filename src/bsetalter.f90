@@ -56,7 +56,7 @@ contains
 
 		!!!!!!! Create a smaller grid for the first step, max size 1600 bfs 
 
-		if ((x==1).and.(basis=="GRID")) then
+		if ((x==1).and.(basis=="GRID").and.(.false.)) then
 
 			allocate (qstrt(ndim), stat=ierr)
 			if (ierr==0) allocate (pstrt(ndim), stat=ierr)

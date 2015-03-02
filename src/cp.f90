@@ -175,7 +175,7 @@ contains
 			Htemp(m) = Htemp(m) - (1.0d0/4.0d0)*&
 											 (z1c**2.0d0+z2(m)**2.0d0-2.0d0*z1c*z2(m)-1.0d0) !free particle
 			if (abs(arho) < tiny(1.0d0)) then             !checks that not near singularity
-				Htemp(m) = 2.0d0*sqrt(gam)/(ndim*sqrtpi)   !empirically determined limit
+				Htemp(m) = Htemp(m) + 2.0d0*sqrt(gam)/(ndim*sqrtpi)   !empirically determined limit
 			else
 				Htemp(m) = Htemp(m) + (c_error_func(sqrt(gam)*arho)/(ndim*arho)) !Atom. Pot.
 			end if
@@ -225,7 +225,7 @@ contains
 				if (datpotdz /= datpotdz) then  !check for NaN or Inf from the exponential
 					continue                     !take no action
 				else
-					dhdztmp = (1.0d0/(sqrt(gam)*sqrtpi))*rho(m)*datpotdz  !atomic potential
+					dhdztmp = dhdztmp + (1.0d0/(rt2g*ndim))*rho(m)*datpotdz  !atomic potential
 				end if
 			end if
 			if (m==1) dhdztmp = dhdztmp + (inten_cp/rt2g)*dcos(freq_cp*t)  ! laser field
