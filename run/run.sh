@@ -214,10 +214,17 @@ for a in "${methseq[@]}"; do
   echo "module load mkl" >> $FILE
  fi
  echo "./MCE.exe" >> $FILE
+ if [[ -n $( echo $HOSTNAME | fgrep -e "chmlin45" ) ]]; then chm45=1; else chm45=0; fi
+ if [[ $chm45 -eq 1 ]]; then ./gridchanger.sh; fi   ########<---------remove this
  for i in "${folseq[@]}"; do
   SUBDIR="$EXDIR/$i-run"
   cd "$RUNF"
-  cp inham.dat input.dat MCE.exe prop.dat $SUBDIR/
+  if [[ $chm45 -eq 1 ]]; then 
+   cp ./calibinputs/input.$i $SUBDIR/input.dat; fi ########<----------remove this
+   cp inham.dat MCE.exe prop.dat $SUBDIR/          ########<----------put input.dat back here
+  else
+   cp inham.dat input.dat MCE.exe prop.dat $SUBDIR/
+  fi
   if [[ $gen -eq 0 ]]; then
    if [[ -f "Outbs-001_$i.out" ]]; then 
     echo "Outbs-001_$i.out found in $PWD"

@@ -20,7 +20,7 @@ gen YES
 prop YES
 
 #Flag for adaptive altering of the compression parameter in swarms/grid-swarms/train-swarms or the grid spacing for grids. [YES/NO]
-cmprss YES
+cmprss NO
 
 #Propagation method [can be CCS, MCEv1, MCEv2 or MCE12 (uses both MCE methods). No support for AI-MCE, vMCG or 2L-CCS yet.]
 method CCS
