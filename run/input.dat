@@ -47,10 +47,10 @@ npes 1
 basis GRSWM
 
 # Compression parameter (can be tweaked to allow better norm value, or altered automatically)   Used for swarms/swarm-trains/grid-swarms
-ALCMP 1000.0d0
+ALCMP 500.0d0
 
 # Flag for adaptive basis set size (yes/no) [Selecting No will give a constant basis set size. This is default behaviour] Used for Grids/grid-swarms
-nbfadapt no
+nbfadapt yes
 
 # Flag for cloning basis functions (yes/no)
 Cloning no
