@@ -164,7 +164,7 @@ else
    k=1
 fi
 sed -i "s/^Repeats.*/Repeats $REPS/g" input2.dat
-grep "^Repeats $REPS" input.dat > /dev/null
+grep "^Repeats $REPS" input2.dat > /dev/null
 if [[ $? == 1 || $? == 2 ]]; then
  echo "Could not change the number of repeats in input.dat. Exitting"
  exit 1
