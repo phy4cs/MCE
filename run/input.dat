@@ -17,7 +17,7 @@ debug 0
 gen YES 
 
 #Basis Set Propagation flag [YES/NO for prop YES
-prop YES
+prop NO
 
 #Flag for adaptive altering of the compression parameter in swarms/grid-swarms/train-swarms or the grid spacing for grids. [YES/NO]
 cmprss NO

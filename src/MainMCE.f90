@@ -649,58 +649,60 @@ Program MainMCE
 
 	print "(a)", "Finished Propagation"
 
-	if ((step=="S").and.(errorflag==0)) then    !Outputs data to file
-		pops = pops/dble(reptot)
-		absehr = absehr/dble(reptot)
-		absnorm = absnorm/dble(reptot)
-		if (method=="MCEv2") absnorm2 = absnorm2/dble(reptot)
-		acf_t = acf_t/dble(reptot)
-		extra = extra/dble(reptot)
-		call outnormpopstat(absnorm, acf_t, extra, absehr, pops)
-		deallocate(absnorm,absnorm2,acf_t,absehr,extra,pops,stat = istat)
-		if (istat/=0) then
-			print "(a)", "Error in deallocation of output arrays in main"
-			errorflag=1
+	if (prop=="Y") then
+		if ((step=="S").and.(errorflag==0)) then    !Outputs data to file
+			pops = pops/dble(reptot)
+			absehr = absehr/dble(reptot)
+			absnorm = absnorm/dble(reptot)
+			if (method=="MCEv2") absnorm2 = absnorm2/dble(reptot)
+			acf_t = acf_t/dble(reptot)
+			extra = extra/dble(reptot)
+			call outnormpopstat(absnorm, acf_t, extra, absehr, pops)
+			deallocate(absnorm,absnorm2,acf_t,absehr,extra,pops,stat = istat)
+			if (istat/=0) then
+				print "(a)", "Error in deallocation of output arrays in main"
+				errorflag=1
+			end if
+		else if ((step=="A").and.(errorflag==0)) then   ! builds a histogram of data
+			rewind(1710)
+			istat=0
+			n=0
+			do while (istat==0)
+				read (1710,"(a)",iostat=istat) LINE
+				n=n+1
+			end do
+			n=n-1
+			print *, "size of timestep array is ", n
+			rewind(1710)
+			allocate(t(n), stat = istat)
+			if (istat/=0) then
+				print "(a)", "Error in timestep array allocation"
+				errorflag=1
+			end if
+			do k=1,n
+				read (1710,"(e12.5)",iostat=istat) t(k)
+				if (istat/=0) t(k) = 0.0d0
+			end do     
+			close(1710)
+			num1 = maxval(t)
+			num2 = minval(t)
+			print "(a,f15.8)", "maxval of timestep array is ", num1
+			print "(a,f15.8)", "minval of timestep array is ", num2
+			up=0.0
+			down=0.0
+			call histogram2(t,n,"timehist.out",up,down)   
+			deallocate(t, stat = istat)
+			if (istat/=0) then
+				print "(a)", "Error in timestep array deallocation"
+				errorflag=1
+			end if 
+			if (npes==2) then
+				cols=10
+			else
+				cols=6+npes
+			end if
+			call interpolate(cols,errorflag) 
 		end if
-	else if ((step=="A").and.(errorflag==0)) then   ! builds a histogram of data
-		rewind(1710)
-		istat=0
-		n=0
-		do while (istat==0)
-			read (1710,"(a)",iostat=istat) LINE
-			n=n+1
-		end do
-		n=n-1
-		print *, "size of timestep array is ", n
-		rewind(1710)
-		allocate(t(n), stat = istat)
-		if (istat/=0) then
-			print "(a)", "Error in timestep array allocation"
-			errorflag=1
-		end if
-		do k=1,n
-			read (1710,"(e12.5)",iostat=istat) t(k)
-			if (istat/=0) t(k) = 0.0d0
-		end do     
-		close(1710)
-		num1 = maxval(t)
-		num2 = minval(t)
-		print "(a,f15.8)", "maxval of timestep array is ", num1
-		print "(a,f15.8)", "minval of timestep array is ", num2
-		up=0.0
-		down=0.0
-		call histogram2(t,n,"timehist.out",up,down)   
-		deallocate(t, stat = istat)
-		if (istat/=0) then
-			print "(a)", "Error in timestep array deallocation"
-			errorflag=1
-		end if 
-		if (npes==2) then
-			cols=10
-		else
-			cols=6+npes
-		end if
-		call interpolate(cols,errorflag) 
 	end if
 
 	if (errorflag .ne. 0) then

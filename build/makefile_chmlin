@@ -3,7 +3,7 @@
 
 F90=gfortran
 FFLAGS=-fopenmp -O2
-FLINKS=-lm -Warray-bounds 
+FLINKS=-lm -Warray-bounds
 VPATH=../src
 
 # Link step
