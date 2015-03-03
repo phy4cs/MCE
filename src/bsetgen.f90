@@ -132,7 +132,7 @@ contains
 		dt = -1.0d0*dtinit
 
 		do x=1,stepback
-			call propstep(bf,dt,dtnext,dtdone,t,genflg)
+			call propstep(bf,dt,dtnext,dtdone,t,genflg,timestrt)
 			t = t + dt
 		end do
 
@@ -147,7 +147,7 @@ contains
 				bs(((x-1)/trainsp)+1)%d_pes = bf(1)%d_pes
 				bs(((x-1)/trainsp)+1)%s_pes = bf(1)%s_pes
 			end if
-			call propstep(bf,dt,dtnext,dtdone,t,genflg)
+			call propstep(bf,dt,dtnext,dtdone,t,genflg,timestrt)
 			t = t + dt
 		end do
 
@@ -246,7 +246,7 @@ contains
 			dt = -1.0d0*dtinit
 
 			do x=1,stepback
-				call propstep(swrmbf,dt,dtnext,dtdone,t,genflg)
+				call propstep(swrmbf,dt,dtnext,dtdone,t,genflg,timestrt)
 				t = t + dt
 			end do
 
@@ -263,7 +263,7 @@ contains
 						bs((((x-1)*swrmsize)/trainsp)+j)%s_pes = swrmbf(j)%s_pes
 					end do
 				end if
-				call propstep(swrmbf,dt,dtnext,dtdone,t,genflg)
+				call propstep(swrmbf,dt,dtnext,dtdone,t,genflg,timestrt)
 				t = t + dt
 			end do
 
@@ -282,7 +282,7 @@ contains
 				dt = -1.0d0*dtinit
 
 				do x=1,stepback
-					call propstep(tmpbf,dt,dtnext,dtdone,t,genflg)
+					call propstep(tmpbf,dt,dtnext,dtdone,t,genflg,timestrt)
 					t = t + dt
 				end do
 
@@ -298,7 +298,7 @@ contains
 						bs(((x-1)/trainsp)+1)%d_pes = tmpbf(1)%d_pes
 						bs(((x-1)/trainsp)+1)%s_pes = tmpbf(1)%s_pes
 					end if
-					call propstep(tmpbf,dt,dtnext,dtdone,t,genflg)
+					call propstep(tmpbf,dt,dtnext,dtdone,t,genflg,timestrt)
 					t = t + dt
 				end do
 

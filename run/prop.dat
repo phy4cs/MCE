@@ -11,5 +11,5 @@ time_end 3.77d+02
 #Start time of propagation
 time_start 0.0d+00
 #Propagation size - either "static" or "adaptive"
-step static
+step adaptive
 

@@ -96,9 +96,9 @@ Program MainMCE
 !      14/04/14 - Modified the basis set reading system, allowing it to read data   !
 !                 from a file and convert it for use by either MCE system or CCS    !
 !                 also                                                              !
-!               - Confirmed that the MCEv2 system is functioning properly, and that !
-!                 the discrepency with the results for the Spin Boson model are a   !
-!                 result of the lower coupling between the coherent states and not  ! 
+!               - Confirmed thatRep the MCEv2 system is functioning properly, and   !
+!                 that the discrepency with the results for the Spin Boson model are!
+!                 a result of the lower coupling between the coherent states and not!
 !                 a programming error.                                              !
 !      25/09/14 - Finished 3D Grid system and repaired MCEv1 which was damaged      !
 !                 during debugging                                                  !
@@ -128,24 +128,28 @@ Program MainMCE
 	use redirect   ! Module which directs functions to the system specific variants
 
 	implicit none
-	type(basisfn), dimension (:), allocatable :: bset
+	!Private variables
+	type(basisfn), dimension (:), allocatable :: bset 
 	complex(kind=8), dimension (:,:), allocatable :: initgrid
-	complex(kind=8), dimension (:), allocatable :: acf_t, extra
 	complex(kind=8)::normtemp, norm2temp, ehren, acft, extmp
-	real(kind=8), dimension (:,:), allocatable :: pops
-	real(kind=8), dimension(:), allocatable :: absnorm, absnorm2, absehr, t
 	real(kind=8), dimension(:), allocatable :: mup, muq, popt, ndimacf
-	real(kind=8) :: starttime, stoptime, up, down, nrmtmp, nrm2tmp, ehrtmp, runtime
+	real(kind=8) :: nrmtmp, nrm2tmp, ehrtmp, gridsp, timestrt_loc
 	real(kind=8) :: time, dt, dtnext, dtdone, initehr, initnorm, initnorm2, alcmprss
-	real(kind=8) :: gridsp, num1, num2
 	integer, dimension(:), allocatable :: clone
+	integer:: j, k, r, y, x, m, nbf, recalcs, nchange, nsame, conjrep, restart, reps, ierr
+	
+	!Reduction Variables
+	complex(kind=8), dimension (:), allocatable :: acf_t, extra
+	real(kind=8), dimension (:,:), allocatable :: pops
+	real(kind=8), dimension(:), allocatable :: absnorm, absnorm2, absehr
+	
+	!Public Variables
+	real(kind=8), dimension(:), allocatable :: t
+	real(kind=8) :: starttime, stoptime, up, down, runtime
+	real(kind=8) :: num1, num2
 	integer(kind=8) :: ranseed
-	integer:: j, k, r, n, y, x, m, nbf, tnum, recalcs, nchange, nsame, conjrep, restart
-	integer:: reps, cols, genflg, istat, intvl, ierr, rprj
+	integer:: tnum, cols, genflg, istat, intvl, rprj, n
 	character(LEN=100) :: LINE
-	character(LEN=17) :: filenm, myfmt
-	character(LEN=3):: rep
-	real(kind=8), dimension (:), allocatable :: p, q
 	
 	call CPU_TIME(starttime) !used to calculate the runtime, which is output at the end
 
@@ -184,23 +188,25 @@ Program MainMCE
 
 	if (step=="S") then       ! Static stepsize case.
 		tnum = int(abs((timeend-timestrt)/dtinit)) + 2
-		allocate (pops(tnum,npes), stat=ierr)               ! Output arrays are allocated
-		if (istat==0) allocate (absehr(tnum), stat=ierr)    ! for the number of steps to 
-		if (istat==0) allocate (absnorm(tnum), stat=ierr)   ! be taken
-		if (istat==0) allocate (absnorm2(tnum), stat=ierr)
-		if (istat==0) allocate (acf_t(tnum), stat=ierr)
-		if (istat==0) allocate (extra(tnum), stat=istat)
-		if (istat/=0) then
-			print "(a)", "Error in allocating the output matrices for static stepsizes"
-			errorflag=1
-		end if
-		pops = 0.0d0          ! Populations in different quantum states
-		absehr = 0.0d0        ! Absolute sum of Ehrenfest Hamiltonian over all bfs
-		absnorm = 0.0d0       ! Absolute value of the norm calculated over all bfs
-		absnorm2 = 0.0d0      ! Absolute value of the sum of the single config. norms
-		acf_t = (0.0d0,0.0d0) ! Auto-correlation function
-		extra = (0.0d0,0.0d0)     
+	else
+		tnum = 1						! The arrays need to be allocated for reduction in omp
 	end if
+	allocate (pops(tnum,npes), stat=istat)               ! Output arrays are allocated
+	if (istat==0) allocate (absehr(tnum), stat=istat)    ! for the number of steps to 
+	if (istat==0) allocate (absnorm(tnum), stat=istat)   ! be taken
+	if (istat==0) allocate (absnorm2(tnum), stat=istat)
+	if (istat==0) allocate (acf_t(tnum), stat=istat)
+	if (istat==0) allocate (extra(tnum), stat=istat)
+	if (istat/=0) then
+		print "(a)", "Error in allocating the output matrices for static stepsizes"
+		errorflag=1
+	end if
+	pops = 0.0d0          ! Populations in different quantum states
+	absehr = 0.0d0        ! Absolute sum of Ehrenfest Hamiltonian over all bfs
+	absnorm = 0.0d0       ! Absolute value of the norm calculated over all bfs
+	absnorm2 = 0.0d0      ! Absolute value of the sum of the single config. norms
+	acf_t = (0.0d0,0.0d0) ! Auto-correlation function
+	extra = (0.0d0,0.0d0)
 	allocate (ndimacf(3*ndim+3), stat=istat)
 	if (istat/=0) then
 		print *, "Error allocatin ndimacf array"
@@ -218,14 +224,6 @@ Program MainMCE
 	rprj=10
 	genflg=0
 
-	if ((basis=="GRID").or.(basis=="GRSWM")) then
-		allocate (initgrid(in_nbf,ndim), stat=istat)
-		if (istat/=0) then
-			print *, "Error allocating the initial grid array in main"
-			errorflag=1
-		end if
-	end if
-
 	if (step == "A") then    ! Adaptive stepsize output includes a timestep dump
 		open (unit=1710,file="timesteps.out",status="unknown",iostat=istat)
 	end if
@@ -236,21 +234,30 @@ Program MainMCE
 	! the static stepsize system as the array size must be known beforehand to avoid 
 	! memory leaks.
 
-	!$omp parallel private (j, k, r, x, y, m, conjrep, restart, recalcs, reps, & 
-	!$omp                   nrmtmp, nrm2tmp, ndimacf, gridsp, ehrtmp, ierr, mup, & 
-	!$omp                   muq, bset, popt, acft, initnorm, initnorm2, initehr, &
-	!$omp                   extmp, nbf, normtemp, norm2temp, ehren, time, dt, dtnext, &
-	!$omp                   dtdone, alcmprss, nchange, nsame)
-	!$omp do reduction (+:pops,absnorm,absnorm2,absehr,acf_t, extra)
-
+	!$omp parallel private (bset, initgrid, normtemp, norm2temp, ehren, acft, extmp,  &
+	!$omp										muq, mup, popt, ndimacf, nrmtmp, nrm2tmp, ehrtmp, gridsp, &
+	!$omp										timestrt_loc, time, dt, dtnext, dtdone, initehr, initnorm,&
+	!$omp										initnorm2, alcmprss, clone, j, k, r, y, x, m, nbf,        &
+	!$omp										recalcs, nchange, nsame, conjrep, restart, reps, ierr     )
+	
+	!$omp do reduction (+:acf_t, extra, pops, absnorm, absnorm2, absehr)
+	
 	! This leaves the following variables currently shared actross all threads:
-	! initgrid, t, starttime, stoptime, up, down, runtime, num1, num2, ranseed, 
-	! tnum, cols, istat, intvl, rprj, LINE, genflg
-
+	! p, q, t, starttime, stoptime, up, down, runtime, num1, num2, ranseed, tnum, 
+	! cols, genflg, istat, intvl, rprj, n, LINE 
+	
 	do k=1,reptot,intvl              ! Loop over all repeats. 
-
+		
 		ierr = 0
-
+	
+		if ((basis=="GRID").or.(basis=="GRSWM")) then
+			allocate (initgrid(in_nbf,ndim), stat=ierr)
+			if (ierr/=0) then
+				print *, "Error allocating the initial grid array in main"
+				errorflag=1
+			end if
+		end if
+	
 		if (errorflag .ne. 0) cycle   ! errorflag is the running error catching system
 
 		allocate (popt(npes), stat=ierr)
@@ -294,8 +301,8 @@ Program MainMCE
 				conjrep = 3
 			end if  
 
-			time = timestrt     ! It is possible to start at t=/=0, but not advisable.
-			                    ! If t=/=0 is required, precalculated basis should be used
+			time = timestrt         ! It is possible to start at t=/=0, but
+			timestrt_loc = timestrt ! precalculated basis should be used
 
 			!**********Basis Set Generation Section Begins**************************!
 
@@ -355,36 +362,6 @@ Program MainMCE
 						end if
 					end if 
 
-					if (((basis.eq."SWTRN").or.(basis.eq."SWARM")).and.(restart.eq.1)) then
-
-						allocate (p(size(bset)), q(size(bset)))
-
-						write(rep,"(i3.3)") recalcs
-
-						filenm = "Traj-"//trim(rep)//".out"  
-
-						do j=1,size(bset)
-							q(j) = sum(dble(bset(j)%z(1:ndim)))
-							p(j) = sum(dimag(bset(j)%z(1:ndim)))
-						end do
-
-						open(unit=151,file=filenm,status='unknown',iostat=ierr)
-
-						if (ierr.ne.0) then
-							print "(a,a,a,1x,i5)", "Error opening ", filenm, " file for step", x
-							errorflag = 1
-						end if
-
-						do j=1,size(bset)
-							write(151,*) j, q(j), p(j)
-						end do
-
-						close (151)
-
-						deallocate (p,q)
-						
-					end if
-
 					if ((restart.eq.1).and.(recalcs.lt.Ntries)) then
 						if ((errorflag==1).and.(basis=="GRID").and.(cmprss=="N")) call outbs(bset, reps, mup, muq, time)
 						call deallocbs(bset)                            !Before recalculation, the basis must be deallocated
@@ -433,9 +410,9 @@ Program MainMCE
 					else
 						call allocbs(bset,nbf)
 						call readbasis(bset, mup, muq, k, time) ! reads and assigns the basis set parameters and values, ready for propagation.
-						timestrt=time
+						timestrt_loc=time
 						nbf = in_nbf
-						print "(a,i0,a)", "Starting from previous file. ", int(real(abs((timeend-timestrt)/dtinit))), " steps remaining."
+						print "(a,i0,a)", "Starting from previous file. ", int(real(abs((timeend-timestrt_loc)/dtinit))), " steps remaining."
 					end if
 				end if
 
@@ -531,7 +508,7 @@ Program MainMCE
 						call cloning (bset, nbf, x, time, clone)
 					end if
 
-					call propstep (bset, dt, dtnext, dtdone, time, genflg)     ! This subroutine takes a single timestep
+					call propstep (bset, dt, dtnext, dtdone, time, genflg, timestrt_loc)     ! This subroutine takes a single timestep
 
 					if (dtdone.eq.dt) then    ! nsame and nchange are used to keep track of changes to the stepsize.
 						!$omp atomic           !atomic parameter used to ensure two threads do not write to the same       
@@ -595,9 +572,9 @@ Program MainMCE
 						end if
 						call outdimacf(time,ndimacf,reps)
 						call outnormpopadap(nrmtmp,acft,extmp,ehrtmp,popt,x,reps,time)
-						if (nbfadapt.eq."NO") then
-							call outD(bset,x,time)
-						end if
+!						if (nbfadapt.eq."NO") then
+!							call outD(bset,x,time)
+!						end if
 					end if
 
 					call outbs(bset, reps, mup, muq, time)
@@ -606,11 +583,11 @@ Program MainMCE
 																							!Disabled to ensure that small fluctuations aren't disruptive
 					if (mod(x,50)==0) then     !Status reports
 						if (step == "S") then
-							print "(1x,a,i8,a,i8,a,i0,a,i0)", "Completed step ", x, " of ", int(real(abs((timeend-timestrt)/dt))),&
+							print "(1x,a,i8,a,i8,a,i0,a,i0)", "Completed step ", x, " of ", int(real(abs((timeend-timestrt_loc)/dt))),&
 									" on rep ", reps, " of ", reptot
 						else
 							print "(1x,a,i8,a,i8,a,i0,a,i0)", "Completed step ", x, " of approximately ", &
-									int(real(abs(x*(timeend-timestrt)/(time-timestrt)))), " on rep ", reps, " of ", reptot
+									int(real(abs(x*(timeend-timestrt_loc)/(time-timestrt_loc)))), " on rep ", reps, " of ", reptot
 						end if
 					end if
 
@@ -637,7 +614,7 @@ Program MainMCE
 			end if 
 
 			call deallocbs(bset)     ! Deallocates basis set ready for next repeat 
-
+			
 			if ((conjrep==2).and.(errorflag==0)) then
 				print "(a)", "Starting Conjugate propagation" 
 			else
@@ -645,9 +622,17 @@ Program MainMCE
 			end if    
 
 		end do !conjugate repeat
+		
+		if ((basis=="GRID").or.(basis=="GRSWM")) then
+			deallocate (initgrid, stat=ierr)
+			if (ierr/=0) then
+				print *, "Error deallocating the initial grid array in main"
+				errorflag=1
+			end if
+		end if	
 
-		deallocate (mup, muq, popt, stat=istat)
-		if (istat/=0) then
+		deallocate (mup, muq, popt, stat=ierr)
+		if (ierr/=0) then
 			print "(a,i0)", "Error deallocating mup, muq or popt in repeat ", reps
 			errorflag=1
 		end if
@@ -656,8 +641,8 @@ Program MainMCE
 	!$omp end do
 	!$omp end parallel
 
-	deallocate(ndimacf,stat=ierr)
-	if (ierr/=0) then
+	deallocate(ndimacf,stat=istat)
+	if (istat/=0) then
 		print *, "Error deallocating ndimacf in main"
 		errorflag=1
 	end if
@@ -672,8 +657,8 @@ Program MainMCE
 		acf_t = acf_t/dble(reptot)
 		extra = extra/dble(reptot)
 		call outnormpopstat(absnorm, acf_t, extra, absehr, pops)
-		deallocate(absnorm,absnorm2,acf_t,absehr,extra,pops,stat = ierr)
-		if (ierr/=0) then
+		deallocate(absnorm,absnorm2,acf_t,absehr,extra,pops,stat = istat)
+		if (istat/=0) then
 			print "(a)", "Error in deallocation of output arrays in main"
 			errorflag=1
 		end if
@@ -683,7 +668,7 @@ Program MainMCE
 		n=0
 		do while (istat==0)
 			read (1710,"(a)",iostat=istat) LINE
-			n = n+1
+			n=n+1
 		end do
 		n=n-1
 		print *, "size of timestep array is ", n

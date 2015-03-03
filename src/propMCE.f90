@@ -13,7 +13,7 @@ MODULE propMCE
 !*      1) Taking a single timestep (top level) and choosing adaptive or static step
 !*      2) Controlling the adaptive stepsize, calculating the error and changing the step if necessary
 !*      3) Taking a step using the Fourth/Fifth order Runge-Kutta-Cash-Karp system for adaptive steps
-!*      4) Taking a step using the Fourht Order Runge-Kutta system for static steps
+!*      4) Taking a step using the Fourth Order Runge-Kutta system for static steps
 !*      
 !*************************************************************************************************!
 
@@ -21,13 +21,13 @@ contains
 
 !*************************************************************************************************!
 
-	subroutine propstep (bs, dt, dtout, dtfin, time, genflg)
+	subroutine propstep (bs, dt, dtout, dtfin, time, genflg, timestrt_loc)
 
 		implicit none
 		type(basisfn), dimension (:), intent (inout) :: bs
 		type(basisfn), dimension (:), allocatable :: dbs_dt1, bserr0, tempbs
 		real(kind=8), intent (inout) :: dt, dtout, dtfin
-		real(kind=8), intent(in) :: time
+		real(kind=8), intent(in) :: time, timestrt_loc
 		integer, intent(in) :: genflg
 		integer::k
 
@@ -37,7 +37,7 @@ contains
 		call allocbs(tempbs,size(bs))
 
 
-		if (timeend.gt.timestrt) then      
+		if (timeend.gt.timestrt_loc) then      
 			if ((time+dt-timeend).gt.0.0d0) dt = timeend - time
 		else
 			if ((time+dt-timeend).lt.0.0d0) dt = timeend - time
@@ -122,12 +122,12 @@ contains
 					errmin = min(abs(bserr0(k)%d_pes(r)/bserr1(k)%d_pes(r)), &
 									 abs(bserr0(k)%s_pes(r)/bserr1(k)%s_pes(r)), &
 									 errmin)
-					print "(6(1x,e16.8e3))", bserr0(k)%d_pes(r), bserr1(k)%d_pes(r), bserr0(k)%s_pes(r), bserr1(k)%s_pes(r)
+!					print "(6(1x,e16.8e3))", bserr0(k)%d_pes(r), bserr1(k)%d_pes(r), bserr0(k)%s_pes(r), bserr1(k)%s_pes(r)
 				end do
 				errmin = min(abs(bserr0(k)%D_big/bserr1(k)%D_big),&
 								 abs(err0z(k)/err1z(k)),&
 								 errmin)
-				print "(8(1x,e16.8e3))", bserr0(k)%D_big, bserr1(k)%D_big, err0z(k), err1z(k)
+!				print "(8(1x,e16.8e3))", bserr0(k)%D_big, bserr1(k)%D_big, err0z(k), err1z(k)
 			end do
 
 			errmin = errmin * diff
@@ -151,13 +151,14 @@ contains
 				dtnext = sign(min(0.9*abs(dt)*(errmin**0.2),dtmax),dt)
 				exit
 			else
+				dtnext = sign(min(0.9*abs(dt)*(errmin**0.25),dtmax),dt)
 				exit          
 			end if
 
 		end do
 
 		dtfin = dt
-		print "(4(1x,e16.8e3))", dtfin, dtmax, dtmin, errmin
+!		print "(4(1x,e16.8e3))", dtfin, dtmax, dtmin, errmin
 
 		call deallocbs(bserr1)
 		deallocate(err1z, err0z, stat = ierr)

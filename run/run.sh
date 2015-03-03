@@ -101,11 +101,25 @@ if [[ -d ../build ]]; then
  BUILD=$PWD
  cd $RUNF
 else
- echo "No build folder! What's going on? I'm scared."
+ echo ""
+ echo ""
+ echo ""
+ echo "No build folder!"
+ echo ""
+ echo ""
+ echo ""
+ echo "What's going on?"
+ echo ""
+ echo ""
+ echo ""
+ echo "I'm scared."
  echo ""
  echo ""
  echo ""
  echo "Hold me."
+ echo ""
+ echo ""
+ echo ""
  exit 1
 fi
 NUMBER=$RANDOM
@@ -137,6 +151,7 @@ if [[ $? -ne 0 ]]; then
  echo "Compilation Error! Exitting"
  exit 1
 fi
+cp input.dat input2.dat
 method=`grep -i "^method" input.dat`
 if [[ $? == 1 || $? == 2 ]]; then
  echo "Could not read the method from input.dat. Exitting"
@@ -148,7 +163,7 @@ if [[ $method == "MCE12" ]]; then
 else
    k=1
 fi
-sed -i "s/^Repeats.*/Repeats $REPS/g" input.dat
+sed -i "s/^Repeats.*/Repeats $REPS/g" input2.dat
 grep "^Repeats $REPS" input.dat > /dev/null
 if [[ $? == 1 || $? == 2 ]]; then
  echo "Could not change the number of repeats in input.dat. Exitting"
@@ -171,7 +186,7 @@ echo $outfol | grep -i "Default" > /dev/null
 outdef=$?
 for a in "${methseq[@]}"; do
  if [[ $k == 2 ]]; then
-  sed -i "s/^method.*/method MCEv$a/g" input.dat
+  sed -i "s/^method.*/method MCEv$a/g" input2.dat
   if [[ $outdef == 0 ]]; then
    outfol2="MCEv$a-$sys-$NUMBER"
   else
@@ -220,10 +235,11 @@ for a in "${methseq[@]}"; do
   SUBDIR="$EXDIR/$i-run"
   cd "$RUNF"
   if [[ $chm45 -eq 1 ]]; then 
-   cp ./calibinputs/input.$i $SUBDIR/input.dat; fi ########<----------remove this
-   cp inham.dat MCE.exe prop.dat $SUBDIR/          ########<----------put input.dat back here
+   cp ./calibinputs/input.$i $SUBDIR/input.dat     ########<----------remove this
+   cp inham.dat MCE.exe prop.dat $SUBDIR/          ########<----------remove this
   else
-   cp inham.dat input.dat MCE.exe prop.dat $SUBDIR/
+   cp inham.dat input2.dat MCE.exe prop.dat $SUBDIR/
+   mv $SUBDIR/input2.dat $SUBDIR/input.dat
   fi
   if [[ $gen -eq 0 ]]; then
    if [[ -f "Outbs-001_$i.out" ]]; then 
@@ -253,7 +269,5 @@ for a in "${methseq[@]}"; do
  cd "$RUNF"
 done
 echo "./collate.sh $EXDIR $1 $3 $NUMBER "'$0' > result.sh
-if [[ $k == 2 ]]; then
- sed -i "s/^method.*/method MCE12/g" input.dat
-fi
+rm input2.dat
 chmod u+x result.sh
