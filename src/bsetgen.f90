@@ -635,12 +635,6 @@ contains
 			bs(k)%D_big = D(k)
 		end do
 
-		open(unit=1,file="D.out")
-		do j=1,size(bs)
-			write(1,*) j, D(j)
-		end do
-		close (1)  
-
 		if (method == "MCEv1") then
 			do j=1,size(bs)
 				bs(j)%a_pes(in_pes) = bs(j)%D_big

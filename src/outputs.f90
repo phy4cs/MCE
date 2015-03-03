@@ -344,7 +344,7 @@ contains
 		close(135)
 
 		if (((basis=="GRID").or.(basis=="GRSWM")).and.(ndim==3)) then
-			open(unit=136, file="outgrd.out", status="unknown", iostat=ierr)
+			open(unit=136, file="Outgrid"//trim(rep)//".out", status="unknown", iostat=ierr)
 			do j=1,size(bs)
 				if (mod(j,2)==1) write(136,"(3(1x,es25.17e3))"), dble(bs(j)%z(1)), dble(bs(j)%z(2)), dble(bs(j)%z(3))
 			end do
@@ -435,26 +435,29 @@ contains
 
 !--------------------------------------------------------------------------------------------------
 
-	 subroutine outD(bs,x,t)
+	 subroutine outD(bs,x,t,reps)
 
 		implicit none
 		type(basisfn),dimension(:),intent(in)::bs
 		real(kind=8),intent(in)::t
-		integer,intent(in)::x
+		integer,intent(in)::x, reps
 		real(kind=8),dimension(:),allocatable::absD
 		integer :: ierr,j
 		character(LEN=18)::myfmt
+		character(LEN=3):: rep
 
 		if (errorflag .ne. 0) return
 
 		ierr = 0
+		
+		write(rep,"(i3.3)") reps
 
 		write(myfmt,'(a,i0,a)') '(', 1+in_nbf, '(1x,e16.8e3))'
 
 		if (x==2) then
-			open (unit=1443,file="D.out",status="new",iostat=ierr)
+			open (unit=1443,file="D"//trim(rep)//".out",status="new",iostat=ierr)
 		else
-			open (unit=1443,file="D.out",access="append",status="old",iostat=ierr)
+			open (unit=1443,file="D"//trim(rep)//".out",access="append",status="old",iostat=ierr)
 		end if
 
 		do j=1,in_nbf

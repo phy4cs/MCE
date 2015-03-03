@@ -573,7 +573,7 @@ Program MainMCE
 						call outdimacf(time,ndimacf,reps)
 						call outnormpopadap(nrmtmp,acft,extmp,ehrtmp,popt,x,reps,time)
 !						if (nbfadapt.eq."NO") then
-!							call outD(bset,x,time)
+!							call outD(bset,x,time,reps)
 !						end if
 					end if
 
