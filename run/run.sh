@@ -164,7 +164,7 @@ else
    k=1
 fi
 sed -i "s/^Repeats.*/Repeats $REPS/g" input2.dat
-grep "^Repeats $REPS" input.dat > /dev/null
+grep "^Repeats $REPS" input2.dat > /dev/null
 if [[ $? == 1 || $? == 2 ]]; then
  echo "Could not change the number of repeats in input.dat. Exitting"
  exit 1
@@ -220,7 +220,7 @@ for a in "${methseq[@]}"; do
  cd ../run/
  echo "#$ -cwd -V -m e" > $FILE
  if [[ $CORES -ne 1 ]]; then echo "#$ -pe smp $CORES" >> $FILE; fi
- echo "#$ -l h_rt=40:00:00" >> $FILE
+# echo "#$ -l h_rt=40:00:00" >> $FILE
  echo "#$ -l h_vmem=4G" >> $FILE
  echo "#$ -t 1-$FOLDERS" >> $FILE
  echo "cd $EXDIR/"'$SGE_TASK_ID'"-run/" >> $FILE
@@ -229,7 +229,7 @@ for a in "${methseq[@]}"; do
   echo "module load mkl" >> $FILE
  fi
  echo "./MCE.exe" >> $FILE
- if [[ -n $( echo $HOSTNAME | fgrep -e "chmlin45" ) ]]; then chm45=1; else chm45=0; fi
+ if [[ -n $( echo $HOSTNAME | fgrep -e "chmlin451" ) ]]; then chm45=1; else chm45=0; fi
  if [[ $chm45 -eq 1 ]]; then ./gridchanger.sh; fi   ########<---------remove this
  for i in "${folseq[@]}"; do
   SUBDIR="$EXDIR/$i-run"
