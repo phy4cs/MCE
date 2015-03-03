@@ -8,7 +8,7 @@ System: CP
 
 #Name of running folder [Default : <method>-<system>-<random number> ie CCS-HP-31254 (input "default", case insensitive)
 #                       Otherwise:  <method>-<system>-<runfolder string> ie CCS-HP-withgrids]
-Runfolder default
+Runfolder 104x26-1.35-400
 
 #Debug flag [ 0: no debug outputs, 1: debug outputs. Does not really work for dynamic basis set sizes]
 debug 0
@@ -32,7 +32,7 @@ Repeats 1
 Conjugate_Repeats NO
 
 # Number of basis functions 
-in_nbf 400
+in_nbf 2704
 
 # Number of dimensions
 ndim 3
@@ -47,7 +47,7 @@ npes 1
 basis GRSWM
 
 # Compression parameter (can be tweaked to allow better norm value, or altered automatically)   Used for swarms/swarm-trains/grid-swarms
-ALCMP 500.0d0
+ALCMP 400
 
 # Flag for adaptive basis set size (yes/no) [Selecting No will give a constant basis set size. This is default behaviour] Used for Grids/grid-swarms
 nbfadapt yes
@@ -59,7 +59,7 @@ Cloning no
 nbfepsilon 1.0d-05
 
 # gives grid spacing. If grid is not selected (previous parameter) this parameter will be read, but not used. Used for grids/grid-swarms
-gridsp 1.50
+gridsp 1.35
 
 # the size of the grid in the q,x coordinate. Used for 3d grids
 qsizex 4
@@ -74,10 +74,10 @@ qsizey 4
 psizey 4
 
 # the size of the grid in the q,z coordinate. Used for grids/grid-swarms
-qsizez 20
+qsizez 104
 
 # the size of the grid in the p,z coordinate. Used for grids/grid-swarms
-psizez 20
+psizez 26
 
 # spacing between trajectories for train type basis set. Used for trains/swarm-trains
 trainsp 50 
