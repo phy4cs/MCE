@@ -69,9 +69,9 @@ elif [[ $2 -gt 8 ]]; then
 elif [[ $3 -lt 1 ]]; then
  echo "Not enough folders selected. Must be 1 or greater"
  exit 1
-elif [[ $3 -gt 100 ]]; then
- echo "Too many folders! Maximum of 100 simultaneous job submissions allowed!"
- exit 1
+#elif [[ $3 -gt 100 ]]; then
+# echo "Too many folders! Maximum of 100 simultaneous job submissions allowed!"
+# exit 1
 elif [[ $(( $1/$3 )) -ge 500 ]]; then
  echo "Too many repeats per folder! Must be less than 500!"
  exit 1
@@ -82,9 +82,9 @@ elif [[ $(( $1%(2*$2*$3) )) -ne 0 && $CRchk == 0 ]]; then
 elif [[ $(( $1%($2*$3) )) -ne 0 ]]; then
  echo "Number of repeats must be an integer multiple of cores * folders"
  exit 1
-elif [[ $(( $2*$3 )) -gt 100 ]]; then
- echo "Total number of cores should stay below 100 unless you want to wait over a week"
- exit 1
+#elif [[ $(( $2*$3 )) -gt 100 ]]; then
+# echo "Total number of cores should stay below 100 unless you want to wait over a week"
+# exit 1
 else
  echo "Arguments checked"
  if [[ -n $( echo $HOSTNAME | fgrep -e "arc1" -e "polaris" -e "arc2" ) ]]; then HPCFLG=1; else HPCFLG=0; fi
@@ -141,9 +141,11 @@ if [[ ! -d "$EXDIR1" ]]; then echo "Cannot find execution directory $EXDIR1. Exi
 folseq=( `seq 1 $FOLDERS` )
 cd $BUILD
 if [[ HPCFLG -eq 1 ]]; then
- make -f makefile_arc
+ cp makefile_arc Makefile
+ make
 else
- make -f makefile_chmlin
+ cp makefile_chmlin Makefile
+ make
 fi 
 cp *.exe $RUNF 
 cd $RUNF
@@ -223,13 +225,14 @@ for a in "${methseq[@]}"; do
 # echo "#$ -l h_rt=40:00:00" >> $FILE
  echo "#$ -l h_vmem=4G" >> $FILE
  echo "#$ -t 1-$FOLDERS" >> $FILE
+# echo "#$ -tc 40" >> $FILE
  echo "cd $EXDIR/"'$SGE_TASK_ID'"-run/" >> $FILE
  echo "echo "'"Running on $HOSTNAME in folder $PWD"' >> $FILE 
  if [[ $HPCFLG -eq 1 ]]; then
   echo "module load mkl" >> $FILE
  fi
  echo "./MCE.exe" >> $FILE
- if [[ -n $( echo $HOSTNAME | fgrep -e "chmlin451" ) ]]; then chm45=1; else chm45=0; fi
+ if [[ -n $( echo $HOSTNAME | fgrep -e "chmlin45" ) ]]; then chm45=1; else chm45=0; fi
  if [[ $chm45 -eq 1 ]]; then ./gridchanger.sh; fi   ########<---------remove this
  for i in "${folseq[@]}"; do
   SUBDIR="$EXDIR/$i-run"

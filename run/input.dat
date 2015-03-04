@@ -8,7 +8,7 @@ System: CP
 
 #Name of running folder [Default : <method>-<system>-<random number> ie CCS-HP-31254 (input "default", case insensitive)
 #                       Otherwise:  <method>-<system>-<runfolder string> ie CCS-HP-withgrids]
-Runfolder 104x26-1.35-400
+Runfolder Various_Full_Propagations
 
 #Debug flag [ 0: no debug outputs, 1: debug outputs. Does not really work for dynamic basis set sizes]
 debug 0
@@ -17,7 +17,7 @@ debug 0
 gen YES 
 
 #Basis Set Propagation flag [YES/NO for prop YES
-prop NO
+prop YES
 
 #Flag for adaptive altering of the compression parameter in swarms/grid-swarms/train-swarms or the grid spacing for grids. [YES/NO]
 cmprss NO
