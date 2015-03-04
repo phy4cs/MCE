@@ -353,13 +353,13 @@ contains
 			end if
 			write(4532,'(e12.5,i5)') time, nbf
 			close(4532)
-!			if (x==1) then
-!				open(unit=1,file="trajat1.dat")
-!				do k=1,nbf
-!					write(1,*) k, (bs(k)%z(m), m=1,ndim)
-!				end do
-!				close(1)
-!			end if 
+			if (x==1) then
+				open(unit=1,file="trajat1.dat")
+				do k=1,nbf
+					write(1,*) k, (bs(k)%z(m), m=1,ndim)
+				end do
+				close(1)
+			end if 
 		end if
 
 		return

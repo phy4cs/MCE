@@ -225,6 +225,10 @@ Program MainMCE
 	rprj=10
 	genflg=0
 
+	if (step == "A") then    ! Adaptive stepsize output includes a timestep dump
+		open (unit=1710,file="timesteps.out",status="unknown",iostat=istat)
+	end if
+
 	! The variables set as private in the below statement are duplicated when Open MP 
 	! is run such that there exists individual copies on each thread. The reduction 
 	! variables are summed over all threads. The reduction variables are only used in 
@@ -456,8 +460,8 @@ Program MainMCE
 					call outnormpopadap(initnorm,acft,extmp,initehr,popt,x,reps,time)
 				else                         ! For adaptive stepsize the data is output straight away
 					if ((nbfadapt.eq."NO").and.(debug==1)) then
-						call outtrajheads(reps, nbf)
-						call outtraj(bset,x,reps,time)
+						!call outtrajheads(reps, nbf)
+						!call outtraj(bset,x,reps,time)
 						call outvarsheads (reps, nbf)
 						call outvars(bset,x,reps,time)
 					end if
@@ -570,12 +574,18 @@ Program MainMCE
 						open (unit=timestpunit,file="timesteps"//trim(rep)//".out",status="old",access="append",iostat=istat)
 						write(timestpunit,"(e12.5)") dtdone
 						close (timestpunit)
+!						!$omp critical
+!						write(1710,"(e12.5)") dtdone    !Outputs the stepsizes of all repetitions
+!						!$omp end critical
 						if ((nbfadapt.eq."NO").and.(method.ne."MCEv2").and.(debug==1)) then
-							call outtraj(bset,x,reps,time)
+							!call outtraj(bset,x,reps,time)
 							call outvars(bset,x,reps,time)
 						end if
 						call outdimacf(time,ndimacf,reps)
 						call outnormpopadap(nrmtmp,acft,extmp,ehrtmp,popt,x,reps,time)
+!						if (nbfadapt.eq."NO") then
+!							call outD(bset,x,time,reps)
+!						end if
 					end if
 
 					call outbs(bset, reps, mup, muq, time)

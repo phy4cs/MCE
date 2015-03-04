@@ -32,7 +32,7 @@ Repeats 1
 Conjugate_Repeats NO
 
 # Number of basis functions 
-in_nbf 2704
+in_nbf 2600
 
 # Number of dimensions
 ndim 3
@@ -47,7 +47,7 @@ npes 1
 basis GRSWM
 
 # Compression parameter (can be tweaked to allow better norm value, or altered automatically)   Used for swarms/swarm-trains/grid-swarms
-ALCMP 400
+ALCMP 500
 
 # Flag for adaptive basis set size (yes/no) [Selecting No will give a constant basis set size. This is default behaviour] Used for Grids/grid-swarms
 nbfadapt yes
@@ -59,7 +59,7 @@ Cloning no
 nbfepsilon 1.0d-05
 
 # gives grid spacing. If grid is not selected (previous parameter) this parameter will be read, but not used. Used for grids/grid-swarms
-gridsp 1.35
+gridsp 1.40
 
 # the size of the grid in the q,x coordinate. Used for 3d grids
 qsizex 4
@@ -74,7 +74,7 @@ qsizey 4
 psizey 4
 
 # the size of the grid in the q,z coordinate. Used for grids/grid-swarms
-qsizez 104
+qsizez 100
 
 # the size of the grid in the p,z coordinate. Used for grids/grid-swarms
 psizez 26
