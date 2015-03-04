@@ -8,7 +8,7 @@ System: CP
 
 #Name of running folder [Default : <method>-<system>-<random number> ie CCS-HP-31254 (input "default", case insensitive)
 #                       Otherwise:  <method>-<system>-<runfolder string> ie CCS-HP-withgrids]
-Runfolder Various_Full_Propagations
+Runfolder 03_Full_Propagations
 
 #Debug flag [ 0: no debug outputs, 1: debug outputs. Does not really work for dynamic basis set sizes]
 debug 0
@@ -47,7 +47,7 @@ npes 1
 basis GRSWM
 
 # Compression parameter (can be tweaked to allow better norm value, or altered automatically)   Used for swarms/swarm-trains/grid-swarms
-ALCMP 500
+ALCMP 750
 
 # Flag for adaptive basis set size (yes/no) [Selecting No will give a constant basis set size. This is default behaviour] Used for Grids/grid-swarms
 nbfadapt yes
@@ -56,7 +56,7 @@ nbfadapt yes
 Cloning no
 
 # Basis set trimming parameter. If overlap is less than this value, basis function is removed. Used when nbfadapt = yes
-nbfepsilon 1.0d-05
+nbfepsilon 1.0d-03
 
 # gives grid spacing. If grid is not selected (previous parameter) this parameter will be read, but not used. Used for grids/grid-swarms
 gridsp 1.40

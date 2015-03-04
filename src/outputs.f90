@@ -1260,7 +1260,7 @@ contains
 		real(kind=8), dimension (:,:), allocatable :: input, output, output2
 		character (LEN=100) :: filename1, filename2, LINE, LINE2, LINE3
 		character (LEN=3) :: repstr, folstr
-		character (LEN=14) :: myfmt
+		character (LEN=16) :: myfmt
 		logical :: file_exists
 	 
 		if (errorflag==1) return
@@ -1321,7 +1321,7 @@ contains
 				rewind (fileunin)
 			end if
 	 
-			do while (LINE/="0.00000000E+00")
+			do while (LINE/="0.00000000E+000")
 				read(fileunin,*,iostat=ierr) LINE
 				if (ierr .ne. 0) then
 					print *, "Error in reading from ", trim(filename1), " file to skip to data"
@@ -1335,7 +1335,7 @@ contains
 				LINE3=LINE
 				lines = lines + 1
 				read(fileunin,*,iostat=ierr) LINE
-				if ((LINE==LINE3).and.(LINE/="0.00000000E+00")) lines = lines-1      ! Stops any line being re-read
+				if ((LINE==LINE3).and.(LINE/="0.00000000E+000")) lines = lines-1      ! Stops any line being re-read
 			end do
 	 
 			allocate(input(cols,lines), stat=ierr)
@@ -1346,7 +1346,7 @@ contains
 			end if
 			
 			rewind (fileunin)
-			do while (LINE/="0.00000000E+00")
+			do while (LINE/="0.00000000E+000")
 				read(fileunin,*,iostat=ierr) LINE
 				if (ierr .ne. 0) then
 					print *, "Error in reading from ", trim(filename1), " file to skip to data again"
@@ -1372,18 +1372,18 @@ contains
 	 
 			call nevillealg(input,output,cols,lines,errorflag)   ! Interpolate subroutine for single file
 			if (errorflag==1) return
-	 
+
 			write(myfmt,'(a,i0,a)') '(', cols, '(1x,e16.8e3))'
 	 
 			do k=1,timesteps
 				write(fileunout,myfmt) output(:,k)
-			end do     
+			end do 
 	 
 			rewind (fileunout)
 	 
 			close (fileunin)
-	 
-			deallocate(input)
+			
+			deallocate(input, stat=ierr)
 			if (ierr/=0) then
 				print *, "Dellocation error in input array"
 				errorflag=1
@@ -1391,15 +1391,15 @@ contains
 			end if
 	 
 		end do  
-	 
-		deallocate(output)
+		
+		deallocate(output, stat=ierr)
 		if (ierr/=0) then
 			print *, "Dellocation error in output array"
 			errorflag=1
 			return
 		end if
 	 
-		OPEN(UNIT=501, FILE="normpop.out",STATUS='new', iostat=ierr) 
+		OPEN(UNIT=501, FILE="normpop.out",STATUS='new', iostat=ierr)
 	 
 		write (501,*), LINE2
 		write (501,*), ""
@@ -1408,7 +1408,7 @@ contains
 		allocate (output2(cols,timesteps))
 	 
 		output2 = 0.0d0
-		fileline = 0.0d0  
+		fileline = 0.0d0 
 	 
 		do i=1,reptot
 	 
@@ -1441,9 +1441,14 @@ contains
 
 		close (501)
 	 
-		deallocate(valid,output2,fileline)
+		deallocate(valid,output2,fileline, stat=ierr)
+		if (ierr/=0) then
+			print *, "Deallocation error in valid, output2 and fileline arrays"
+			errorflag=1
+			return
+		end if
 	 
-		stop
+		return
 
 	 end subroutine interpolate
 
@@ -1459,7 +1464,7 @@ contains
 		integer, intent (in) :: cols, lines
 		real(kind=8) :: time, timetmp, dataout, errout
 		real(kind=8), dimension (:), allocatable :: timein, datain, timeall
-		integer :: i, k, n, z, jdown, jup, jold
+		integer :: i, k, n, z, jdown, jup, jold, inpsize
 
 		if (errorflag==1) return
 
@@ -1488,18 +1493,18 @@ contains
 			return
 		end if
 	
-		if (input(1,2) == timestrt + dtinit) then
-			output(:,2) = input (:,2)
-			time = time + dtinit
-		else
-			print *, "I expected the first timestep to be the same as the initial timestep"
-			errorflag = 1
-			return
-		end if
+!		if (input(1,2) == timestrt + dtinit) then
+!			output(:,2) = input (:,2)
+!			time = time + dtinit
+!		else
+!			print *, "I expected the first timestep to be the same as the initial timestep"
+!			errorflag = 1
+!			return
+!		end if
 
-		jold = 2
-		z=2
-		timetmp=time  
+		jold = 1
+		z=1
+		timetmp=timestrt
 
 		do while (time.lt.timeend)
 
@@ -1517,25 +1522,34 @@ contains
 			if (errorflag==1) return
 
 			jup = jdown + 1
+			jold = jdown
 
 			if (timetmp==timeend) then
 				n=3
 			end if
-
-			jold = jdown
+			
+			inpsize=size(input,2)
 
 			if (mod(n,2)==0) then
 				jdown = jdown - (n/2) + 1
 				jup = jup + (n/2) - 1
 			else
-				if (((abs(input(1,jup)-timetmp)).lt.(abs(input(1,jdown)-timetmp))).and.(timetmp/=timeend)) then
-					jup = jup + (n/2)
-					jdown = jdown - (n/2) + 1
+				if (timetmp/=timeend) then
+					if ((abs(input(1,min(jup,inpsize))-timetmp)).lt.(abs(input(1,min(jdown,inpsize-1))-timetmp))) then
+						jup = jup + (n/2)
+						jdown = jdown - (n/2) + 1
+					else 
+						jup = jup + (n/2) - 1
+						jdown = jdown - (n/2)
+					end if
 				else
-					jup = jup + (n/2) - 1
-					jdown = jdown - (n/2)
+					jup = min(jup,inpsize)
+					jdown = jup-n+1
 				end if
 			end if
+			
+!			jup=min(jup,inpsize)
+!			jdown=jup-n+1
 
 			allocate (timein(n), datain(n))
 

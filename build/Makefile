@@ -2,7 +2,7 @@
 #Made with the aid of the fmkmf utility (Copyright (c) The University of Edinburgh) 
 
 F90=gfortran
-FFLAGS=-O2
+FFLAGS=-fbounds-check -g -O2
 FLINKS=-lm -Warray-bounds
 VPATH=../src
 

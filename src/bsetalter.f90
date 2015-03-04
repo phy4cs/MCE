@@ -318,14 +318,6 @@ contains
 			end if
 		end do
 
-		if (x==1) then
-			do k=1,in_nbf
-				if (abs(C_k(k)).lt.bfeps) then
-					DC(k) = -1.0d0
-				end if
-			end do
-		end if
-			
 		if (j-1/=nbf) then
 			print *, "Error! Mismatch in (new) basis set size!"
 			errorflag = 1

@@ -665,7 +665,7 @@ Program MainMCE
 				errorflag=1
 			end if
 		else if ((step=="A").and.(errorflag==0)) then   ! builds a histogram of data
-			call system ("cat timesteps*.out timesteps.out")
+			call system ("cat timesteps*.out > timesteps.out")
 			open (unit=1710,file="timesteps.out",status="unknown",iostat=istat)
 			istat=0
 			n=0
