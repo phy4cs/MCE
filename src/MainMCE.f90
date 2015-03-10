@@ -154,15 +154,15 @@ Program MainMCE
 	
 	call CPU_TIME(starttime) !used to calculate the runtime, which is output at the end
 
-	print *, " ______________________________________________________________________ "
-	print *, "|                                                                      |"
-	print *, "|                                                                      |"
-	print *, "|                     MCE Simulation Program v0.935                    |"
-	print *, "|                                                                      |"
-	print *, "|______________________________________________________________________|"
-	print *, ""
-	print *, ""
-	print *, ""
+	write(6,"(a)"), " ______________________________________________________________________ "
+	write(6,"(a)"), "|                                                                      |"
+	write(6,"(a)"), "|                                                                      |"
+	write(6,"(a)"), "|                     MCE Simulation Program v0.935                    |"
+	write(6,"(a)"), "|                                                                      |"
+	write(6,"(a)"), "|______________________________________________________________________|"
+	write(6,"(a)"), ""
+	write(6,"(a)"), ""
+	write(6,"(a)"), ""
 
 	call initialise        ! this subroutine writes initial values to global variables
 
@@ -199,7 +199,7 @@ Program MainMCE
 	if (istat==0) allocate (acf_t(tnum), stat=istat)
 	if (istat==0) allocate (extra(tnum), stat=istat)
 	if (istat/=0) then
-		print "(a)", "Error in allocating the output matrices for static stepsizes"
+		write(0,"(a)"), "Error in allocating the output matrices for static stepsizes"
 		errorflag=1
 	end if
 	pops = 0.0d0          ! Populations in different quantum states
@@ -210,7 +210,7 @@ Program MainMCE
 	extra = (0.0d0,0.0d0)
 	allocate (ndimacf(3*ndim+3), stat=istat)
 	if (istat/=0) then
-		print *, "Error allocatin ndimacf array"
+		write(0,"(a)"), "Error allocatin ndimacf array"
 		errorflag=1
 	end if
 
@@ -251,7 +251,7 @@ Program MainMCE
 		if ((basis=="GRID").or.(basis=="GRSWM")) then
 			allocate (initgrid(in_nbf,ndim), stat=ierr)
 			if (ierr/=0) then
-				print *, "Error allocating the initial grid array in main"
+				write(0,"(a)"), "Error allocating the initial grid array in main"
 				errorflag=1
 			end if
 		end if
@@ -260,7 +260,7 @@ Program MainMCE
 
 		allocate (popt(npes), stat=ierr)
 		if (ierr/=0) then
-			print "(a)", "Error in allocating the temporary population array in Main"
+			write(0,"(a)"), "Error in allocating the temporary population array in Main"
 			errorflag=1
 		end if
 
@@ -268,7 +268,7 @@ Program MainMCE
 			allocate (mup(ndim), stat=ierr)
 			if (ierr == 0) allocate (muq(ndim), stat=ierr)
 			if (ierr/=0) then
-				print *, "Error in allocation of mup and muq"
+				write(0,"(a)"), "Error in allocation of mup and muq"
 				errorflag=1
 			end if
 			mup = 0.0d0
@@ -352,9 +352,9 @@ Program MainMCE
 							do j=1,size(bset)
 								bset(j)%D_big = bset(j)%D_big/sqrt(initnorm)
 							end do
-							print "(a,e16.8e3)", "Renormalising! Old norm was ", initnorm
+							write(6,"(a,e16.8e3)"), "Renormalising! Old norm was ", initnorm
 							call initnormchk(bset, recalcs, restart,alcmprss, gridsp, initnorm, initnorm2)
-							print "(a,e16.8e3)", "               New norm is  ", initnorm
+							write(6,"(a,e16.8e3)"), "               New norm is  ", initnorm
 							recalcs = recalcs - 1
 							restart = 0
 						end if
@@ -363,23 +363,23 @@ Program MainMCE
 					if ((restart.eq.1).and.(recalcs.lt.Ntries)) then
 						if ((errorflag==1).and.(basis=="GRID").and.(cmprss=="N")) call outbs(bset, reps, mup, muq, time)
 						call deallocbs(bset)                            !Before recalculation, the basis must be deallocated
-						print "(a,i0,a,i0)", "Attempt ", recalcs, " of ", Ntries
+						write(6,"(a,i0,a,i0)"), "Attempt ", recalcs, " of ", Ntries
 					end if
 
 				end do   !End of basis set recalculation loop.
 
 				if ((restart.eq.1).and.(recalcs.ge.Ntries)) then   ! Fatal error
-					print "(a,i0,a)", "Initial Basis Set Error. Not resolved after ", recalcs, " repeat calculations."
-					print "(a)"," "
-					print "(a)","TERMINATING PROGRAM"
+					write(0,"(a,i0,a)"), "Initial Basis Set Error. Not resolved after ", recalcs, " repeat calculations."
+					
+					write(6,"(a)"),"TERMINATING PROGRAM"
 					stop
 				end if
 
 				if ((restart.eq.1).and.(alcmprss.le.1.0d-7).and.(cmprss.eq."Y")) then   ! Fatal error
-					print "(a)", "Initial Basis Set Error. Not resolved after reducing compression parameter to 1.0d-7."
-					print "(a)", "Probable Error in Code"
-					print "(a)"," "
-					print "(a)","TERMINATING PROGRAM"
+					write(0,"(a)"), "Initial Basis Set Error. Not resolved after reducing compression parameter to 1.0d-7."
+					write(0,"(a)"), "Probable Error in Code"
+					write(0,"(a)")," "
+					write(6,"(a)"),"TERMINATING PROGRAM"
 					stop
 				end if
 
@@ -388,11 +388,11 @@ Program MainMCE
 				end if    
 
 				if (errorflag.eq.0) then  ! Only executes if generation is successful
-					print "(a)", "Basis Set Generated Successfully"
-					print "(a,e15.8)", "Abs(Norm) = ", initnorm
-					if (npes.ne.1) print "(a,e15.8)", "Popsum    = ", initnorm2
-					if ((cmprss.eq."Y").and.((basis.eq."SWARM").or.(basis.eq."SWTRN"))) print "(a,e15.8)", "Alcmprss  = ", 1.0d0/alcmprss
-					if ((cmprss.eq."Y").and.(basis.eq."GRID")) print "(a,e15.8)", "Grid Spacing  = ", gridsp/dsqrt(2.0d0)
+					write(6,"(a)"), "Basis Set Generated Successfully"
+					write(6,"(a,e15.8)"), "Abs(Norm) = ", initnorm
+					if (npes.ne.1) write(6,"(a,e15.8)"), "Popsum    = ", initnorm2
+					if ((cmprss.eq."Y").and.((basis.eq."SWARM").or.(basis.eq."SWTRN"))) write(6,"(a,e15.8)"), "Alcmprss  = ", 1.0d0/alcmprss
+					if ((cmprss.eq."Y").and.(basis.eq."GRID")) write(6,"(a,e15.8)"), "Grid Spacing  = ", gridsp/dsqrt(2.0d0)
 				end if
 
 			end if !End of Basis set generation conditional statement
@@ -410,7 +410,7 @@ Program MainMCE
 						call readbasis(bset, mup, muq, k, time) ! reads and assigns the basis set parameters and values, ready for propagation.
 						timestrt_loc=time
 						nbf = in_nbf
-						print "(a,i0,a)", "Starting from previous file. ", int(real(abs((timeend-timestrt_loc)/dtinit))), " steps remaining."
+						write(6,"(a,i0,a)"), "Starting from previous file. ", int(real(abs((timeend-timestrt_loc)/dtinit))), " steps remaining."
 					end if
 				end if
 
@@ -481,7 +481,7 @@ Program MainMCE
 				if ((sys=="SB").and.(method=="MCEv2").and.(cloneflg=="YES")) then
 					allocate (clone(nbf), stat=ierr)
 					if (ierr/=0) then
-						print *, "Error in allocating clone arrays"
+						write(0,"(a)"), "Error in allocating clone arrays"
 						errorflag = 1
 					end if
 					do j=1,nbf
@@ -489,9 +489,9 @@ Program MainMCE
 					end do
 				end if
 
-				print *, "Beginning Propagation"
+				write(6,"(a)"), "Beginning Propagation"
 
-				do while ((time.lt.timeend).and.(x.le.20000))
+				do while ((time.lt.timeend).and.(x.le.80000))
  
 					if (errorflag .ne. 0) exit 
 
@@ -584,25 +584,27 @@ Program MainMCE
 																							!Disabled to ensure that small fluctuations aren't disruptive
 					if (mod(x,50)==0) then     !Status reports
 						if (step == "S") then
-							print "(1x,a,i8,a,i8,a,i0,a,i0)", "Completed step ", x, " of ", int(real(abs((timeend-timestrt_loc)/dt))),&
+							write(6,"(1x,a,i8,a,i8,a,i0,a,i0)"), "Completed step ", x, " of ", int(real(abs((timeend-timestrt_loc)/dt))),&
 									" on rep ", reps, " of ", reptot
 						else
-							print "(1x,a,i8,a,i8,a,i0,a,i0)", "Completed step ", x, " of approximately ", &
+							write(6,"(1x,a,i8,a,i8,a,i0,a,i0)"), "Completed step ", x, " of approximately ", &
 									int(real(abs(x*(timeend-timestrt_loc)/(time-timestrt_loc)))), " on rep ", reps, " of ", reptot
 						end if
 					end if
+					
+					call flush() 
 
 				end do   !End of time propagation.
 
 				if ((time.lt.timeend).and.(errorflag.ne.1)) then
-					print "(1x,a,e12.5)", "Too many steps taken. Propagation aborted at t = ", time
-					print "(a)", "Consider revising timestep parameters"
+					write(0,"(1x,a,e12.5)"), "Too many steps taken. Propagation aborted at t = ", time
+					write(0,"(a)"), "Consider revising timestep parameters"
 				end if
 
 				if ((sys=="SB").and.(method=="MCEv2").and.(cloneflg=="YES")) then
 					deallocate (clone, stat=ierr)
 					if (ierr/=0) then
-						print *, "Error in deallocating clone arrays"
+						write(0,"(a)"), "Error in deallocating clone arrays"
 						errorflag = 1
 					end if
 				end if
@@ -610,33 +612,37 @@ Program MainMCE
 			end if 
 
 			if (errorflag==1) then
-				print *, "Last basis set outputting...."
+				write(6,"(a)"), "Last basis set outputting...."
 				call outbs(bset, reps, mup, muq, time)
 			end if 
 
 			call deallocbs(bset)     ! Deallocates basis set ready for next repeat 
 			
 			if ((conjrep==2).and.(errorflag==0)) then
-				print "(a)", "Starting Conjugate propagation" 
+				write(6,"(a)"), "Starting Conjugate propagation" 
 			else
 				exit
-			end if    
+			end if  
+			
+			call flush()  
 
 		end do !conjugate repeat
 		
 		if ((basis=="GRID").or.(basis=="GRSWM")) then
 			deallocate (initgrid, stat=ierr)
 			if (ierr/=0) then
-				print *, "Error deallocating the initial grid array in main"
+				write(0,"(a)"), "Error deallocating the initial grid array in main"
 				errorflag=1
 			end if
 		end if	
 
 		deallocate (mup, muq, popt, stat=ierr)
 		if (ierr/=0) then
-			print "(a,i0)", "Error deallocating mup, muq or popt in repeat ", reps
+			write(0,"(a,i0)"), "Error deallocating mup, muq or popt in repeat ", reps
 			errorflag=1
 		end if
+		
+		call flush()
 
 	end do ! The main repeat loop
 	!$omp end do
@@ -644,11 +650,11 @@ Program MainMCE
 
 	deallocate(ndimacf,stat=istat)
 	if (istat/=0) then
-		print *, "Error deallocating ndimacf in main"
+		write(0,"(a)"), "Error deallocating ndimacf in main"
 		errorflag=1
 	end if
 
-	print "(a)", "Finished Propagation"
+	write(6,"(a)"), "Finished Propagation"
 
 	if (prop=="Y") then
 		if ((step=="S").and.(errorflag==0)) then    !Outputs data to file
@@ -661,7 +667,7 @@ Program MainMCE
 			call outnormpopstat(absnorm, acf_t, extra, absehr, pops)
 			deallocate(absnorm,absnorm2,acf_t,absehr,extra,pops,stat = istat)
 			if (istat/=0) then
-				print "(a)", "Error in deallocation of output arrays in main"
+				write(0,"(a)"), "Error in deallocation of output arrays in main"
 				errorflag=1
 			end if
 		else if ((step=="A").and.(errorflag==0)) then   ! builds a histogram of data
@@ -674,11 +680,11 @@ Program MainMCE
 				n=n+1
 			end do
 			n=n-1
-			print *, "size of timestep array is ", n
+			write(6,"(a)"), "size of timestep array is ", n
 			rewind(1710)
 			allocate(t(n), stat = istat)
 			if (istat/=0) then
-				print "(a)", "Error in timestep array allocation"
+				write(0,"(a)"), "Error in timestep array allocation"
 				errorflag=1
 			end if
 			do k=1,n
@@ -688,14 +694,14 @@ Program MainMCE
 			close(1710)
 			num1 = maxval(t)
 			num2 = minval(t)
-			print "(a,f15.8)", "maxval of timestep array is ", num1
-			print "(a,f15.8)", "minval of timestep array is ", num2
+			write(6,"(a,f15.8)"), "maxval of timestep array is ", num1
+			write(6,"(a,f15.8)"), "minval of timestep array is ", num2
 			up=0.0
 			down=0.0
 			call histogram2(t,n,"timehist.out",up,down)   
 			deallocate(t, stat = istat)
 			if (istat/=0) then
-				print "(a)", "Error in timestep array deallocation"
+				write(0,"(a)"), "Error in timestep array deallocation"
 				errorflag=1
 			end if 
 			if (npes==2) then
@@ -708,24 +714,24 @@ Program MainMCE
 	end if
 
 	if (errorflag .ne. 0) then
-		print "(a)", "Program terminated early."
-		print "(a,i0)", "errorflag value is ", errorflag
+		write(6,"(a)"), "Program terminated early."
+		write(6,"(a,i0)"), "errorflag value is ", errorflag
 	end if
 
 	call CPU_TIME(stoptime)
 	runtime = stoptime-starttime
-	if (errorflag.eq.0) print "(a)", 'Successfully Executed MCE Program'
+	if (errorflag.eq.0) write(6,"(a)"), 'Successfully Executed MCE Program'
 	if (step == "A") then
-		print "(1x,a,i0,a,i0,a)", 'Of ', nsame + nchange, ' steps, ', nchange, ' were changed'
+		write(6,"(1x,a,i0,a,i0,a)"), 'Of ', nsame + nchange, ' steps, ', nchange, ' were changed'
 	end if 
 	if (runtime/3600.0d0 .gt. 1.0d0)then
 		runtime = runtime/3600.0d0
-		print "(a,e12.5,a)", 'Time taken : ', runtime, ' hours' 
+		write(6,"(a,e12.5,a)"), 'Time taken : ', runtime, ' hours' 
 	else if (runtime/60.0d0 .gt. 1.0d0)then
 		runtime = runtime/60.0d0 
-		print "(a,e12.5,a)", 'Time taken : ', runtime , ' mins'
+		write(6,"(a,e12.5,a)"), 'Time taken : ', runtime , ' mins'
 	else
-		print "(a,e12.5,a)", 'Time taken : ', runtime, ' seconds'        
+		write(6,"(a,e12.5,a)"), 'Time taken : ', runtime, ' seconds'        
 	end if
  
 	stop

@@ -39,7 +39,7 @@ contains
 		ierr=0
 		allocate (bs(nbf), stat=ierr)  !allocate the top level of the defined type array 
 		if (ierr/=0) then
-			print *, "Error in basis set allocation"
+			write(0,"(a)"), "Error in basis set allocation"
 			errorflag=1
 			return
 		end if
@@ -72,7 +72,7 @@ contains
 		if (ierr==0) allocate (bf%s_pes(npes), stat=ierr)    
 		if (ierr==0) allocate (bf%a_pes(npes), stat=ierr)    
 		if (ierr/=0) then
-			print *, "Error in basis function allocation"
+			write(0,"(a)"), "Error in basis function allocation"
 			errorflag=1
 			return
 		end if
@@ -108,7 +108,7 @@ contains
 		if (ierr==0) deallocate (bf%s_pes, stat=ierr)
 		if (ierr==0) deallocate (bf%a_pes, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in basis function deallocation"
+			write(0,"(a)"), "Error in basis function deallocation"
 			errorflag=1
 			return
 		end if
@@ -140,7 +140,7 @@ contains
 
 		if (errorflag==0) deallocate (bs, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in basis set deallocation"
+			write(0,"(a)"), "Error in basis set deallocation"
 			errorflag=1
 			return
 		end if
@@ -169,7 +169,7 @@ contains
 			end do
 		end do
 		if (ierr/=0) then
-			print *, "Error in hamiltonian matrix allocation"
+			write(0,"(a)"), "Error in hamiltonian matrix allocation"
 			errorflag=1
 			return
 		end if
@@ -190,7 +190,7 @@ contains
 
 		allocate (Hsing%Hjk(npes, npes), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in hamiltonian element allocation"
+			write(0,"(a)"), "Error in hamiltonian element allocation"
 			errorflag=1
 			return
 		end if
@@ -220,7 +220,7 @@ contains
 		end do
 		deallocate (H, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in hamiltonian matrix deallocation"
+			write(0,"(a)"), "Error in hamiltonian matrix deallocation"
 			errorflag=1
 			return
 		end if
@@ -241,7 +241,7 @@ contains
 
 		deallocate (Hsing%Hjk, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in hamiltonian element deallocation"
+			write(0,"(a)"), "Error in hamiltonian element deallocation"
 			errorflag=1
 			return
 		end if
