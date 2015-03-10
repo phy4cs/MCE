@@ -2,7 +2,7 @@ Program MainMCE
 
 !***********************************************************************************!
 !                                                                                   !
-!  MCE program - by Chris Symonds     Version 0.937              Date : 19/02/15    !
+!  MCE program - by Chris Symonds     Version 0.970              Date : 04/03/15    !
 !                                                                                   !
 !  This Program performs simulations using the Multi-Configurational Ehrenfest      !
 !  method with the formulations given in D. Shalashilin's 2010 (MCEv2) and          !
@@ -37,14 +37,14 @@ Program MainMCE
 !         to minimise the error between the fourth and fifth order RK propagation   !
 !         systems. This currently outputs a dump of all the timesteps from which a  !
 !         histogram is generatedwith which an appropriate static stepsize is        !
-!         generated. This is currently experiencingsome problems however with the   !
-!         timestep being stuck below the minimum value                              !
+!         generated.																	                              !
 !                                                                                   !
 !  To do list as of 14/04/2014:                                                     !
-!      3) Include multilayer CCS and possible Fermionic CCS capability              !
-!      4) Repair the openMP and adaptive timestep systems which were damaged during !
-!         the debugging procedure, and also ensure basis set conserves norm         !
-!      5) Clean and fully comment code to bring it up to a version 1.0 level        !
+!      1) Include multilayer CCS and possible Fermionic CCS capability              !
+!      2) Write a post-propagation processing system to allow for the use of        !
+!					AIMC-MCE propagation, as cloned swarm/trains takes a very long time to    !
+!         complete																																	!
+!      3) Clean and fully comment code to bring it up to a version 1.0 level        !
 !                                                                                   !
 !  Changelog :                                                                      !
 !      25/09/13 - Added Comments and large preamble section to Main and preamble to !
@@ -113,6 +113,12 @@ Program MainMCE
 !               - Included the 3D Coulomb Potential                                 !  
 !               - Set functionality to allow starting at t=/=0 when using an input  !
 !                 set, and also set output of the basis set at each timestep        !
+!			 04/03/15 - Repaired the adaptive timestep and openMP systems, which now work !
+!									fully.																														!
+!								- Repaired the Coulomb potential, which was not being properly      !
+!									calculated																												!
+!								- Changed the running scripts to allow for use of make to compile   !
+!               - Ensured that the program works properly for all model potentials  !
 !                                                                                   !
 !***********************************************************************************!
 
@@ -157,7 +163,7 @@ Program MainMCE
 	write(6,"(a)"), " ______________________________________________________________________ "
 	write(6,"(a)"), "|                                                                      |"
 	write(6,"(a)"), "|                                                                      |"
-	write(6,"(a)"), "|                     MCE Simulation Program v0.935                    |"
+	write(6,"(a)"), "|                     MCE Simulation Program v0.970                    |"
 	write(6,"(a)"), "|                                                                      |"
 	write(6,"(a)"), "|______________________________________________________________________|"
 	write(6,"(a)"), ""
