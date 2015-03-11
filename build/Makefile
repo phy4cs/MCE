@@ -1,9 +1,9 @@
-#Makefile for use on chmlinxx computers.
+#Makefile for use on arcx computers.
 #Made with the aid of the fmkmf utility (Copyright (c) The University of Edinburgh) 
 
-F90=gfortran
-FFLAGS=-fopenmp -O2
-FLINKS=-lm -Warray-bounds
+F90=ifort
+FFLAGS=-openmp -recursive -openmp-report2 -W1 -O2
+FLINKS=-Wl,--start-group -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -Wl,--end-group -lpthread
 VPATH=../src
 
 # Link step
@@ -14,10 +14,10 @@ Main:BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o vars.o alarrays.
 	 $(F90) $(FFLAGS) -o MCE.exe BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o dcerf.o cp.o hh.o redirect.o Ham.o outputs.o Chks.o derivsMCE.o propMCE.o bsetgen.o bsetalter.o readpars.o MainMCE.o $(FLINKS)
 	 
 avrgpops:avrgpops.f90
-	 $(F90) $(FFLAGS) -o avrgpops.exe $<
+	 $(F90) -O2 -o avrgpops.exe $<
 	 
 timehist:timehist.f90
-	 $(F90) $(FFLAGS) -o timehist.exe $<
+	 $(F90) -O2 -o timehist.exe $<
 
 # Compile steps
  

@@ -1,5 +1,5 @@
-GFORTRAN module version '0' created from ../src/outputs.f90 on Wed Mar  4 13:22:48 2015
-MD5:532eecb70631488aa533d8ba03e75623 -- If you edit this, you'll get what you deserve.
+GFORTRAN module version '0' created from ../src/outputs.f90 on Wed Mar 11 20:05:40 2015
+MD5:c3917655e04fc9248e99426dfe92792e -- If you edit this, you'll get what you deserve.
 
 (() () () () () () () () () () () () () () () () () () () () () () ()
 () () () ())
@@ -293,23 +293,23 @@ INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
 53 'filename' '' 'filename' 50 ((VARIABLE IN UNKNOWN-PROC UNKNOWN
 UNKNOWN DUMMY) (CHARACTER 1 0 0 CHARACTER ((CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '10'))) 0 0 () () 0 () () () 0 0)
-58 'a' '' 'a' 57 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
-DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 ASSUMED_SHAPE (CONSTANT (INTEGER 4
-0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)
-59 'n' '' 'n' 57 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DUMMY) (
-INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
 60 'filename' '' 'filename' 57 ((VARIABLE IN UNKNOWN-PROC UNKNOWN
 UNKNOWN DUMMY) (CHARACTER 1 0 0 CHARACTER ((CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '12'))) 0 0 () () 0 () () () 0 0)
+59 'n' '' 'n' 57 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DUMMY) (
+INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+58 'a' '' 'a' 57 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 ASSUMED_SHAPE (CONSTANT (INTEGER 4
+0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)
 61 'cutup' '' 'cutup' 57 ((VARIABLE INOUT UNKNOWN-PROC UNKNOWN UNKNOWN
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
 62 'cutdown' '' 'cutdown' 57 ((VARIABLE INOUT UNKNOWN-PROC UNKNOWN
 UNKNOWN DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
-45 'n' '' 'n' 43 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DUMMY) (
-INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
 44 'a' '' 'a' 43 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (COMPLEX 8 0 0 COMPLEX ()) 0 0 () (1 ASSUMED_SHAPE (CONSTANT (
 INTEGER 4 0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)
+45 'n' '' 'n' 43 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DUMMY) (
+INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
 46 'filename' '' 'filename' 43 ((VARIABLE IN UNKNOWN-PROC UNKNOWN
 UNKNOWN DUMMY) (CHARACTER 1 0 0 CHARACTER ((CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '10'))) 0 0 () () 0 () () () 0 0)
