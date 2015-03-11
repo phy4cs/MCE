@@ -232,7 +232,7 @@ for a in "${methseq[@]}"; do
   echo "module load mkl" >> $FILE
  fi
  echo "./MCE.exe" >> $FILE
- if [[ -n $( echo $HOSTNAME | fgrep -e "chmlin45" ) ]]; then chm45=1; else chm45=0; fi
+ if [[ -n $( echo $HOSTNAME | fgrep -e "chmlin451" ) ]]; then chm45=1; else chm45=0; fi
  if [[ $chm45 -eq 1 ]]; then ./gridchanger.sh; fi   ########<---------remove this
  for i in "${folseq[@]}"; do
   SUBDIR="$EXDIR/$i-run"

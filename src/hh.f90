@@ -33,7 +33,7 @@ contains
 		open(unit=128, file='inham.dat', status='old', iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, 'Error in opening inham.dat file'
+			write(0,"(a)"), 'Error in opening inham.dat file'
 			errorflag = 1
 			return
 		end if
@@ -45,7 +45,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,lambda_hh
 				if (ierr.ne.0) then
-					print *, "Error reading coupling constant value"
+					write(0,"(a)"), "Error reading coupling constant value"
 					errorflag = 1
 					return
 				end if
@@ -54,7 +54,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,uplimnorm
 				if (ierr.ne.0) then
-					print *, "Error reading upper limit of the norm"
+					write(0,"(a)"), "Error reading upper limit of the norm"
 					errorflag = 1
 					return
 				end if
@@ -63,7 +63,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,lowlimnorm
 				if (ierr.ne.0) then
-					print *, "Error reading lower limit of the norm"
+					write(0,"(a)"), "Error reading lower limit of the norm"
 					errorflag = 1
 					return
 				end if
@@ -75,7 +75,7 @@ contains
 		close (128)
 
 		if (n.ne.3) then
-			print *, "Not all required variables read in readparams_hh subroutine"
+			write(0,"(a)"), "Not all required variables read in readparams_hh subroutine"
 			errorflag = 1
 			return
 		end if
@@ -114,7 +114,7 @@ contains
 		if (errorflag .ne. 0) return
 
 		if (npes.ne.1) then
-			print *, "Error! There is more than 1 pes for the Harmonic Potential"
+			write(0,"(a)"), "Error! There is more than 1 pes for the Harmonic Potential"
 			errorflag = 1
 			return
 		end if
@@ -122,7 +122,7 @@ contains
 		allocate (z1c(ndim), stat=ierr)
 		if (ierr==0) allocate (Htemp(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating z1c or Htemp in Hij_hh"
+			write(0,"(a)"), "Error allocating z1c or Htemp in Hij_hh"
 			errorflag=1
 		end if
 
@@ -149,7 +149,7 @@ contains
 		deallocate (z1c, stat=ierr)
 		if (ierr==0) deallocate (Htemp, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error deallocating z1c or Htemp in Hij_hh"
+			write(0,"(a)"), "Error deallocating z1c or Htemp in Hij_hh"
 			errorflag=1
 		end if
 
@@ -172,7 +172,7 @@ contains
 
 		allocate (zc(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating zc array in dh_dz_hh function"
+			write(0,"(a)"), "Error allocating zc array in dh_dz_hh function"
 			errorflag = 1
 			return
 		end if
@@ -199,7 +199,7 @@ contains
 
 		deallocate (zc, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error deallocating zc array in dh_dz_hh function"
+			write(0,"(a)"), "Error deallocating zc array in dh_dz_hh function"
 			errorflag = 1
 			return
 		end if

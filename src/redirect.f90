@@ -49,8 +49,8 @@ contains
 			case ("HH")
 				call readparams_hh
 			case default
-				print *, "Error! The system was not recognised!"
-				print *, "If you are seeing this something is terribly wrong"
+				write(0,"(a)") "Error! The system was not recognised!"
+				write(0,"(a)") "If you are seeing this something is terribly wrong"
 				errorflag=1
 		end select
 
@@ -84,8 +84,8 @@ contains
 			case ("HH")
 				call genzinit_hh(mup,muq)
 			case default
-				print *, "Error! The system was not recognised!"
-				print *, "If you are seeing this something is terribly wrong"
+				write(0,"(a)") "Error! The system was not recognised!"
+				write(0,"(a)") "If you are seeing this something is terribly wrong"
 				errorflag=1
 		end select
 
@@ -120,8 +120,8 @@ contains
 			case ("HH")
 				call Hij_hh(H,z1,z2)
 			case default
-				print *, "Error! The system was not recognised!"
-				print *, "If you are seeing this something is terribly wrong"
+				write(0,"(a)") "Error! The system was not recognised!"
+				write(0,"(a)") "If you are seeing this something is terribly wrong"
 				errorflag=1
 		end select
 
@@ -156,8 +156,8 @@ contains
 			case ("HH")
 				dhdz=dh_dz_hh(z)   
 			case default
-				print *, "Error! The system was not recognised!"
-				print *, "If you are seeing this something is terribly wrong"
+				write(0,"(a)") "Error! The system was not recognised!"
+				write(0,"(a)") "If you are seeing this something is terribly wrong"
 				errorflag=1
 		end select
 
@@ -192,8 +192,8 @@ contains
 			case ("HH")
 				extra=(0.0d0,0.0d0)      
 			case default
-				print *, "Error! The system was not recognised!"
-				print *, "If you are seeing this something is terribly wrong"
+				write(0,"(a)") "Error! The system was not recognised!"
+				write(0,"(a)") "If you are seeing this something is terribly wrong"
 				errorflag=1
 		end select
 

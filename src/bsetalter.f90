@@ -47,7 +47,7 @@ contains
 		if (errorflag .ne. 0) return
 
 		if ((basis.ne."GRID").and.(basis.ne."GRSWM")) then
-			print *, "Basis Set relocation called, but initial basis set was not a grid!"
+			write (0,"(a)"), "Basis Set relocation called, but initial basis set was not a grid!"
 			errorflag=1
 			return
 		end if
@@ -63,7 +63,7 @@ contains
 			if (ierr==0) allocate (qsize(ndim), stat=ierr)
 			if (ierr==0) allocate (psize(ndim), stat=ierr)
 			if (ierr/=0) then
-				print *, "Error in allocation starting p and q values for grid"
+				write (0,"(a)"), "Error in allocation starting p and q values for grid"
 				errorflag=1
 				return
 			end if
@@ -78,7 +78,7 @@ contains
 				qsize(1) = 4
 				psize(1) = 4
 			else
-				print *, "Using a grid of neither 3 nor 1 dimensions! How did that happen?"
+				write (0,"(a)"), "Using a grid of neither 3 nor 1 dimensions! How did that happen?"
 				errorflag=1
 				return
 			end if
@@ -87,7 +87,7 @@ contains
 			if (ierr==0) allocate (columnsize(ndim*2), stat=ierr)
 			if (ierr==0) allocate (columnrep(ndim*2), stat=ierr)
 			if (ierr/=0) then
-				print *, "Error in deallocation of column and coordinate arrays in reloc"
+				write (0,"(a)"), "Error in deallocation of column and coordinate arrays in reloc"
 				errorflag=1
 				return
 			end if
@@ -168,7 +168,7 @@ contains
 			if (ierr==0) deallocate (columnsize, stat=ierr)
 			if (ierr==0) deallocate (columnrep, stat=ierr)
 			if (ierr/=0) then
-				print *, "Error in deallocation of starting p and q values ", &
+				write (0,"(a,a)"), "Error in deallocation of starting p and q values ", &
 															 "and column and coordinate arrays in reloc"
 				errorflag=1
 				return
@@ -180,7 +180,7 @@ contains
 		if (ierr==0) allocate (cnew(in_nbf), stat=ierr)
 		if (ierr==0) allocate (ovrlp_mat(in_nbf,nbf), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in allocating temporary z values for reprojection subroutine"
+			write (0,"(a)"), "Error in allocating temporary z values for reprojection subroutine"
 			errorflag=1
 			return
 		end if 
@@ -206,7 +206,7 @@ contains
 		if (ierr==0) deallocate(zt, stat=ierr)
 		if (ierr==0) allocate(remove(in_nbf), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of remove array or deallocation of first", &
+			write (0,"(a,a)"), "Error in allocation of remove array or deallocation of first", &
 							 " overlap matrix in reprojection subroutine"
 			errorflag = 1
 			return
@@ -223,14 +223,14 @@ contains
 				end if
 			end do
 			nbf = in_nbf - sum(remove(1:in_nbf))
-			print "(i0,a,i0,a,i0)", sum(remove(1:in_nbf)), " of ", in_nbf, &
+			write (6,"(i0,a,i0,a,i0)"), sum(remove(1:in_nbf)), " of ", in_nbf, &
 								" bfs were removed. nbf now = ", nbf
 		end if
 
 		allocate (C_k(nbf), stat = ierr)  
 		if (ierr==0) allocate (ovrlp_mat(nbf,nbf), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of overlap matrix or C_k in reprojection sub"
+			write (0,"(a)"), "Error in allocation of overlap matrix or C_k in reprojection sub"
 			errorflag=1
 			return
 		end if
@@ -265,7 +265,7 @@ contains
 		if (ierr==0) allocate (dnew(nbf), stat=ierr)
 		if (ierr==0) deallocate (znew, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in de- and re-allocation of cnew or in allocation of dnew", &
+			write (0,"(a,a)"), "Error in de- and re-allocation of cnew or in allocation of dnew", &
 									 " in reprojection subroutine"
 			errorflag=1
 			return
@@ -278,14 +278,14 @@ contains
 		else if (matfun.eq.'zheev') then
 			call matinv2(ovrlp_mat, cnew, dnew)
 		else
-			print *, "Error! Matrix function not recognised! Value is ", matfun
+			write(0,"(a)"), "Error! Matrix function not recognised! Value is ", matfun
 			errorflag = 1
 			return
 		end if
 
 		deallocate(ovrlp_mat, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of Linear Algebra check array or deallocation",&
+			write (0,"(a,a)"), "Error in allocation of Linear Algebra check array or deallocation",&
 									" of input overlap"
 			errorflag=1
 			return
@@ -295,7 +295,7 @@ contains
 		allocate (DC(in_nbf), stat=ierr)
 		if (ierr==0) deallocate (cnew, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating DC array or deallocating Btemp, cnew or chkmat ",& 
+			write (0,"(a,a)"), "Error allocating DC array or deallocating Btemp, cnew or chkmat ",& 
 										"in relocation subroutine"
 			errorflag = 1
 			return
@@ -319,7 +319,7 @@ contains
 		end do
 
 		if (j-1/=nbf) then
-			print *, "Error! Mismatch in (new) basis set size!"
+			write (0,"(a)"), "Error! Mismatch in (new) basis set size!"
 			errorflag = 1
 			return
 		end if
@@ -331,7 +331,7 @@ contains
 		if (ierr==0) deallocate(C_k, stat=ierr)
 		if (ierr==0) deallocate(DC, stat=ierr)
 		if (ierr/=0) then
-			print *,"Error deallocating remove, dnew, C_k or DC arrays in reloc"
+			write (0,"(a)"),"Error deallocating remove, dnew, C_k or DC arrays in reloc"
 			errorflag = 1
 			return
 		end if
@@ -339,7 +339,7 @@ contains
 		if (nbfadapt=="YES") then
 			open(unit=4532,file="nbf.dat",status="old",access="append",iostat=ierr)
 			if (ierr/=0) then
-				print *,"Error opening nbf file in reloc"
+				write (0,"(a)"),"Error opening nbf file in reloc"
 				errorflag = 1
 				return
 			end if
@@ -375,7 +375,7 @@ contains
 		if (errorflag/=0) return
 
 		if (size(bs).ne.nbf) then
-			print *, "Error with nbf. Does not match the size of the basis set"
+			write (0,"(a)"), "Error with nbf. Does not match the size of the basis set"
 			errorflag = 1
 			return
 		end if  
@@ -387,7 +387,7 @@ contains
 		if (ierr==0) allocate (s_pes(nbf,npes), stat=ierr)
 		if (ierr==0) allocate (D_k(nbf), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating the basis set variables in wavefunction leaking",&
+			write (0,"(a,a)"), "Error allocating the basis set variables in wavefunction leaking",&
 									" subroutine"
 			errorflag = 1
 			return
@@ -412,7 +412,7 @@ contains
 
 		nbfnew = nbf - sum(remove(1:nbf))
 		if (sum(remove(1:nbf)).ne.0) then
-			print "(i0,a,i0,a,i0,a,i0)", sum(remove(1:nbf)), " of ", nbf, &
+			write (0,"(i0,a,i0,a,i0,a,i0)"), sum(remove(1:nbf)), " of ", nbf, &
 					" bfs were removed at step ", x, ". nbf now = ", nbfnew
 		end if
 
@@ -440,7 +440,7 @@ contains
 		if (ierr==0) deallocate (s_pes, stat=ierr)
 		if (ierr==0) deallocate (D_k, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error deallocating the basis set variables in wavefunction ",& 
+			write (0,"(a,a)"), "Error deallocating the basis set variables in wavefunction ",& 
 								 "leaking subroutine"
 			errorflag = 1
 			return
@@ -473,7 +473,7 @@ contains
 		allocate (clonehere(nbf), stat=ierr)
 		if (ierr==0) allocate(clonecopy(nbf), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating the clonehere array"
+			write (0,"(a)"), "Error allocating the clonehere array"
 			errorflag = 1
 			return
 		end if
@@ -565,7 +565,7 @@ contains
 			deallocate (clone, stat=ierr)
 			if (ierr==0) allocate (clone(nbfnew), stat=ierr)
 			if (ierr/=0) then
-				print *, "Error in de- and re-allocation of clone array"
+				write (0,"(a)"), "Error in de- and re-allocation of clone array"
 				errorflag = 1
 				return
 			end if
@@ -581,7 +581,7 @@ contains
 				end do
 			end if
 	 
-			print "(1x,i0,a,i0,a,i0)", sum(clonehere(:)), " bfs cloned in step ", x, &
+			write (0,"(1x,i0,a,i0,a,i0)"), sum(clonehere(:)), " bfs cloned in step ", x, &
 						". nbf now = ", nbfnew
 	 
 			nbf = nbfnew
@@ -591,7 +591,7 @@ contains
 		deallocate(clonehere, stat=ierr)
 		if (ierr==0) deallocate(clonecopy, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error deallocating the cloning arrays"
+			write(0,"(a)"), "Error deallocating the cloning arrays"
 			errorflag = 1
 			return
 		end if        

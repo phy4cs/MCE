@@ -33,7 +33,7 @@ contains
 		open(unit=128, file='inham.dat', status='old', iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, 'Error in opening inham.dat file'
+			write(0,"(a)"), 'Error in opening inham.dat file'
 			errorflag = 1
 			return
 		end if
@@ -45,7 +45,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,freq_hp
 				if (ierr.ne.0) then
-					print *, "Error reading Frequency value"
+					write(0,"(a)"), "Error reading Frequency value"
 					errorflag = 1
 					return
 				end if
@@ -54,7 +54,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,uplimnorm
 				if (ierr.ne.0) then
-					print *, "Error reading upper limit of the norm"
+					write(0,"(a)"), "Error reading upper limit of the norm"
 					errorflag = 1
 					return
 				end if
@@ -63,7 +63,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,lowlimnorm
 				if (ierr.ne.0) then
-					print *, "Error reading lower limit of the norm"
+					write(0,"(a)"), "Error reading lower limit of the norm"
 					errorflag = 1
 					return
 				end if
@@ -75,7 +75,7 @@ contains
 		close (128)
 
 		if (n.ne.3) then
-			print *, "Not all required variables read in readparams_hp subroutine"
+			write(0,"(a)"), "Not all required variables read in readparams_hp subroutine"
 			errorflag = 1
 			return
 		end if
@@ -111,7 +111,7 @@ contains
 		if (errorflag .ne. 0) return
 
 		if (npes.ne.1) then
-			print *, "Error! There is more than 1 pes for the Harmonic Potential"
+			write(0,"(a)"), "Error! There is more than 1 pes for the Harmonic Potential"
 			errorflag = 1
 			return
 		end if

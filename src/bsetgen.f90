@@ -54,8 +54,8 @@ contains
 			case ("GRSWM")
 				call gen_grswm(bs,mup,muq,alcmprss,initgrid,gridsp,t)
 			case default
-				print *, "Error! Initial basis calculation method not recognised!"
-				print *, "This should have been caught at the read stage!"
+				write(0,"(a)"), "Error! Initial basis calculation method not recognised!"
+				write(0,"(a)"), "This should have been caught at the read stage!"
 				errorflag = 1
 				return
 		end select
@@ -136,7 +136,7 @@ contains
 			t = t + dt
 		end do
 
-		print *, "t at maximum stepback is ", t
+		write(6,"(a)"), "t at maximum stepback is ", t
 
 		dt = dtinit
 
@@ -151,7 +151,7 @@ contains
 			t = t + dt
 		end do
 
-		print *, "t at maximum stepforward is ", t
+		write(6,"(a)"), "t at maximum stepforward is ", t
 
 		call deallocbs(bf)
 
@@ -190,9 +190,9 @@ contains
 		else if (mod(in_nbf,def_stp2 - 1)==0) then
 			steps = def_stp2 - 1
 		else
-			print '(a,i0,a,i0)', "In_nbf is not an integer multiple of ", def_stp2, &
+			write(0,'(a,i0,a,i0)'), "In_nbf is not an integer multiple of ", def_stp2, &
 								 " or ", def_stp2 - 1, ", which are the default number of steps."
-			print '(a,a)', "To have a different number of steps in a swarm train or ",&
+			write(0,'(a,a)'), "To have a different number of steps in a swarm train or ",&
 										"train swarm, modify value of def_stp in gen_swtrn sub" 
 			errorflag = 1
 			return
@@ -200,7 +200,7 @@ contains
 
 		swrmsize = in_nbf / steps
 
-		print "(a,i0,a,i0,a)","Making ",swrmsize," trains each ",steps," carriages long."
+		write(6,"(a,i0,a,i0,a)"),"Making ",swrmsize," trains each ",steps," carriages long."
 		
 		if ((mod(swrmsize,2)==1).and.(mod(steps,2)==1)) uplimnorm = 1.0000001d0
 
@@ -308,7 +308,7 @@ contains
 
 		else
 
-			print '(a,a,i0)', "Error! Train swarm/swarm train identifier is wrong. ",&
+			write(0,'(a,a,i0)'), "Error! Train swarm/swarm train identifier is wrong. ",&
 								 "Should be 1 or 2 but got ", trtype
 			errorflag = 1
 			return
@@ -347,7 +347,7 @@ contains
 		if (ierr==0) allocate (qsize(ndim), stat=ierr)
 		if (ierr==0) allocate (psize(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation starting p and q values for grid"
+			write(0,"(a)"), "Error in allocation starting p and q values for grid"
 			errorflag=1
 			return
 		end if
@@ -363,7 +363,7 @@ contains
 			qsize(1) = qsizez
 			psize(1) = psizez
 		else
-			print *, "Using a grid of neither 3 nor 1 dimensions! How did that happen?"
+			write(0,"(a)"), "Using a grid of neither 3 nor 1 dimensions! How did that happen?"
 			errorflag=1
 			return
 		end if
@@ -443,10 +443,10 @@ contains
 		end if
 
 		if (size(initgrid,1).ne.in_nbf) then
-			print *, "Error in generating the initial grid overlap matrix. ",&
+			write(0,"(a,a)"), "Error in generating the initial grid overlap matrix. ",&
 								"Sizes are not equal to in_nbf"
-			print "(a,i0)", "Error is in size of initgrid, which is ", size(initgrid)
-			print "(a,i0)", "in_nbf is ", in_nbf          
+			write(0,"(a,i0)"), "Error is in size of initgrid, which is ", size(initgrid)
+			write(0,"(a,i0)"), "in_nbf is ", in_nbf          
 			errorflag = 1
 			return
 		end if
@@ -454,7 +454,7 @@ contains
 		deallocate (qstrt, stat=ierr)
 		if (ierr==0) deallocate (pstrt, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation starting p and q values for grid"
+			write(0,"(a)"), "Error in deallocation starting p and q values for grid"
 			errorflag=1
 			return
 		end if
@@ -514,10 +514,10 @@ contains
 			bs(in_nbf)=bf
 		end if
 		if (size(initgrid,1).ne.in_nbf) then
-			print *, "Error in generating the initial grid overlap matrix. ",&
+			write(0,"(a,a)"), "Error in generating the initial grid overlap matrix. ",&
 								"Sizes are not equal to in_nbf"
-			print "(a,i0)", "Error is in size of initgrid, which is ", size(initgrid)
-			print "(a,i0)", "in_nbf is ", in_nbf          
+			write(0,"(a,i0)"), "Error is in size of initgrid, which is ", size(initgrid)
+			write(0,"(a,i0)"), "in_nbf is ", in_nbf          
 			errorflag = 1
 			return
 		end if
@@ -545,7 +545,7 @@ contains
 
 		allocate(D(size(bs)), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of D_k array in genD_big"
+			write(0,"(a)"), "Error in allocation of D_k array in genD_big"
 			errorflag=1
 			return
 		end if 
@@ -582,7 +582,7 @@ contains
 			if (ierr==0) allocate(zinit(ndim), stat = ierr)
 			if (ierr==0) allocate(zpq(ndim), stat = ierr)
 			if (ierr/=0) then
-				print *, "Error in allocation of C_k or z arrays in genD_big"
+				write(0,"(a)"), "Error in allocation of C_k or z arrays in genD_big"
 				errorflag=1
 				return
 			end if
@@ -598,14 +598,14 @@ contains
 			deallocate(zpq, stat = ierr)
 			if (ierr==0) deallocate(zinit, stat = ierr)
 			if (ierr/=0) then
-				print *, "Error in z array deallocation in genD_big"
+				write(0,"(a)"), "Error in z array deallocation in genD_big"
 				errorflag=1
 				return
 			end if
 
 			allocate(ovrlp_mat(size(bs),size(bs)), stat = ierr)
 			if (ierr/=0) then
-				print *, "Error in overlap matrix allocation in genD_big"
+				write(0,"(a)"), "Error in overlap matrix allocation in genD_big"
 				errorflag=1
 				return
 			end if
@@ -616,7 +616,7 @@ contains
 			else if (matfun.eq.'zheev') then
 				call matinv(ovrlp_mat, C_k, D, restart)
 			else
-				print *, "Error! Matrix function not recognised! Value is ", matfun
+				write(0,"(a)"), "Error! Matrix function not recognised! Value is ", matfun
 				errorflag = 1
 				return
 			end if
@@ -624,7 +624,7 @@ contains
 			deallocate(C_k, stat = ierr)
 			if (ierr==0) deallocate(ovrlp_mat, stat = ierr)
 			if (ierr/=0) then
-				print *, "Error in deallocation of local arrays in genD_big"
+				write(0,"(a)"), "Error in deallocation of local arrays in genD_big"
 				errorflag=1
 				return
 			end if
@@ -669,8 +669,8 @@ contains
 				bs(j)%d_pes(in_pes) = (1.0d0,0.0d0)
 			end do
 		else
-			print *, "Error! The method is wrong"
-			print *, "I don't even know how you got this far"
+			write(0,"(a)"), "Error! The method is wrong"
+			write(0,"(a)"), "I don't even know how you got this far"
 			errorflag = 1
 			return
 		end if

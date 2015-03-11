@@ -67,7 +67,7 @@ contains
 		open(unit=128, file='inham.dat', status='old', iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, 'Error in opening inham.dat file'
+			write(0,"(a)") 'Error in opening inham.dat file'
 			errorflag = 1
 			return
 		end if
@@ -80,7 +80,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,delta_sb
 				if (ierr.ne.0) then
-					print *, "Error reading Delta value"
+					write(0,"(a)") "Error reading Delta value"
 					errorflag = 1
 					return
 				end if
@@ -89,7 +89,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,eps_sb
 				if (ierr.ne.0) then
-					print *, "Error reading Epsilon value"
+					write(0,"(a)") "Error reading Epsilon value"
 					errorflag = 1
 					return
 				end if
@@ -98,7 +98,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,wc_sb
 				if (ierr.ne.0) then
-					print *, "Error reading wc value"
+					write(0,"(a)") "Error reading wc value"
 					errorflag = 1
 					return
 				end if
@@ -107,7 +107,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,kondo_sb
 				if (ierr.ne.0) then
-					print *, "Error reading kondo parameter value"
+					write(0,"(a)") "Error reading kondo parameter value"
 					errorflag = 1
 					return
 				end if
@@ -116,7 +116,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,wmax_sb
 				if (ierr.ne.0) then
-					print *, "Error reading wmax value"
+					write(0,"(a)") "Error reading wmax value"
 					errorflag = 1
 					return
 				end if
@@ -125,7 +125,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,beta_sb
 				if (ierr.ne.0) then
-					print *, "Error reading beta value"
+					write(0,"(a)") "Error reading beta value"
 					errorflag = 1
 					return
 				end if
@@ -134,7 +134,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,uplimnorm
 				if (ierr.ne.0) then
-					print *, "Error reading upper limit of the norm"
+					write(0,"(a)") "Error reading upper limit of the norm"
 					errorflag = 1
 					return
 				end if
@@ -143,7 +143,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,lowlimnorm
 				if (ierr.ne.0) then
-					print *, "Error reading lower limit of the norm"
+					write(0,"(a)") "Error reading lower limit of the norm"
 					errorflag = 1
 					return
 				end if
@@ -161,7 +161,7 @@ contains
 		close (128)
 
 		if (n.ne.8) then
-			print *, "Not all required variables read in readparams_sb subroutine"
+			write(0,"(a)") "Not all required variables read in readparams_sb subroutine"
 			errorflag = 1
 			return
 		end if
@@ -182,11 +182,11 @@ contains
 		ierr = 0
 
 		if (ndim.le.0) then
-			print *, "Number of dimensions not correctly read or stored"
+			write(0,"(a)") "Number of dimensions not correctly read or stored"
 			errorflag = 1
 			return
 		else if (.not.allocated(wm_sb)) then
-			print *, "genwm subroutine called but wm not allocated"
+			write(0,"(a)") "genwm subroutine called but wm not allocated"
 			errorflag=1
 			return
 		else
@@ -212,11 +212,11 @@ contains
 		ierr = 0
 
 		if (ndim.le.0) then
-			print *, 'Number of dimensions not correctly read or stored'
+			write(0,"(a)") 'Number of dimensions not correctly read or stored'
 			errorflag = 1
 			return
 		else if (.not.allocated(Cm_sb)) then
-			print *, "genCm subroutine called but Cm not allocated"
+			write(0,"(a)") "genCm subroutine called but Cm not allocated"
 			errorflag=1
 			return
 		else
@@ -242,11 +242,11 @@ contains
 		ierr = 0
 
 		if (ndim.le.0) then
-			print *, 'Number of dimensions not correctly read or stored'
+			write(0,"(a)") 'Number of dimensions not correctly read or stored'
 			errorflag = 1
 			return
 		else if (.not.allocated(sig_sb)) then
-			print *, 'Allocation error in sig'
+			write(0,"(a)") 'Allocation error in sig'
 			errorflag = 1
 			return
 		else
@@ -279,20 +279,20 @@ contains
 
 		allocate(zin(ndim), H(npes,npes), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of zin and H in genzinit"
+			write(0,"(a)") "Error in allocation of zin and H in genzinit"
 			errorflag=1
 			return
 		end if  
 
 		if (ndim.le.0) then
-			print *, 'Number of dimensions not correctly read or stored'
+			write(0,"(a)") 'Number of dimensions not correctly read or stored'
 			errorflag = 1
 			return
 		end if
 
 		if ((.not.allocated(mup)).or.(.not.allocated(muq)).or.(size(mup).ne.size(muq)) &
 					 .or.(size(mup).ne.ndim)) then
-			print *, 'Allocation error in mup or muq'
+			write(0,"(a)") 'Allocation error in mup or muq'
 			errorflag = 1
 			return
 		end if
@@ -301,7 +301,7 @@ contains
 		if (ierr==0) allocate (wm_sb(ndim), stat=ierr)
 		if (ierr==0) allocate (Cm_sb(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in sig or wm allocation in genzinit"
+			write(0,"(a)") "Error in sig or wm allocation in genzinit"
 			errorflag=1
 			return
 		end if
@@ -321,12 +321,13 @@ contains
 				if ((Ezin.gt.Ebfmax).or.(Ezin.lt.Ebfmin)) then
 					if (n.lt.Ntries) then
 						n = n+1
-						print *,"Initial Basis did not meet energy requirements. Recalculating..."
-						print *,"Ebfmax = ", Ebfmax, "Ebfmin = ", Ebfmin, "Ezin = ", Ezin
+						write(6,"(a)")"Initial Basis did not meet energy requirements. Recalculating..."
+						write(6,"(3(a,e12.5))")"Ebfmax = ", Ebfmax, "Ebfmin = ", Ebfmin, "Ezin = ", Ezin
 						recalc = 1
 					else
-						print *,"Initial basis recalculated ", n, "times but still outside acceptable region."
-						Print *,"Terminating calculation"
+						write(6,"(a)"),"Initial basis recalculated ", n, "times but still outside acceptable region."
+						write(0,"(a)"),"Multiple recalculations due to energy checks resulted in an unsuitable basis"
+						write(0,"(a)"),"Terminating calculation"
 						errorflag = 1
 						recalc = 0
 					end if
@@ -340,7 +341,7 @@ contains
 
 		deallocate(zin, H, sig_sb, wm_sb, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of zin, H, wm or sig in genzinit"
+			write(0,"(a)"), "Error in deallocation of zin, H, wm or sig in genzinit"
 			errorflag=1
 			return
 		end if 
@@ -368,7 +369,7 @@ contains
 		allocate (wm_sb(ndim), stat=ierr)
 		if (ierr==0) allocate (Cm_sb(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in wm or Cm allocation in Hij"
+			write(0,"(a)"), "Error in wm or Cm allocation in Hij"
 			errorflag=1
 			return
 		end if
@@ -392,7 +393,7 @@ contains
 
 		deallocate(wm_sb, Cm_sb, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of wm or Cm in Hij"
+			write(0,"(a)"), "Error in deallocation of wm or Cm in Hij"
 			errorflag=1
 			return
 		end if 
@@ -458,7 +459,7 @@ contains
 		if (errorflag .ne. 0) return
 
 		if (npes.ne.2) then
-			print *, "No. PES is not equal to 2, but Spin Boson 2 PES derivative called"
+			write(0,"(a)"), "No. PES is not equal to 2, but Spin Boson 2 PES derivative called"
 			errorflag = 1
 			return
 		end if
@@ -466,7 +467,7 @@ contains
 		allocate (wm_sb(ndim), stat=ierr)
 		if (ierr==0) allocate (Cm_sb(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in wm or Cm allocation in dh_dz"
+			write(0,"(a)"), "Error in wm or Cm allocation in dh_dz"
 			errorflag=1
 			return
 		end if 
@@ -481,7 +482,7 @@ contains
 
 		deallocate (wm_sb, Cm_sb, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in wm or Cm allocation in dh_dz"
+			write(0,"(a)"), "Error in wm or Cm allocation in dh_dz"
 			errorflag=1
 			return
 		end if 

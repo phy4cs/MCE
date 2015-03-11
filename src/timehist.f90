@@ -14,15 +14,15 @@ Program timehist
 	call getarg(0,filename)
 	call getarg(1,LINE)
 	if (istat==-1) then
-		print "(a,a)", "Error! Could not read first argument for ", trim(filename)
-		print "(a)", "This should be the number of seed folders used."
+		write(0,"(a,a)"), "Error! Could not read first argument for ", trim(filename)
+		write(0,"(a)"), "This should be the number of seed folders used."
 		stop
 	end if
 	read (LINE,*) reps
 	call getarg(2,LINE)
 	if (istat==-1) then
-		print "(a,a)", "Error! Could not read second argument for ", trim(filename)
-		print "(a)", "This should be the number of repeats used."
+		write(0,"(a,a)"), "Error! Could not read second argument for ", trim(filename)
+		write(0,"(a)"), "This should be the number of repeats used."
 		stop
 	end if
 	read (LINE,*) reps2
@@ -43,11 +43,11 @@ Program timehist
 	end do
 	tot = sum(valid(:))
 
-	print "(i0,a,i0,a)", tot, " files of ", reps, " valid."
+	write(6,"(2(i0,a))"), tot, " files of ", reps, " valid."
 
 	open (unit=1710,file="timesteps.out",status="unknown",iostat=istat)
 	if (istat/=0) then
-		print "(a)", "Error in opening timesteps file. Exitting histogram program"
+		write(0,"(a)"), "Error in opening timesteps file. Exitting histogram program"
 		stop
 	end if 
 	istat=0
@@ -56,11 +56,11 @@ Program timehist
 		read (1710,"(a)",iostat=istat) LINE
 		n = n+1
 	end do
-	print *, "size of timestep array is ", n
+	write(6,"(a)"), "size of timestep array is ", n
 	rewind(1710)
 	allocate(t(n), stat = istat)
 	if (istat/=0) then
-		print "(a)", "Error in timestep array allocation for histogram program"
+		write(0,"(a)"), "Error in timestep array allocation for histogram program"
 		stop
 	end if
 	do k=1,n
@@ -74,7 +74,7 @@ Program timehist
 	boxn_rl = real(boxn)
 	allocate(p_dist(boxn), stat = istat)
 	if (istat/=0) then
-		print *, "Error in p distribution allocation for histogram"
+		write(0,"(a)"), "Error in p distribution allocation for histogram"
 		stop
 	end if
 
@@ -83,7 +83,7 @@ Program timehist
 
 	open(unit=135,file="timehist_all.out",status="unknown",iostat=istat)
 	if (istat/=0) then
-		print *, "Error in opening output file for histogram"
+		write(0,"(a)"), "Error in opening output file for histogram"
 		stop
 	end if
 
@@ -97,7 +97,7 @@ Program timehist
 			.and.(t(u).le.(cutup+((cutup-cutdown)/(2*boxn_rl))))) then
 			n_box_p=int((((t(u)-cutdown)*(boxn_rl-1.0))/(cutup-cutdown))+1.5)
 			if ((n_box_p.gt.boxn).or.(n_box_p.lt.0)) then
-				print *,"Error! Invalid Box Calculated. n_box_p = ", n_box_p
+				write(0,"(a,i0)"),"Error! Invalid Box Calculated. n_box_p = ", n_box_p
 			else if (n_box_p.ne.0) then
 				p_dist(n_box_p)=p_dist(n_box_p) + 1
 			end if
@@ -115,13 +115,13 @@ Program timehist
 
 	deallocate(t, stat = istat)
 	if (istat/=0) then
-		print "(a)", "Error in timestep array deallocation for histogram program"
+		write(0,"(a)"), "Error in timestep array deallocation for histogram program"
 		stop
 	end if
 
 	open (unit=176,file="plothistall.gpl",status="unknown",iostat=istat)
 	if (istat .ne. 0) then
-		print *, 'Error in opening plothistall.gpl output file'
+		write(0,"(a)"), 'Error in opening plothistall.gpl output file'
 		stop
 	end if
 
@@ -159,7 +159,7 @@ Program timehist
 
 		open (unit=175,file="plothist.gpl",status="unknown",iostat=istat)
 		if (istat .ne. 0) then
-			print *, 'Error in opening plothist.gpl output file'
+			write(0,"(a)"), 'Error in opening plothist.gpl output file'
 			stop
 		end if
 

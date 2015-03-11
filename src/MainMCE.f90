@@ -142,7 +142,7 @@ Program MainMCE
 	real(kind=8) :: nrmtmp, nrm2tmp, ehrtmp, gridsp, timestrt_loc
 	real(kind=8) :: time, dt, dtnext, dtdone, initehr, initnorm, initnorm2, alcmprss
 	integer, dimension(:), allocatable :: clone
-	integer:: j, k, r, y, x, m, nbf, recalcs, nchange, nsame, conjrep, restart, reps, ierr, timestpunit
+	integer:: j, k, r, y, x, m, nbf, recalcs, conjrep, restart, reps, ierr, timestpunit
 	character(LEN=3):: rep
 	
 	!Reduction Variables
@@ -155,7 +155,7 @@ Program MainMCE
 	real(kind=8) :: starttime, stoptime, up, down, runtime
 	real(kind=8) :: num1, num2
 	integer(kind=8) :: ranseed
-	integer:: tnum, cols, genflg, istat, intvl, rprj, n
+	integer:: tnum, cols, genflg, istat, intvl, rprj, n, nsame, nchange
 	character(LEN=100) :: LINE
 	
 	call CPU_TIME(starttime) !used to calculate the runtime, which is output at the end
@@ -230,7 +230,7 @@ Program MainMCE
 	nsame=0
 	rprj=10
 	genflg=0
-
+	
 	! The variables set as private in the below statement are duplicated when Open MP 
 	! is run such that there exists individual copies on each thread. The reduction 
 	! variables are summed over all threads. The reduction variables are only used in 
@@ -241,16 +241,20 @@ Program MainMCE
 	!$omp										muq, mup, popt, ndimacf, nrmtmp, nrm2tmp, ehrtmp, gridsp, &
 	!$omp										timestrt_loc, time, dt, dtnext, dtdone, initehr, initnorm,&
 	!$omp										initnorm2, alcmprss, clone, j, k, r, y, x, m, nbf,        &
-	!$omp										recalcs, nchange, nsame, conjrep, restart, reps, ierr,    &
+	!$omp										recalcs, conjrep, restart, reps, ierr,    &
 	!$omp			     					timestpunit, rep																					)
 	
 	!$omp do reduction (+:acf_t, extra, pops, absnorm, absnorm2, absehr)
 	
 	! This leaves the following variables currently shared actross all threads:
 	! p, q, t, starttime, stoptime, up, down, runtime, num1, num2, ranseed, tnum, 
-	! cols, genflg, istat, intvl, rprj, n, LINE 
+	! cols, genflg, istat, intvl, rprj, n, nsame, nchange, LINE 
 	
+
 	do k=1,reptot,intvl              ! Loop over all repeats. 
+	
+		call flush(6)
+		call flush(0)
 		
 		ierr = 0
 	
@@ -371,6 +375,9 @@ Program MainMCE
 						call deallocbs(bset)                            !Before recalculation, the basis must be deallocated
 						write(6,"(a,i0,a,i0)"), "Attempt ", recalcs, " of ", Ntries
 					end if
+					
+					call flush(6)
+					call flush(0)
 
 				end do   !End of basis set recalculation loop.
 
@@ -469,7 +476,7 @@ Program MainMCE
 					end if
 					timestpunit=1710+reps
 					write(rep,"(i3.3)") reps
-					open (unit=timestpunit,file="timesteps"//trim(rep)//".out",status="unknown",iostat=istat)
+					open (unit=timestpunit,file="timesteps-"//trim(rep)//".out",status="unknown",iostat=istat)
 					close (timestpunit)
 					call outdimacfheads(reps)
 					call outdimacf(time,ndimacf,reps)
@@ -516,9 +523,15 @@ Program MainMCE
 						call cloning (bset, nbf, x, time, clone)
 					end if
 
+					if (timeend.gt.timestrt_loc) then      
+						if ((time+dt-timeend).gt.0.0d0) dt = timeend - time
+					else
+						if ((time+dt-timeend).lt.0.0d0) dt = timeend - time
+					end if
+
 					call propstep (bset, dt, dtnext, dtdone, time, genflg, timestrt_loc)     ! This subroutine takes a single timestep
 
-					if (dtdone.eq.dt) then    ! nsame and nchange are used to keep track of changes to the stepsize.
+					if (dtdone.eq.dt) then   ! nsame and nchange are used to keep track of changes to the stepsize.
 						!$omp atomic           !atomic parameter used to ensure two threads do not write to the same       
 						nsame = nsame + 1      !memory address simultaneously as these counts are taken over all repeats.
 					else
@@ -573,7 +586,7 @@ Program MainMCE
 					else
 						timestpunit=1710+reps
 						write(rep,"(i3.3)") reps
-						open (unit=timestpunit,file="timesteps"//trim(rep)//".out",status="old",access="append",iostat=istat)
+						open (unit=timestpunit,file="timesteps-"//trim(rep)//".out",status="old",access="append",iostat=istat)
 						write(timestpunit,"(e12.5)") dtdone
 						close (timestpunit)
 						if ((nbfadapt.eq."NO").and.(method.ne."MCEv2").and.(debug==1)) then
@@ -598,7 +611,8 @@ Program MainMCE
 						end if
 					end if
 					
-					call flush() 
+					call flush(6) 
+					call flush(0)
 
 				end do   !End of time propagation.
 
@@ -630,7 +644,8 @@ Program MainMCE
 				exit
 			end if  
 			
-			call flush()  
+			call flush(6) 
+			call flush(0) 
 
 		end do !conjugate repeat
 		
@@ -648,7 +663,8 @@ Program MainMCE
 			errorflag=1
 		end if
 		
-		call flush()
+		call flush(6)
+		call flush(0)
 
 	end do ! The main repeat loop
 	!$omp end do
@@ -677,45 +693,49 @@ Program MainMCE
 				errorflag=1
 			end if
 		else if ((step=="A").and.(errorflag==0)) then   ! builds a histogram of data
-			call system ("cat timesteps*.out > timesteps.out")
-			open (unit=1710,file="timesteps.out",status="unknown",iostat=istat)
-			istat=0
-			n=0
-			do while (istat==0)
-				read (1710,"(a)",iostat=istat) LINE
-				n=n+1
-			end do
-			n=n-1
-			write(6,"(a)"), "size of timestep array is ", n
-			rewind(1710)
-			allocate(t(n), stat = istat)
-			if (istat/=0) then
-				write(0,"(a)"), "Error in timestep array allocation"
-				errorflag=1
-			end if
-			do k=1,n
-				read (1710,"(e12.5)",iostat=istat) t(k)
-				if (istat/=0) t(k) = 0.0d0
-			end do     
-			close(1710)
-			num1 = maxval(t)
-			num2 = minval(t)
-			write(6,"(a,f15.8)"), "maxval of timestep array is ", num1
-			write(6,"(a,f15.8)"), "minval of timestep array is ", num2
-			up=0.0
-			down=0.0
-			call histogram2(t,n,"timehist.out",up,down)   
-			deallocate(t, stat = istat)
-			if (istat/=0) then
-				write(0,"(a)"), "Error in timestep array deallocation"
-				errorflag=1
-			end if 
-			if (npes==2) then
-				cols=10
+			call system ("cat timesteps-* > timesteps.out")
+			open (unit=1710,file="timesteps.out",status="old",iostat=istat)
+			if (istat.ne.0) then
+				write(0,"(a)") "Error opening the compined timesteps file"
 			else
-				cols=6+npes
+				istat=0	
+				n=0
+				do while (istat==0)
+					read (1710,"(a)",iostat=istat) LINE
+					n=n+1
+				end do
+				n=n-1
+				write(6,"(a,i0)"), "size of timestep array is ", n
+				rewind(1710)
+				allocate(t(n), stat = istat)
+				if (istat/=0) then
+					write(0,"(a)"), "Error in timestep array allocation"
+					errorflag=1
+				end if
+				do k=1,n
+					read (1710,"(e12.5)",iostat=istat) t(k)
+					if (istat/=0) t(k) = 0.0d0
+				end do
+				close(1710)
+				num1 = maxval(t)
+				num2 = minval(t)
+				write(6,"(a,f15.8)"), "maxval of timestep array is ", num1
+				write(6,"(a,f15.8)"), "minval of timestep array is ", num2
+				up=0.0
+				down=0.0
+				call histogram2(t,n,"timehist.out",up,down)   
+				deallocate(t, stat = istat)
+				if (istat/=0) then
+					write(0,"(a)"), "Error in timestep array deallocation"
+					errorflag=1
+				end if 
+				if (npes==2) then
+					cols=13
+				else
+					cols=10+npes
+				end if
+				call interpolate(cols,errorflag) 
 			end if
-			call interpolate(cols,errorflag) 
 		end if
 	end if
 
@@ -739,6 +759,9 @@ Program MainMCE
 	else
 		write(6,"(a,e12.5,a)"), 'Time taken : ', runtime, ' seconds'        
 	end if
+	
+	call flush(6)
+	call flush(0)
  
 	stop
 

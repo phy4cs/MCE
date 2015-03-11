@@ -56,7 +56,7 @@ contains
 		allocate(p_dist(boxn), stat = ierr)
 		allocate(q_dist(boxn), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in p or q distribution allocation for histogram"
+			write(0,"(a)"), "Error in p or q distribution allocation for histogram"
 			errorflag=1
 			return
 		end if
@@ -90,7 +90,7 @@ contains
 				 .and.(dimag(A(u)).le.(cutup+((cutup-cutdown)/(2*boxn_rl))))) then
 				n_box_p=int((((dimag(A(u))-cutdown)*(boxn_rl-1.0))/(cutup-cutdown))+1.5)
 				if ((n_box_p.gt.boxn).or.(n_box_p.lt.0)) then
-					print *,"Error! Invalid Box Calculated. n_box_p = ", n_box_p
+					write(0,"(a,i0)"),"Error! Invalid Box Calculated. n_box_p = ", n_box_p
 				else if (n_box_p.ne.0) then
 					p_dist(n_box_p)=p_dist(n_box_p) + 1
 				end if
@@ -99,7 +99,7 @@ contains
 				 .and.(dble(A(u)).le.(cutup+((cutup-cutdown)/(2*boxn_rl))))) then
 				n_box_q=int((((dble(A(u))-cutdown)*(boxn_rl-1.0))/(cutup-cutdown))+1.5)
 				if ((n_box_q.gt.boxn).or.(n_box_q.lt.0)) then
-					print *,"Error! Invalid Box Calculated. n_box_q = ", n_box_q
+					write(0,"(a,i0)"),"Error! Invalid Box Calculated. n_box_q = ", n_box_q
 				else if (n_box_q.ne.0) then
 					q_dist(n_box_q)=q_dist(n_box_q) + 1
 				end if
@@ -141,7 +141,7 @@ contains
 		boxn_rl = real(boxn)
 		allocate(p_dist(boxn), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in p distribution allocation for histogram"
+			write(0,"(a)"), "Error in p distribution allocation for histogram"
 			errorflag=1
 			return
 		end if
@@ -163,7 +163,7 @@ contains
 				 .and.(A(u).le.(cutup+((cutup-cutdown)/(2*boxn_rl))))) then
 				n_box_p=int((((A(u)-cutdown)*(boxn_rl-1.0))/(cutup-cutdown))+1.5)
 				if ((n_box_p.gt.boxn).or.(n_box_p.lt.0)) then
-					print *,"Error! Invalid Box Calculated. n_box_p = ", n_box_p
+					write(0,"(a)"),"Error! Invalid Box Calculated. n_box_p = ", n_box_p
 				else if (n_box_p.ne.0) then
 					p_dist(n_box_p)=p_dist(n_box_p) + 1
 				end if
@@ -205,7 +205,7 @@ contains
 		boxn = 100
 
 		if (size(A).ne.n) then
-			print *,"Error! Size of array for histogram mismatched!"
+			write(0,"(a)"),"Error! Size of array for histogram mismatched!"
 			errorflag = 1
 			return
 		end if
@@ -214,7 +214,7 @@ contains
 		allocate(dist(boxn,boxn), stat = ierr)
 		allocate(boxvals(boxn), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in distribution or boxval allocation for 2D histogram"
+			write(0,"(a)"), "Error in distribution or boxval allocation for 2D histogram"
 			errorflag=1
 			return
 		end if
@@ -261,7 +261,7 @@ contains
 				n_box_q=int((((dble(A(u))-cutdown)*(boxn_rl-1.0))/(cutup-cutdown))+1.5)
 			end if
 			if ((n_box_p.gt.boxn).or.(n_box_q.gt.boxn).or.(n_box_p.lt.0).or.(n_box_q.lt.0)) then
-				print *,"Error! Invalid Box Calculated. n_box_p = ", n_box_p, " n_box_q = ", n_box_q
+				write(0,"(a,i0,a,i0)"),"Error! Invalid Box Calculated. n_box_p = ", n_box_p, " n_box_q = ", n_box_q
 			else if ((n_box_p.ne.0).and.(n_box_q.ne.0)) then
 				dist(n_box_p,n_box_q) = dist(n_box_p,n_box_q) + 1
 			end if
@@ -494,7 +494,7 @@ contains
 		open(unit=fileun,file=filenm,status='unknown',iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, "Error in initial opening of ", trim(filenm), " file"
+			write(0,"(a,a,a)"), "Error in initial opening of ", trim(filenm), " file"
 			errorflag = 1
 			return
 		end if
@@ -516,7 +516,7 @@ contains
 
 		open (unit=175,file=filenm2,status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filenm2), ' output file'
+			write(0,"(a,a,a)"), 'Error in opening ', trim(filenm2), ' output file'
 			errorflag=1
 			return
 		end if
@@ -533,7 +533,7 @@ contains
 
 		open (unit=176,file=filenm2,status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filenm2), ' output file'
+			write(0,"(a,a,a)"), 'Error in opening ', trim(filenm2), ' output file'
 			errorflag=1
 			return
 		end if
@@ -550,7 +550,7 @@ contains
 
 		open (unit=177,file=filenm2,status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filenm2), ' output file'
+			write(0,"(a,a,a)"), 'Error in opening ', trim(filenm2), ' output file'
 			errorflag=1
 			return
 		end if
@@ -573,7 +573,7 @@ contains
 
 		open (unit=178,file=filenm2,status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filenm2), ' output file'
+			write(0,"(a,a,a)"), 'Error in opening ', trim(filenm2), ' output file'
 			errorflag=1
 			return
 		end if
@@ -615,7 +615,7 @@ contains
 		open(unit=fileun,file=trim(filenm),status='old',access='append',iostat=ierr)
 
 		if (ierr.ne.0) then
-			print "(a,a,a,1x,i5)", "Error opening ", trim(filenm), " file in step", x
+			write(0,"(a,a,a,1x,i5)"), "Error opening ", trim(filenm), " file in step", x
 			errorflag = 1
 			return
 		end if
@@ -660,7 +660,7 @@ contains
 		open(unit=fileun,file=filenm,status='unknown',iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, "Error in initial opening of ", trim(filenm), " file"
+			write(0,"(a,a,a)"), "Error in initial opening of ", trim(filenm), " file"
 			errorflag = 1
 			return
 		end if
@@ -692,8 +692,8 @@ contains
 		end do  
 
 		write(fileun,"(a)") trim(lngchar1)
-		write(fileun,*), ""
-		write(fileun,*), ""
+		write(fileun,"(a)"), ""
+		write(fileun,"(a)"), ""
 
 		close(fileun)
 
@@ -701,7 +701,7 @@ contains
 
 		open (unit=175,file=filenm2,status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filenm2), ' output file'
+			write(0,"(a,a,a)"), 'Error in opening ', trim(filenm2), ' output file'
 			errorflag=1
 			return
 		end if
@@ -724,7 +724,7 @@ contains
 
 		open (unit=176,file=filenm2,status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filenm2), ' output file'
+			write(0,"(a,a,a)"), 'Error in opening ', trim(filenm2), ' output file'
 			errorflag=1
 			return
 		end if
@@ -748,7 +748,7 @@ contains
 
 		open (unit=177,file=filenm2,status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filenm2), ' output file'
+			write(0,"(a,a,a)"), 'Error in opening ', trim(filenm2), ' output file'
 			errorflag=1
 			return
 		end if
@@ -795,7 +795,7 @@ contains
 		open(unit=fileun,file=filenm,status='old',access='append',iostat=ierr)
 
 		if (ierr.ne.0) then
-			print "(a,a,a)", "Error opening ", trim(filenm), " file"
+			write(0,"(a,a,a)"), "Error opening ", trim(filenm), " file"
 			errorflag = 1
 			return
 		end if
@@ -829,7 +829,7 @@ contains
 		open(unit=150,file=trim(filenm),status='unknown',iostat=ierr)
 
 		if (ierr.ne.0) then
-			print "(a,1x,i5)", "Error opening ", trim(filenm), " file"
+			write(0,"(a,1x,i5)"), "Error opening ", trim(filenm), " file"
 			errorflag = 1
 			return
 		end if
@@ -881,9 +881,9 @@ contains
 		if (errorflag .ne. 0) return
 
 		if (nbfadapt.eq."YES") then
-			print *, "Warning! Outvarsheads subroutine called improperly."
-			print *, "This output file is incompatible with a non-constant basis set size"
-			print *, "File will not be created."
+			write(0,"(a)"), "Warning! Outvarsheads subroutine called improperly."
+			write(0,"(a)"), "This output file is incompatible with a non-constant basis set size"
+			write(0,"(a)"), "File will not be created."
 			return
 		end if 
 			
@@ -896,7 +896,7 @@ contains
 		open(unit=151,file=filenm,status='unknown',iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, "Error in initial opening of PropVars.dat file"
+			write(0,"(a)"), "Error in initial opening of PropVars.dat file"
 			errorflag = 1
 			return
 		end if
@@ -927,7 +927,7 @@ contains
 
 		open (unit=175,file=filenm2,status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filenm2), ' output file'
+			write(0,"(a,a,a)"), 'Error in opening ', trim(filenm2), ' output file'
 			errorflag=1
 			return
 		end if
@@ -972,7 +972,7 @@ contains
 
 		open (unit=176,file=filenm2,status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filenm2), ' output file'
+			write(0,"(a,a,a)"), 'Error in opening ', trim(filenm2), ' output file'
 			errorflag=1
 			return
 		end if
@@ -1016,7 +1016,7 @@ contains
 
 		open (unit=177,file=filenm2,status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filenm2), ' output file'
+			write(0,"(a,a,a)"), 'Error in opening ', trim(filenm2), ' output file'
 			errorflag=1
 			return
 		end if
@@ -1067,7 +1067,7 @@ contains
 		if (ierr==0) allocate(rld2ar(size(bs)), stat = ierr)
 		if (ierr==0) allocate(imd2ar(size(bs)), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error allocating arrays for output of basis set variables in step ", x
+			write(0,"(a,i0)"), "Error allocating arrays for output of basis set variables in step ", x
 			errorflag = 1
 			return
 		end if
@@ -1092,7 +1092,7 @@ contains
 		open(unit=151,file=filenm,status='old',access='append',iostat=ierr)
 
 		if (ierr.ne.0) then
-			print "(a,a,a,1x,i5)", "Error opening ", filenm, " file for step", x
+			write(0,"(a,a,a,1x,i5)"), "Error opening ", filenm, " file for step", x
 			errorflag = 1
 			return
 		end if
@@ -1113,7 +1113,7 @@ contains
 		if (ierr==0) deallocate(rld2ar, stat = ierr)
 		if (ierr==0) deallocate(imd2ar, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error deallocating arrays for output of basis set variables in step ", x
+			write(0,"(a,i0)"), "Error deallocating arrays for output of basis set variables in step ", x
 			errorflag = 1
 			return
 		end if
@@ -1136,9 +1136,9 @@ contains
 		if (errorflag .ne. 0) return
 
 		if (nbfadapt.eq."YES") then
-			print *, "Warning! Outtrajheads subroutine called improperly."
-			print *, "This output file is incompatible with a non-constant basis set size"
-			print *, "File will not be created."
+			write(0,"(a)"), "Warning! Outtrajheads subroutine called improperly."
+			write(0,"(a)"), "This output file is incompatible with a non-constant basis set size"
+			write(0,"(a)"), "File will not be created."
 			return
 		end if 
 
@@ -1151,7 +1151,7 @@ contains
 		open(unit=151,file=filenm,status='unknown',iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, "Error in initial opening of Traj.dat file"
+			write(0,"(a)"), "Error in initial opening of Traj.dat file"
 			errorflag = 1
 			return
 		end if
@@ -1181,7 +1181,7 @@ contains
 
 		open (unit=175,file=filenm2,status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filenm2), ' output file'
+			write(0,"(a,a,a)"), 'Error in opening ', trim(filenm2), ' output file'
 			errorflag=1
 			return
 		end if
@@ -1233,7 +1233,7 @@ contains
 		open(unit=151,file=filenm,status='old',access='append',iostat=ierr)
 
 		if (ierr.ne.0) then
-			print "(a,a,a,1x,i5)", "Error opening ", filenm, " file for step", x
+			write(0,"(a,a,a,1x,i5)"), "Error opening ", filenm, " file for step", x
 			errorflag = 1
 			return
 		end if
@@ -1270,7 +1270,14 @@ contains
 		lines = 0
 		if (mod(timeend-timestrt,dtinit).ne.0) timeend=timeend - (mod(timeend-timestrt,dtinit)) + dtinit
 		timesteps = (timeend-timestrt)/dtinit + 1
-		allocate (output(cols,timesteps))
+		allocate (output(cols,timesteps), stat=ierr)
+		if (ierr/=0) then
+			write(0,"(a)"), "Allocation error in output array"
+			call flush(0)
+			errorflag=1
+			return
+		end if
+		
 		output = 0.0d0
 		tot = 0
 	 
@@ -1299,14 +1306,14 @@ contains
 	 
 			OPEN(UNIT=fileunin, FILE=trim(filename1),STATUS='OLD', iostat=ierr)
 			if (ierr .ne. 0) then
-				print *, "Error in opening ", trim(filename1), " file"
+				write(0,"(a,a,a)"), "Error in opening ", trim(filename1), " file"
 				errorflag=1
 				return
 			end if
 	 
 			OPEN(UNIT=fileunout, FILE=trim(filename2),STATUS='UNKNOWN', iostat=ierr)
 			if (ierr .ne. 0) then
-				print *, "Error in opening ", trim(filename2), " file"
+				write(0,"(a,a,a)"), "Error in opening ", trim(filename2), " file"
 				errorflag=1
 				return
 			end if
@@ -1314,7 +1321,7 @@ contains
 			if (i==1) then
 				read(fileunin,"(a141)",iostat=ierr) LINE2
 				if (ierr .ne. 0) then
-					print *, "Error in reading from ", trim(filename1), " file to get headers"
+					write(0,"(a,a,a)"), "Error in reading from ", trim(filename1), " file to get headers"
 					errorflag=1  
 					return  
 				end if
@@ -1324,7 +1331,7 @@ contains
 			do while (LINE/="0.00000000E+000")
 				read(fileunin,*,iostat=ierr) LINE
 				if (ierr .ne. 0) then
-					print *, "Error in reading from ", trim(filename1), " file to skip to data"
+					write(0,"(a,a,a)"), "Error in reading from ", trim(filename1), " file to skip to data"
 					errorflag=1
 					return
 				end if
@@ -1340,7 +1347,7 @@ contains
 	 
 			allocate(input(cols,lines), stat=ierr)
 			if (ierr/=0) then
-				print *, "Allocation error in input array"
+				write(0,"(a)"), "Allocation error in input array"
 				errorflag=1
 				return
 			end if
@@ -1349,7 +1356,7 @@ contains
 			do while (LINE/="0.00000000E+000")
 				read(fileunin,*,iostat=ierr) LINE
 				if (ierr .ne. 0) then
-					print *, "Error in reading from ", trim(filename1), " file to skip to data again"
+					write(0,"(a,a,a)"), "Error in reading from ", trim(filename1), " file to skip to data again"
 					errorflag=1
 					return
 				end if
@@ -1361,7 +1368,7 @@ contains
 			do j=1,lines
 				read(fileunin,*,iostat=ierr) fileline(1:cols)
 				if (ierr/=0) then
-					print *, "Error writing to input array"
+					write(0,"(a)"), "Error writing to input array"
 					errorflag=1
 					return
 				end if
@@ -1385,16 +1392,15 @@ contains
 			
 			deallocate(input, stat=ierr)
 			if (ierr/=0) then
-				print *, "Dellocation error in input array"
+				write(0,"(a)"), "Dellocation error in input array"
 				errorflag=1
 				return
 			end if
-	 
 		end do  
-		
 		deallocate(output, stat=ierr)
 		if (ierr/=0) then
-			print *, "Dellocation error in output array"
+			write(0,"(a)"), "Dellocation error in output array"
+			call flush(0)
 			errorflag=1
 			return
 		end if
@@ -1443,7 +1449,7 @@ contains
 	 
 		deallocate(valid,output2,fileline, stat=ierr)
 		if (ierr/=0) then
-			print *, "Deallocation error in valid, output2 and fileline arrays"
+			write(0,"(a)"), "Deallocation error in valid, output2 and fileline arrays"
 			errorflag=1
 			return
 		end if
@@ -1479,7 +1485,7 @@ contains
 		n=4
 
 		if (lines.le.n) then
-			print *, "File Error! There is not enough data in the files to interpolate!"
+			write(0,"(a)"), "File Error! There is not enough data in the files to interpolate!"
 			errorflag=1
 			return
 		end if
@@ -1488,7 +1494,7 @@ contains
 			output(:,1) = input (:,1)
 			time = timestrt
 		else
-			print *, "Something is wrong. Input array does not start at start time"
+			write(0,"(a)"), "Something is wrong. Input array does not start at start time"
 			errorflag = 1
 			return
 		end if
@@ -1497,13 +1503,13 @@ contains
 !			output(:,2) = input (:,2)
 !			time = time + dtinit
 !		else
-!			print *, "I expected the first timestep to be the same as the initial timestep"
+!			write(0,"(a)"), "I expected the first timestep to be the same as the initial timestep"
 !			errorflag = 1
 !			return
 !		end if
 
 		jold = 1
-		z=1
+		z=0
 		timetmp=timestrt
 
 		do while (time.lt.timeend)
@@ -1531,25 +1537,21 @@ contains
 			inpsize=size(input,2)
 
 			if (mod(n,2)==0) then
-				jdown = jdown - (n/2) + 1
 				jup = jup + (n/2) - 1
 			else
 				if (timetmp/=timeend) then
 					if ((abs(input(1,min(jup,inpsize))-timetmp)).lt.(abs(input(1,min(jdown,inpsize-1))-timetmp))) then
 						jup = jup + (n/2)
-						jdown = jdown - (n/2) + 1
 					else 
 						jup = jup + (n/2) - 1
-						jdown = jdown - (n/2)
 					end if
 				else
 					jup = min(jup,inpsize)
-					jdown = jup-n+1
 				end if
 			end if
 			
-!			jup=min(jup,inpsize)
-!			jdown=jup-n+1
+			jup=min(jup,inpsize)
+			jdown=jup-n+1
 
 			allocate (timein(n), datain(n))
 
@@ -1619,7 +1621,8 @@ contains
 				w=c(i+1)-d(i)
 				den=ho-hp
 				if (den.eq.0) then  
-					print *, "Error in polint when t=", x, "for xa values", xa(i)," and", xa(i+m), "when i and m are ",i, "and ", m
+					write(0,"(3(a,es16.8e3),2(a,i0))"), "Error in polint when t=", x, "for xa values", &
+															xa(i)," and", xa(i+m), "when i and m are ",i, "and ", m
 					errorflag=1
 					return
 				end if

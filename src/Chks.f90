@@ -51,44 +51,44 @@ contains
 		if(size(bs).ne.1) then
 			 
 			if (abs(popsum-absnorm).gt.1.0d-10) then
-				print *, "Error! Difference between norm and population sum is too high"
-				print *, ""
-				print *, "ABS(Norm)  ", absnorm
-				print *, "Popsum     ", popsum
-				print *, "Difference ", abs(popsum-absnorm)
-				print *, ""
+				write(0,"(a)"), "Error! Difference between norm and population sum is too high"
+				write(0,"(a)"), ""
+				write(0,"(a)"), "ABS(Norm)  ", absnorm
+				write(0,"(a)"), "Popsum     ", popsum
+				write(0,"(a)"), "Difference ", abs(popsum-absnorm)
+				write(0,"(a)"), ""
 				restart = 1
 			end if
 
 			if (cmprss.eq."N") then      
 				if ((absnorm.gt.uplimnorm).or.(absnorm.lt.lowlimnorm)) then
-					print "(a,a,e13.5e3)", "Warning. Initial Norm outside established ",&
+					write(6,"(a,a,e13.5e3)"), "Warning. Initial Norm outside established ",&
 											 "parameters, with a value of ", absnorm
-					print *, ""
+					write(6,"(a)"), ""
 					if ((basis.eq."SWARM").or.(basis.eq."SWTRN")) restart = 1
 				end if
 			else
 				if (absnorm.lt.lowlimnorm) then
-					print '(a,es16.8e3)', " Initial Norm too low with a value of ", absnorm
+					write(6,'(a,es16.8e3)'), " Initial Norm too low with a value of ", absnorm
 					if (basis.eq."GRID") then
-						print *, "Reducing grid spacing to ", (gridsp * 0.95d0)/sqrt(2.)
-						print *, ""
+						write(6,"(a,es16.8e3)"), "Reducing grid spacing to ", (gridsp * 0.95d0)/sqrt(2.)
+						write(6,"(a)"), ""
 						gridsp = gridsp * 0.95d0
 					else if ((basis.eq."SWARM").or.(basis.eq."SWTRN")) then
-						print *, "Increasing compression parameter to", 1/(alcmprss * 0.95d0)
-						print *, ""
+						write(6,"(a,es16.8e3)"), "Increasing compression parameter to", 1/(alcmprss * 0.95d0)
+						write(6,"(a)"), ""
 						alcmprss = alcmprss * 0.95d0
 					end if 
 					restart = 1
 				else if (absnorm.gt.uplimnorm) then
-					print '(a,es16.8e3)', " Initial Norm too high with a value of ", absnorm
+					write(6,'(a,es16.8e3)'), " Initial Norm too high with a value of ", absnorm
 					if (basis.eq."GRID") then
-						print *, "Increasing grid spacing to ", (gridsp * 1.05d0)/sqrt(2.)
-						print *, ""
+						write(6,"(a,es16.8e3)"), "Increasing grid spacing to ", (gridsp * 1.05d0)/sqrt(2.)
+						write(6,"(a)"), ""
 						gridsp = gridsp * 1.05d0
 					else if ((basis.eq."SWARM").or.(basis.eq."SWTRN")) then
-						print *, "Reducing compression parameter to", 1/(alcmprss * 1.05d0)
-						print *, ""
+						write(6,"(a,es16.8e3)"), "Reducing compression parameter to", 1/(alcmprss * 1.05d0)
+						write(6,"(a)"), ""
 						alcmprss = alcmprss * 1.05d0
 					end if 
 					restart = 1
@@ -99,8 +99,8 @@ contains
 				if (cmprss.eq."N") then
 					recalcs = recalcs + 1
 				end if
-				print *, "Recalculating..."
-				print *, ""
+				write(6,"(a)"), "Recalculating..."
+				write(6,"(a)"), ""
 				return
 			else
 				return
@@ -132,7 +132,7 @@ contains
 		if (ECheck.eq."YES") then
 			allocate(H(npes,npes), stat = ierr)
 			if (ierr/=0) then
-				print *, "Error in H allocation in genbasis"
+				write(0,"(a)"), "Error in H allocation in genbasis"
 				errorflag=1
 				return
 			end if
@@ -141,13 +141,14 @@ contains
 			if ((Echk.gt.Ebfmax).or.(Echk.lt.Ebfmin)) then
 				if (n.lt.Ntries) then
 					n = n+1
-					print *,"Basis ", k, " did not meet energy requirements. ",&
+					write(6,"(a)"),"Basis ", k, " did not meet energy requirements. ",&
 								 "Recalculating..."
 					redo=1
 				else
-					print *,"Basis ", k, " recalculated ", n, "times but still outside ",&
+					write(6,"(a)"),"Basis ", k, " recalculated ", n, "times but still outside ",&
 									"acceptable region."
-					print *,"Terminating calculation"
+					write(0,"(a)"), "Multiple recalculations did not find an adequate basis"
+					write(0,"(a)"), "Terminating calculation"
 					errorflag = 1
 					redo=0
 				end if
@@ -159,7 +160,7 @@ contains
 		end if
 
 		if ((redo/=1).and.(redo/=0)) then
-			print *, "Error! Somehow, the redo flag is not 1 or 0"
+			write(0,"(a)"), "Error! Somehow, the redo flag is not 1 or 0"
 			errorflag = 1
 			return
 		end if
@@ -187,7 +188,7 @@ contains
 			do m=1,ndim
 				trajq = dble(z(m))*dsqrt(2.0d0/gam)
 				if (abs(trajq).gt.20000) then
-					print '(a,i0,a,i0,a,e16.8)', "Trajectory ", j, " in dof ", m, &
+					write(6,'(a,i0,a,i0,a,e16.8)'), "Trajectory ", j, " in dof ", m, &
 												" is equal to ", dble(z(m))*dsqrt(2.0d0)
 					flag = flag + 1
 				end if
@@ -196,7 +197,7 @@ contains
 
 		if (flag.gt.0) then
 			errorflag = 1
-			print "(1x,i0,a,a)", flag, " trajectories have position components outside ",&
+			write(6,"(i0,a,a)"), flag, " trajectories have position components outside ",&
 											"acceptable range."
 			return
 		end if
@@ -223,17 +224,17 @@ contains
 		filenm = "normpop-"//trim(rep)//".out"
 
 		if (abs(initnorm-absnorm).ge.1.0d-3) then
-			write (*,*) ""
-			write (*,*) "*************************Simulation Failed*************************"
-			write (*,*) "*************Norm deviated too much from initial value*************"
+			write (0,"(a)") ""
+			write (0,"(a)") "*************************Simulation Failed*************************"
+			write (0,"(a)") "*************Norm deviated too much from initial value*************"
 			errorflag = 1
 			return
 		end if
 
 		if ((abs(1.0d0-(absehr/initehr)).ge.1.0d-2).and.(method=="MCEv2")) then
-			write (*,*) ""
-			write (*,*) "*************************Simulation Failed*************************"
-			write (*,*) "*******Ehrenfest Energy deviated too much from initial value*******"
+			write (0,"(a)") ""
+			write (0,"(a)") "*************************Simulation Failed*************************"
+			write (0,"(a)") "*******Ehrenfest Energy deviated too much from initial value*******"
 			errorflag = 1
 			return
 		end if

@@ -1,4 +1,4 @@
-#Makefile for use on chmlinxx computers.
+#Makefile for use on arcx computers.
 #Made with the aid of the fmkmf utility (Copyright (c) The University of Edinburgh) 
 
 F90=ifort

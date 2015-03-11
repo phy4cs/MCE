@@ -51,7 +51,7 @@ contains
 		if (ierr==0) allocate (ds(size(bsin),npes),stat=ierr)
 		if (ierr==0) allocate (dD_big(size(bsin)),stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in derivatives array allocation in deriv"
+			write(0,"(a)"), "Error in derivatives array allocation in deriv"
 			errorflag=1
 			return
 		end if
@@ -70,8 +70,8 @@ contains
 				dD_big=bigDdotv2 (bsin,x,time)
 			end if
 		else
-			print *, "Error! Method unrecognised!"
-			print *, "How did you even get this far?"
+			write(0,"(a)"), "Error! Method unrecognised!"
+			write(0,"(a)"), "How did you even get this far?"
 			errorflag = 1
 			return
 		end if  
@@ -91,7 +91,7 @@ contains
 
 		deallocate (dz,dd,ds,dD_big, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in derivatives array deallocation in deriv"
+			write(0,"(a)"), "Error in derivatives array deallocation in deriv"
 			errorflag=1
 			return
 		end if
@@ -125,7 +125,7 @@ contains
 		if (ierr==0) allocate (a(npes), stat = ierr)
 		if (ierr==0) allocate (ac(npes), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in array allocation in zdot"
+			write(0,"(a)"), "Error in array allocation in zdot"
 			errorflag=1
 			return
 		end if
@@ -154,7 +154,7 @@ contains
 
 		deallocate(zdottemp,z,dhdz,a,ac, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in array deallocation in zdot"
+			write(0,"(a)"), "Error in array deallocation in zdot"
 			errorflag=1
 			return
 		end if
@@ -197,7 +197,7 @@ contains
 		if (ierr==0) allocate (ddot_in(nbf),stat=ierr)
 		if (ierr==0) allocate (ddot_temppes(nbf, npes),stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of matrices or arrays in ddotv1"
+			write(0,"(a)"), "Error in allocation of matrices or arrays in ddotv1"
 			errorflag=1
 			return
 		end if
@@ -272,7 +272,7 @@ contains
 			else if (matfun.eq.'zheev') then
 				call matinv2(ovrlpin, ddot_in, ddot_out)
 			else
-				print *, "Error! Matrix function not recognised! Value is ", matfun
+				write(0,"(a)"), "Error! Matrix function not recognised! Value is ", matfun
 				errorflag = 1
 				return
 			end if 
@@ -286,7 +286,7 @@ contains
 		deallocate(ovrlp,ovrlpin,zczd,d2H_temp,d2H,atemp,stat=ierr)
 		if(ierr==0) deallocate(ddot_temp,ddot_out,ddot_in,ddot_temppes,stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of matrices or arrays in ddotv1"
+			write(0,"(a)"), "Error in deallocation of matrices or arrays in ddotv1"
 			errorflag=1
 			return
 		end if
@@ -316,7 +316,7 @@ contains
 
 		allocate(Hkk(npes,npes),dk(npes),z(ndim),Sk(npes),stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of matrices or arrays in ddotv2"
+			write(0,"(a)"), "Error in allocation of matrices or arrays in ddotv2"
 			errorflag=1
 			return
 		end if
@@ -350,7 +350,7 @@ contains
 
 		deallocate(Hkk,dk,z,Sk,stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of matrices or arrays in ddotv2"
+			write(0,"(a)"), "Error in deallocation of matrices or arrays in ddotv2"
 			errorflag=1
 			return
 		end if
@@ -380,7 +380,7 @@ contains
 
 		allocate(zk(ndim),zkc(ndim),zkdot(ndim),zkdotc(ndim),Hkk(npes,npes),stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of matrices or arrays in sdot"
+			write(0,"(a)"), "Error in allocation of matrices or arrays in sdot"
 			errorflag=1
 			return
 		end if
@@ -404,7 +404,7 @@ contains
 
 		deallocate(zk,zkc,zkdot,zkdotc,Hkk,stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of matrices or arrays in sdot"
+			write(0,"(a)"), "Error in allocation of matrices or arrays in sdot"
 			errorflag=1
 			return
 		end if
@@ -472,7 +472,7 @@ contains
 		if (ierr == 0) allocate (d2HD(nbf),stat=ierr)
 		if (ierr == 0) allocate (Dtemp(nbf),stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of matrices or arrays in bigDdotv2"
+			write(0,"(a)"), "Error in allocation of matrices or arrays in bigDdotv2"
 			errorflag=1
 			return
 		end if    
@@ -485,10 +485,10 @@ contains
 				do k=1,nbf
 					ovrlpdif = ovrlpphi(j,k) - ovrlp(j,k) 
 					if ((ovrlpdif.ne.0.0d0).and.(basis.ne."TRAIN").and.(basis.ne."SWTRN")) then
-						print '(a)', "Error! Initial phi-overlap has disimilarilies to z-overlap"
-						print '(a,a,i0,a,i0,a)', "These matricies should be identical ",&
+						write(0,"(a)"), "Error! Initial phi-overlap has disimilarilies to z-overlap"
+						write(0,'(a,a,i0,a,i0,a)'), "These matricies should be identical ",&
 																	"but differences found at coordinate ", j,",",k,"."
-						print '(a,4(e15.8,a))', "Expected (",dimag(i*ovrlp(j,k)),","&
+						write(0,'(a,4(e15.8,a))'), "Expected (",dimag(i*ovrlp(j,k)),","&
 						                     ,dimag(ovrlp(j,k)),") but got (",&
 																  dimag(i*ovrlpphi(j,k)),",",dimag(ovrlpphi(j,k)),")"
 						errorflag = 1
@@ -516,7 +516,7 @@ contains
 			do j=1,nbf
 				d2H(j,k) = h_av_jk(j,k) - h_av_jj(j,k) - zconjzdot(j,k)
 				if (d2H(j,k)/=d2H(j,k)) then
-					print " (1x,a,i4,a,i4,a)", "d2H(", j, ",", k, ") is NaN. Terminating"
+					write(0,"(1x,a,i4,a,i4,a)"), "d2H(", j, ",", k, ") is NaN. Terminating"
 					errorflag = 1
 					return
 				end if
@@ -533,7 +533,7 @@ contains
 		do j=1,nbf
 			Ddot(j) = (0.0d0, 0.0d0)
 			if (tempD(j)/=tempD(j)) then
-				print " (1x,a,i4,a)", "tempD(", j, ") is NaN. Terminating"
+				write(0,"(1x,a,i4,a)"), "tempD(", j, ") is NaN. Terminating"
 				errorflag = 1
 			return
 			end if
@@ -546,7 +546,7 @@ contains
 		else if (matfun.eq.'zheev') then
 			call matinv2(ovrlpphi, tempD, Ddot)
 		else
-			print *, "Error! Matrix function not recognised! Value is ", matfun
+			write(0,"(a)"), "Error! Matrix function not recognised! Value is ", matfun
 			errorflag = 1
 			return
 		end if
@@ -560,7 +560,7 @@ contains
 		deallocate (ovrlp,ovrlpphi,h_av_jj,h_av_jk,zconjzdot,d2H,d2H2,d2Hdiff,stat=ierr)
 		if (ierr == 0 ) deallocate (tempD,chk,Ddot,d2HD,Dtemp,stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of matrices or arrays in bigDdotv2"
+			write(0,"(a)"), "Error in deallocation of matrices or arrays in bigDdotv2"
 			errorflag=1
 			return
 		end if   
@@ -592,7 +592,7 @@ contains
 					end do
 				end do
 				if (phiHphi(j,k)/=phiHphi(j,k)) then
-					print " (1x,a,i4,a,i4,a)", "phiHphi(", j, ",", k, ") is NaN. Terminating"
+					write(0,"(1x,a,i4,a,i4,a)"), "phiHphi(", j, ",", k, ") is NaN. Terminating"
 					errorflag = 1
 					return
 				end if
@@ -627,7 +627,7 @@ contains
 				end do
 				Hjk_avrg(j,k) = Hjk_avrg(j,k) * ovrlp(j,k)
 				if (Hjk_avrg(j,k)/=Hjk_avrg(j,k)) then
-					print " (1x,a,i4,a,i4,a)", "Hjk_avrg(", j, ",", k, ") is NaN. Terminating"
+					write(0,"(1x,a,i4,a,i4,a)"), "Hjk_avrg(", j, ",", k, ") is NaN. Terminating"
 					errorflag = 1
 					return
 				end if
@@ -653,7 +653,7 @@ contains
 		ierr = 0
 		allocate(dz(size(bsin),ndim), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of dz arrays in zczdot"
+			write(0,"(a)"), "Error in allocation of dz arrays in zczdot"
 			errorflag=1
 			return
 		end if   
@@ -667,7 +667,7 @@ contains
 					zczdot(j,k) = zczdot(j,k) + ((dconjg(bsin(j)%z(m)-bsin(k)%z(m)))*dz(k,m))
 				end do
 				if (zczdot(j,k)/=zczdot(j,k)) then
-					print "(1x,a,i4,a,i4,a)", "zczdot(", j, ",", k, ") is NaN. Terminating"
+					write(0,"(1x,a,i4,a,i4,a)"), "zczdot(", j, ",", k, ") is NaN. Terminating"
 					errorflag = 1
 					return
 				end if
@@ -677,7 +677,7 @@ contains
 
 		deallocate(dz, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of dz arrays in zczdot"
+			write(0,"(a)"), "Error in deallocation of dz arrays in zczdot"
 			errorflag=1
 			return
 		end if   

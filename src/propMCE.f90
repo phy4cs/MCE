@@ -26,8 +26,8 @@ contains
 		implicit none
 		type(basisfn), dimension (:), intent (inout) :: bs
 		type(basisfn), dimension (:), allocatable :: dbs_dt1, bserr0, tempbs
-		real(kind=8), intent (inout) :: dt, dtout, dtfin
-		real(kind=8), intent(in) :: time, timestrt_loc
+		real(kind=8), intent (inout) :: dtout, dtfin
+		real(kind=8), intent(in) :: time, timestrt_loc, dt
 		integer, intent(in) :: genflg
 		integer::k
 
@@ -35,13 +35,6 @@ contains
 	
 		call allocbs(dbs_dt1,size(bs))
 		call allocbs(tempbs,size(bs))
-
-
-		if (timeend.gt.timestrt_loc) then      
-			if ((time+dt-timeend).gt.0.0d0) dt = timeend - time
-		else
-			if ((time+dt-timeend).lt.0.0d0) dt = timeend - time
-		end if
 
 		call deriv(bs, dbs_dt1, 1, time, genflg)
 
@@ -95,7 +88,7 @@ contains
 
 		allocate(err1z(size(bs)), err0z(size(bs)), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocating the z error arrays in rkstpctrl"
+			write(0,"(a)"), "Error in allocating the z error arrays in rkstpctrl"
 			errorflag=1
 		end if
 
@@ -122,12 +115,10 @@ contains
 					errmin = min(abs(bserr0(k)%d_pes(r)/bserr1(k)%d_pes(r)), &
 									 abs(bserr0(k)%s_pes(r)/bserr1(k)%s_pes(r)), &
 									 errmin)
-!					print "(6(1x,e16.8e3))", bserr0(k)%d_pes(r), bserr1(k)%d_pes(r), bserr0(k)%s_pes(r), bserr1(k)%s_pes(r)
 				end do
 				errmin = min(abs(bserr0(k)%D_big/bserr1(k)%D_big),&
 								 abs(err0z(k)/err1z(k)),&
 								 errmin)
-!				print "(8(1x,e16.8e3))", bserr0(k)%D_big, bserr1(k)%D_big, err0z(k), err1z(k)
 			end do
 
 			errmin = errmin * diff
@@ -136,12 +127,13 @@ contains
 				dt = sign(max((0.9*abs(dt)*(errmin**0.25)),dtmin),dt)
 				if (dt==dtmin) dtnext=dtmin
 				if (dt.lt.dtmin) then
-					print *, "Error! Somehow, dt is smaller than dtmin, with values of ", dt, " and ", dtmin, "respectively"
+					write(0,"(2(a,es16.8e3),a)"), "Error! Somehow, dt is smaller than dtmin, with values of ", &
+																					dt, " and ", dtmin, "respectively"
 					errorflag=1 
 					return
 				end if
 				if (time+dt.eq.time) then
-					print "(a,e12.5,a,e12.5)", "Error! Underflow in step size at time = ", time, " for dt value of ", dt
+					write(0,"(2(a,es16.8e3))"), "Error! Underflow in step size at time = ", time, " for dt value of ", dt
 					errorflag = 1
 					return
 				end if
@@ -158,12 +150,11 @@ contains
 		end do
 
 		dtfin = dt
-!		print "(4(1x,e16.8e3))", dtfin, dtmax, dtmin, errmin
 
 		call deallocbs(bserr1)
 		deallocate(err1z, err0z, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocating the z error arrays in rkstpctrl"
+			write(0,"(a)"), "Error in deallocating the z error arrays in rkstpctrl"
 			errorflag=1
 		end if
 
@@ -190,7 +181,7 @@ contains
 		ierr = 0
 		allocate (a(6), b(6,6), c(6), d(6), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of Butcher tableau arrays for rkck45"
+			write(0,"(a)"), "Error in allocation of Butcher tableau arrays for rkck45"
 			errorflag=1
 			return
 		end if
@@ -235,7 +226,7 @@ contains
 
 		allocate (dbs_dt(6,size(bsin)), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of RK array"
+			write(0,"(a)"), "Error in allocation of RK array"
 			errorflag=1
 			return
 		end if
@@ -297,7 +288,7 @@ contains
 		end do    
 		deallocate (a,b,c,d,dbs_dt, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of arrays or matrices for rkck45"
+			write(0,"(a)"), "Error in deallocation of arrays or matrices for rkck45"
 			errorflag=1
 			return
 		end if
@@ -315,8 +306,8 @@ contains
 		type(basisfn), dimension (:), intent (in) :: bsin, dbs_dt1
 		type(basisfn), dimension (:), intent (inout) :: tempbs
 		type(basisfn), dimension (:,:), allocatable :: dbs_dt
-		real(kind=8),intent(inout)::dt, dtfin, dtout
-		real(kind=8), intent(in) :: time
+		real(kind=8),intent(inout)::dtfin, dtout
+		real(kind=8), intent(in) :: time, dt
 		real(kind=8),dimension(:), allocatable::a,b,c
 		integer, intent(in) :: genflg
 		integer::k, l, n, ierr
@@ -325,7 +316,7 @@ contains
 		ierr=0
 		allocate(a(4), b(4), c(4), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of rk4 Butcher tableau parameters"
+			write(0,"(a)"), "Error in allocation of rk4 Butcher tableau parameters"
 			errorflag=1
 			return
 		end if 
@@ -347,7 +338,7 @@ contains
 
 		allocate (dbs_dt(4,size(bsin)), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in basis set allocation in rk4"
+			write(0,"(a)"), "Error in basis set allocation in rk4"
 			errorflag=1
 			return
 		end if
@@ -399,7 +390,7 @@ contains
 		end do
 		deallocate (dbs_dt, a,b,c, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of local arrays in rk4"
+			write(0,"(a)"), "Error in deallocation of local arrays in rk4"
 			errorflag=1
 			return
 		end if

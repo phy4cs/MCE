@@ -16,15 +16,15 @@ Program avrgnorm
 	call getarg(0,filename)
 	call getarg(1,LINE)
 	if (ierr==-1) then
-		print "(a,a)", "Error! Could not read first argument for ", trim(filename)
-		print "(a)", "This should be the number of seed folders used."
+		write (0,"(a,a)"), "Error! Could not read first argument for ", trim(filename)
+		write (0,"(a)"), "This should be the number of seed folders used."
 		stop
 	end if
 	read (LINE,*)folders
 	call getarg(2,LINE)
 	if (ierr==-1) then
-		print "(a,a)", "Error! Could not read second argument for ", trim(filename)
-		print "(a)", "This should be the number of repeats used."
+		write (0,"(a,a)"), "Error! Could not read second argument for ", trim(filename)
+		write (0,"(a)"), "This should be the number of repeats used."
 		stop
 	end if
 	read (LINE,*) totreps
@@ -55,7 +55,7 @@ Program avrgnorm
 		filename = "normpop_"//trim(repstr)//".out"
 		OPEN(UNIT=128, FILE=trim(filename),STATUS='OLD', iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'error in opening ', trim(filename), ' file'
+			write (0,"(a,a,a)"), 'Error in opening ', trim(filename), ' file'
 			stop
 		end if
 		read(128,*,iostat=ierr) LINE
@@ -69,13 +69,13 @@ Program avrgnorm
 
 	do i=1,folders
 		if ((lines(i).ne.lines(1)).and.(lines(i).ne.0)) then
-			print "(a,i0)", "Error - Line number mismatch in repeat ", i
-			print "(a,i0,a,i0)", "Expected ", lines(1), " lines, but got ", lines(i)
+			write (0,"(a,i0)"), "Error - Line number mismatch in repeat ", i
+			write (0,"(a,i0,a,i0)"), "Expected ", lines(1), " lines, but got ", lines(i)
 			stop
 		end if
 	end do
 
-	print "(i0,a,i0,a)", tot, " files of ",folders, " were valid."
+	write (6,"(i0,a,i0,a)"), tot, " files of ",folders, " were valid."
 			 
 	allocate(time(tot))
 	allocate(nrm(tot))
@@ -104,14 +104,14 @@ Program avrgnorm
 		OPEN(UNIT=n, FILE=trim(filename),STATUS='OLD', iostat=ierr)
 
 		if (ierr .ne. 0) then
-			print *, 'error in opening ', trim(filename), ' file'
+			write (0,"(a,a,a)"), 'Error in opening ', trim(filename), ' file'
 			stop
 		end if
 
 		do
 			read (n,*,iostat=ierr)LINE
 			if (ierr.ne.0) then
-				print *, "Read Error in normpop_", trim(repstr), ".out"
+				write (0,"(a,a,a)"), "Read Error in normpop_", trim(repstr), ".out"
 				stop
 			end if
 			if (LINE=="0.00000000E+000") then
@@ -135,7 +135,7 @@ Program avrgnorm
 		open (unit=m, file=trim(filename), status='unknown', iostat=ierr)
 
 		if (ierr .ne. 0) then
-			print *, 'Error in opening ', trim(filename), ' output file'
+			write (0,"(a,a,a)"), 'Error in opening ', trim(filename), ' output file'
 			stop
 		end if
 
@@ -153,10 +153,10 @@ Program avrgnorm
 			read(n,*,iostat=ierr)time(i),nrm(i),rlacf(i),imacf(i),abacf(i),rlex(i),&
 												imex(i),abex(i),ehr(i),pop1(i),pop2(i),popsum(i),popdiff(i)
 			if (time(i).ne.time(1)) then
-				print "(a,e15.8,a,i0)", "File synchronisation error when reading at ", & 
+				write (0,"(a,e15.8,a,i0)"), "File synchronisation error when reading at ", & 
 																		"time ", time(1) ," in unit ", n
-				print "(a,i0,a,i0,a,i0)", "i = ", i, " n = ", n
-				print "(a,e15.8,a,e15.8)", "Expected t=", time(1), " but got t=", time(i)
+				write (0,"(a,i0,a,i0,a,i0)"), "i = ", i, " n = ", n
+				write (0,"(a,e15.8,a,e15.8)"), "Expected t=", time(1), " but got t=", time(i)
 				stop
 			end if
 		end do
@@ -207,7 +207,7 @@ Program avrgnorm
 
 	open (unit=175,file="plotpopdiff.gpl",status="unknown",iostat=ierr)
 	if (ierr .ne. 0) then
-		print *, 'Error in opening plotpopdiff.gpl output file'
+		write (0,"(a)"), 'Error in opening plotpopdiff.gpl output file'
 		stop
 	end if
 
@@ -223,7 +223,7 @@ Program avrgnorm
 
 		open(unit=180,file="popdiffresiduals.out",status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening popdiffresiduals.out output file'
+			write (0,"(a)"), 'Error in opening popdiffresiduals.out output file'
 			stop
 		end if
 
@@ -248,9 +248,9 @@ Program avrgnorm
 				read(n,*,iostat=ierr)time(i),nrm(i),rlacf(i),imacf(i),abacf(i),rlex(i),&
 											imex(i),abex(i),ehr(i),pop1(i),pop2(i),popsum(i),popdiff(i)
 				if (time(i).ne.time(1)) then
-					print "(a,a,e15.8,a,i0)","File synchronisation error when reading at",&
+					write (0,"(a,a,e15.8,a,i0)"),"File synchronisation error when reading at",&
 															 "time ", time(1) ," in unit ", n
-					print "(a,i0,a,i0,a,i0)", "i = ", i, " n = ", n
+					write (0,"(a,i0,a,i0,a,i0)"), "i = ", i, " n = ", n
 					stop
 				end if
 			end do
@@ -285,7 +285,7 @@ Program avrgnorm
 
 		open (unit=176,file="plotpopres.gpl",status="unknown",iostat=ierr)
 		if (ierr .ne. 0) then
-			print *, 'Error in opening plotpopres.gpl output file'
+			write (0,"(a)"), 'Error in opening plotpopres.gpl output file'
 			stop
 		end if
 

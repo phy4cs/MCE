@@ -41,7 +41,7 @@ contains
 		open(unit=140, file='input.dat', status='old', iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, 'Error in opening runconds.dat file'
+			write(0,"(a)"), 'Error in opening runconds.dat file'
 			errorflag = 1
 			return
 		end if
@@ -54,13 +54,13 @@ contains
 				backspace(140)
 				read(140,*,iostat=ierr)LINE,debug
 				if (ierr.ne.0) then
-					print *, "Error reading debug status"
+					write(0,"(a)"), "Error reading debug status"
 					errorflag = 1
 					return
 				end if
 				if ((debug.ne.0).and.(debug.ne.1)) then
-					print *, "Error in debug state. Debug value should be only 0 (for off) or 1 (for on)"
-					print "(a,i3)", "Debug value read was ", debug
+					write(0,"(a)"), "Error in debug state. Debug value should be only 0 (for off) or 1 (for on)"
+					write(0,"(a,i3)"), "Debug value read was ", debug
 					errorflag = 1
 					return
 				end if
@@ -69,7 +69,7 @@ contains
 				backspace(140)
 				read(140,*,iostat=ierr)LINE,LINE2
 				if (ierr.ne.0) then
-					print *, "Error reading basis set generation status"
+					write(0,"(a)"), "Error reading basis set generation status"
 					errorflag = 1
 					return
 				end if
@@ -78,14 +78,14 @@ contains
 				else if ((LINE2(1:1).eq.'n').or.(LINE2(1:1).eq.'N')) then
 					gen = "N"
 				else
-					print *, "Error. gen value must be YES/NO. Read ", trim(LINE2)
+					write(0,"(a,a)"), "Error. gen value must be YES/NO. Read ", trim(LINE2)
 				end if
 				n=n+1
 			else if (LINE=='prop') then
 				backspace(140)
 				read(140,*,iostat=ierr)LINE,LINE2
 				if (ierr.ne.0) then
-					print *, "Error reading basis set propagation status"
+					write(0,"(a)"), "Error reading basis set propagation status"
 					errorflag = 1
 					return
 				end if
@@ -94,14 +94,14 @@ contains
 				else if ((LINE2(1:1).eq.'n').or.(LINE2(1:1).eq.'N')) then
 					prop = "N"
 				else
-					print *, "Error. prop value must be YES/NO. Read ", trim(LINE2)
+					write(0,"(a,a)"), "Error. prop value must be YES/NO. Read ", trim(LINE2)
 				end if
 				n=n+1              
 			else if (LINE=='cmprss') then
 				backspace(140)
 				read(140,*,iostat=ierr)LINE,LINE2
 				if (ierr.ne.0) then
-					print *, "Error reading compression parameter change status"
+					write(0,"(a)"), "Error reading compression parameter change status"
 					errorflag = 1
 					return
 				end if
@@ -110,14 +110,14 @@ contains
 				else if ((LINE2(1:1).eq.'n').or.(LINE2(1:1).eq.'N')) then
 					cmprss = "N"
 				else
-					print *, "Error. cmprss value must be YES/NO. Read ", trim(LINE2)
+					write(0,"(a,a)"), "Error. cmprss value must be YES/NO. Read ", trim(LINE2)
 				end if
 				n=n+1 
 			else if (LINE=='method') then
 				backspace(140)
 				read(140,*,iostat=ierr)LINE,LINE2
 				if (ierr.ne.0) then
-					print *, "Error reading basis set propagation method"
+					write(0,"(a)"), "Error reading basis set propagation method"
 					errorflag = 1
 					return
 				end if
@@ -128,14 +128,14 @@ contains
 				else if ((LINE2(1:3).eq.'ccs').or.(LINE2(1:3).eq.'CCS')) then
 					method = "CCS"
 				else
-					print *, "Error. Method must be MCEv1,MCEv2 or CCS. Read ", trim(LINE2)
+					write(0,"(a,a)"), "Error. Method must be MCEv1,MCEv2 or CCS. Read ", trim(LINE2)
 				end if
 				n=n+1
 			else if (LINE=='Repeats') then
 				backspace(140)
 				read(140,*,iostat=ierr)LINE,reptot
 				if (ierr.ne.0) then
-					print *, "Error reading number of repeats"
+					write(0,"(a)"), "Error reading number of repeats"
 					errorflag = 1
 					return
 				end if
@@ -144,7 +144,7 @@ contains
 				backspace(140)
 				read(140,*,iostat=ierr)LINE,LINE2
 				if (ierr.ne.0) then
-					print *, "Error reading conjugate repeats flag"
+					write(0,"(a)"), "Error reading conjugate repeats flag"
 					errorflag = 1
 					return
 				end if
@@ -153,7 +153,7 @@ contains
 				else if ((LINE2(1:1).eq.'n').or.(LINE2(1:1).eq.'N')) then
 					conjflg = 0
 				else
-					print *, "Error. Conjugate repeats flag must be Yes or No. Read ", trim(LINE2)
+					write(0,"(a,a)"), "Error. Conjugate repeats flag must be Yes or No. Read ", trim(LINE2)
 				end if
 				n=n+1                     
 			end if
@@ -165,25 +165,25 @@ contains
 		close(140)
 
 		if ((gen.eq."N").and.(prop.eq."N")) then
-			print *, "Error! Run conditions are for no basis set generation or propagation. So what now genius?"
+			write(0,"(a)"), "Error! Run conditions are for no basis set generation or propagation. So what now genius?"
 			errorflag=1
 			return
 		end if
 
 		if ((conjflg==1).and.(mod(reptot,2).ne.0)) then
-			print *,"Warning! An odd number of repeats selected but conjugate repetition chosen!"
-			print *,"Incrementing repeat total to even number"
+			write(6,"(a)"),"Warning! An odd number of repeats selected but conjugate repetition chosen!"
+			write(6,"(a)"),"Incrementing repeat total to even number"
 			reptot = reptot + 1
 		end if
 
 		if ((conjflg==1).and.(gen=="N")) then
-			print *,"Error! Conjugate repetition is not compatible for simulations with pre-calculated basis set"
+			write(0,"(a)"),"Error! Conjugate repetition is not compatible for simulations with pre-calculated basis set"
 			errorflag=1
 			return
 		end if
 
 		if (n.ne.7) then
-			print *, "Not all required variables read in readrunconds subroutine"
+			write(0,"(a)"), "Not all required variables read in readrunconds subroutine"
 			errorflag = 1
 			return
 		end if
@@ -208,7 +208,7 @@ contains
 		open(unit=127, file='input.dat', status='old', iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, 'Error in opening input.dat file'
+			write(0,"(a)") 'Error in opening input.dat file'
 			errorflag = 1
 			return
 		end if
@@ -221,7 +221,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,sys
 				if (ierr.ne.0) then
-					print *, "Error reading System Name"
+					write(0,"(a)"), "Error reading System Name"
 					errorflag = 1
 					return
 				end if
@@ -236,136 +236,136 @@ contains
 		select case (sys)
 			case ("SB")
 				if (npes.lt.2) then
-					print *, "Spin Boson model must have at least 2 pes'"
+					write(0,"(a)"), "Spin Boson model must have at least 2 pes'"
 					errorflag = 1
 					return
 				end if
 				if ((method.ne."MCEv1").and.(method.ne."MCEv2")) then
-					print *, "Spin Boson model can only be simulated by MCEv1 or MCEv2"
+					write(0,"(a)"), "Spin Boson model can only be simulated by MCEv1 or MCEv2"
 					errorflag = 1
 					return
 				end if
 				if (basis.eq."GRID") then
-					print *, "This method must not use a static grid."
+					write(0,"(a)"), "This method must not use a static grid."
 					errorflag = 1
 					return
 				end if 
 			case ("HP")
 				if (npes.ne.1) then
-					print *, "Harmonic Potential only valid for 1 PES"
+					write(0,"(a)"), "Harmonic Potential only valid for 1 PES"
 					errorflag = 1
 					return
 				end if
 				if (trim(method).ne."CCS") then
-					print *, "Harmonic Potential can only be simulated by CCS"
+					write(0,"(a)"), "Harmonic Potential can only be simulated by CCS"
 					errorflag = 1
 					return  
 				end if
 			case ("FP")
 				if (npes.ne.1) then
-					print *, "Free Particle only valid for 1 PES"
+					write(0,"(a)"), "Free Particle only valid for 1 PES"
 					errorflag = 1
 					return
 				end if
 				if (trim(method).ne."CCS") then
-					print *, "Free Particle can only be simulated by CCS"
+					write(0,"(a)"), "Free Particle can only be simulated by CCS"
 					errorflag = 1
 					return  
 				end if
 			case ("MP")
 				if (npes.ne.1) then
-					print *, "Morse Potential only valid for 1 PES"
+					write(0,"(a)"), "Morse Potential only valid for 1 PES"
 					errorflag = 1
 					return
 				end if
 				if (trim(method).ne."CCS") then
-					print *, "Morse Potential can only be simulated by CCS"
+					write(0,"(a)"), "Morse Potential can only be simulated by CCS"
 					errorflag = 1
 					return  
 				end if 
 			case ("IV")
 				if (npes.ne.1) then
-					print *, "Inverted Gaussian only valid for 1 PES"
+					write(0,"(a)"), "Inverted Gaussian only valid for 1 PES"
 					errorflag = 1
 					return
 				end if
 				if ((ndim.ne.1).and.(ndim.ne.3)) then
-					print  *, "Inverted Gaussian is only valid for 1 or 3 dimensional"
+					write(0,"(a)"), "Inverted Gaussian is only valid for 1 or 3 dimensional"
 					errorflag = 1
 					return 
 				end if
 				if (trim(method).ne."CCS") then
-					print *, "Inverted Gaussian can only be simulated by CCS"
+					write(0,"(a)"), "Inverted Gaussian can only be simulated by CCS"
 					errorflag = 1
 					return  
 				end if 
 				if ((basis.ne."GRID").and.(basis.ne."GRSWM")) then
-					print *, "This method must use a static grid."
+					write(0,"(a)"), "This method must use a static grid."
 					errorflag = 1
 					return
 				end if
 			case ("CP")
 				if (npes.ne.1) then
-					print *, "Coulomb Potential only valid for 1 PES"
+					write(0,"(a)"), "Coulomb Potential only valid for 1 PES"
 					errorflag = 1
 					return
 				end if
 				if (mod(qsizez,2)==1) then
-					print *, "Odd parity for the grid parameters will result in a point on the singularity"
-					print *, "This would make reprojection impossible, as well as seriously affecting results"
-					print *, "Change the grid parameters and restart."
+					write(0,"(a)"), "Odd parity for the grid parameters will result in a point on the singularity"
+					write(0,"(a)"), "This would make reprojection impossible, as well as seriously affecting results"
+					write(0,"(a)"), "Change the grid parameters and restart."
 					errorflag=1
 					return
 				end if
 				if (in_nbf.eq.(qsizez*psizez+1)) then
-					print *, "The in_nbf value has been reset so that there is a point on the singularity."
-					print *, "This will make reprojection impossible. Resetting to even parity."
+					write(6,"(a)"), "The in_nbf value has been reset so that there is a point on the singularity."
+					write(6,"(a)"), "This will make reprojection impossible. Resetting to even parity."
 					in_nbf = qsizez*psizez
 				end if
 				if (ndim.ne.3) then
-					print  *, "Coulomb Potential is only valid in 3 dimensions"
+					write(0,"(a)"), "Coulomb Potential is only valid in 3 dimensions"
 					errorflag = 1
 					return 
 				end if
 				if (trim(method).ne."CCS") then
-					print *, "Coulomb Potential can only be simulated by CCS"
+					write(0,"(a)"), "Coulomb Potential can only be simulated by CCS"
 					errorflag = 1
 					return  
 				end if 
 				if ((basis.ne."GRID").and.(basis.ne."GRSWM")) then
-					print *, "This method must use a static grid."
+					write(0,"(a)"), "This method must use a static grid."
 					errorflag = 1
 					return
 				end if
 			case ("HH")
 				if (npes.ne.1) then
-					print *, "Inverted Gaussian only valid for 1 PES"
+					write(0,"(a)"), "Inverted Gaussian only valid for 1 PES"
 					errorflag = 1
 					return
 				end if
 				if (trim(method).ne."CCS") then
-					print *, "Henon-Heiles Potential can only be simulated by CCS"
+					write(0,"(a)"), "Henon-Heiles Potential can only be simulated by CCS"
 					errorflag = 1
 					return  
 				end if 
 				if ((ndim.ne.2).and.(ndim.ne.6).and.(ndim.ne.10)) then
-					print  *, "Henon-Heiles potential is only valid currently for the 2,6,or 10 dimensional systems"
+					write(0,"(a)"), "Henon-Heiles potential is only valid currently for the 2,6,or 10 dimensional systems"
 					errorflag = 1
 					return 
 				end if
 				if (basis.eq."GRID") then
-					print *, "This method must not use a static grid."
+					write(0,"(a)"), "This method must not use a static grid."
 					errorflag = 1
 					return
 				end if 
 			case default
-				print *, "System is not recognised. Value is ", sys
+				write(0,"(a)"), "System is not recognised. Value is ", sys
 				errorflag = 1
 				return
 		end select             
 
 		if (n.ne.1) then
-			print *, "Not all required variables read in readsys subroutine"
+			write(0,"(a)"), "Not all required variables read in readsys subroutine"
 			errorflag = 1
 			return
 		end if
@@ -392,7 +392,7 @@ contains
 		open(unit=128, file='inham.dat', status='old', iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, 'Error in opening inham.dat file'
+			write(0,"(a)"), 'Error in opening inham.dat file'
 			errorflag = 1
 			return
 		end if
@@ -405,7 +405,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,ECheck
 				if (ierr.ne.0) then
-					print *, "Error reading ECheck value"
+					write(0,"(a)"), "Error reading ECheck value"
 					errorflag = 1
 					return
 				end if
@@ -414,7 +414,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,Ntries
 				if (ierr.ne.0) then
-					print *, "Error reading Ntries value"
+					write(0,"(a)"), "Error reading Ntries value"
 					errorflag = 1
 					return
 				end if
@@ -423,7 +423,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,Ebfmin
 				if (ierr.ne.0) then
-					print *, "Error reading Ebfmin value"
+					write(0,"(a)"), "Error reading Ebfmin value"
 					errorflag = 1
 					return
 				end if
@@ -432,7 +432,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,Ebfmax
 				if (ierr.ne.0) then
-					print *, "Error reading Ebfmax value"
+					write(0,"(a)"), "Error reading Ebfmax value"
 					errorflag = 1
 					return
 				end if
@@ -448,7 +448,7 @@ contains
 		if ((ECheck.ne.'NO').and.(ECheck.ne.'YES').and.(ECheck.ne.'No').and.(ECheck.ne.'Yes') &
 			  .and.(ECheck.ne.'yes').and.(ECheck.ne.'no').and.(ECheck.ne.'Y').and.(ECheck.ne.'N') &
 			  .and.(ECheck.ne.'y').and.(ECheck.ne.'n')) then
-			print *, "Invalid value for ECheck. Must be YES/NO/Yes/No/yes/no/Y/N/y/n. Value is ", ECheck
+			write(0,"(a)"), "Invalid value for ECheck. Must be YES/NO/Yes/No/yes/no/Y/N/y/n. Value is ", ECheck
 			errorflag = 1
 			return
 		else if ((ECheck.eq.'NO').or.(ECheck.eq.'No').or.(ECheck.eq.'no').or.(ECheck.eq.'N') &
@@ -460,13 +460,13 @@ contains
 		end if
 
 		if (Ebfmin.ge.Ebfmax) then
-			print *, "Invalid values for Ebfmin and/or Ebfmax. Max must be higher than min"
+			write(0,"(a)"), "Invalid values for Ebfmin and/or Ebfmax. Max must be higher than min"
 			errorflag = 1
 			return
 		end if
 
 		if (n.ne.4) then
-			print *, "Not all required variables read in readecut subroutine"
+			write(0,"(a)"), "Not all required variables read in readecut subroutine"
 			errorflag = 1
 			return
 		end if
@@ -494,7 +494,7 @@ contains
 		OPEN(UNIT=127, FILE='input.dat',STATUS='OLD', iostat=ierr)
 
 		if (ierr .ne. 0) then
-			print *, 'error in opening input.dat file'
+			write(0,"(a)"), 'Error in opening input.dat file'
 			errorflag = 1
 			return
 		end if
@@ -507,7 +507,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,ndim 
 				if(ierr.ne.0) then
-					Print *,  "Error reading ndim"
+					write(0,"(a)"),  "Error reading ndim"
 					errorflag = 1
 					return
 				end if
@@ -516,7 +516,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,in_nbf
 				if(ierr.ne.0) then
-					Print *,  "Error reading in_nbf"
+					write(0,"(a)"),  "Error reading in_nbf"
 					errorflag = 1
 					return
 				end if
@@ -525,7 +525,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,matfun
 				if(ierr.ne.0) then
-					print *,  "Error reading matrix function"
+					write(0,"(a)"),  "Error reading matrix function"
 					errorflag = 1
 					return
 				end if
@@ -534,7 +534,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,npes
 				if(ierr.ne.0) then
-					Print *,  "Error reading npes"
+					write(0,"(a)"),  "Error reading npes"
 					errorflag = 1
 					return
 				end if
@@ -543,7 +543,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,in_pes
 				if(ierr.ne.0) then
-					print *,  "Error reading in_PES"
+					write(0,"(a)"),  "Error reading in_PES"
 					errorflag = 1
 					return
 				end if
@@ -552,7 +552,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,basis
 				if(ierr.ne.0) then
-					Print *,  "Error reading basis option"
+					write(0,"(a)"),  "Error reading basis option"
 					errorflag = 1
 					return
 				end if
@@ -561,7 +561,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,initsp
 				if(ierr.ne.0) then
-					print *,  "Error reading grid spacing"
+					write(0,"(a)"),  "Error reading grid spacing"
 					errorflag = 1
 					return
 				end if
@@ -570,7 +570,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,psizex
 				if(ierr.ne.0) then
-					print *,  "Error reading grid size in p coordinate"
+					write(0,"(a)"),  "Error reading grid size in p coordinate"
 					errorflag = 1
 					return
 				end if
@@ -579,7 +579,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,qsizex
 				if(ierr.ne.0) then
-					print *,  "Error reading grid size in q coordinate"
+					write(0,"(a)"),  "Error reading grid size in q coordinate"
 					errorflag = 1
 					return
 				end if
@@ -588,7 +588,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,psizey
 				if(ierr.ne.0) then
-					print *,  "Error reading grid size in p coordinate"
+					write(0,"(a)"),  "Error reading grid size in p coordinate"
 					errorflag = 1
 					return
 				end if
@@ -597,7 +597,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,qsizey
 				if(ierr.ne.0) then
-					print *,  "Error reading grid size in q coordinate"
+					write(0,"(a)"),  "Error reading grid size in q coordinate"
 					errorflag = 1
 					return
 				end if
@@ -606,7 +606,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,psizez
 				if(ierr.ne.0) then
-					print *,  "Error reading grid size in p coordinate"
+					write(0,"(a)"),  "Error reading grid size in p coordinate"
 					errorflag = 1
 					return
 				end if
@@ -615,7 +615,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,qsizez
 				if(ierr.ne.0) then
-					print *,  "Error reading grid size in q coordinate"
+					write(0,"(a)"),  "Error reading grid size in q coordinate"
 					errorflag = 1
 					return
 				end if
@@ -624,7 +624,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,trainsp
 				if(ierr.ne.0) then
-					print *,  "Error reading train spacing"
+					write(0,"(a)"),  "Error reading train spacing"
 					errorflag = 1
 					return
 				end if
@@ -633,7 +633,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,def_stp
 				if(ierr.ne.0) then
-					print *,  "Error reading default number of basis functions per train"
+					write(0,"(a)"),  "Error reading default number of basis functions per train"
 					errorflag = 1
 					return
 				end if
@@ -642,7 +642,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,nbfadapt
 				if(ierr.ne.0) then
-					print *,  "Error reading bf adapt flag"
+					write(0,"(a)"),  "Error reading bf adapt flag"
 					errorflag = 1
 					return
 				end if
@@ -651,7 +651,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,bfeps
 				if(ierr.ne.0) then
-					print *,  "Error reading bf adapt cutoff parameter"
+					write(0,"(a)"),  "Error reading bf adapt cutoff parameter"
 					errorflag = 1
 					return
 				end if
@@ -660,7 +660,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,cloneflg
 				if(ierr.ne.0) then
-					print *,  "Error reading cloning flag"
+					write(0,"(a)"),  "Error reading cloning flag"
 					errorflag = 1
 					return
 				end if
@@ -674,35 +674,35 @@ contains
 		close(127) 
 	  
 		if ((in_pes.gt.npes).or.(in_pes.le.0)) then
-			print *, "Initial PES does not exist"
+			write(0,"(a)"), "Initial PES does not exist"
 			ierr=-1
 			errorflag = 1
 			return
 		end if
 
 		if (in_nbf.le.0) then
-			print *, "Number of Basis Functions <= 0"
+			write(0,"(a)"), "Number of Basis Functions <= 0"
 			ierr=-1
 			errorflag = 1
 			return
 		end if
 
 		if (npes.le.0) then
-			print *, "Number of PES <= 0"
+			write(0,"(a)"), "Number of PES <= 0"
 			ierr=-1
 			errorflag = 1
 			return
 		end if
 
 		if ((npes.eq.1).and.(trim(method)/="CCS")) then
-			print *, "Only one PES selected, but propagation method is not CCS!"
+			write(0,"(a)"), "Only one PES selected, but propagation method is not CCS!"
 			ierr=-1
 			errorflag=1
 			return
 		end if
 
 		if (ndim.le.0) then
-			print *, "Number of Degrees of Freedom <= 0"
+			write(0,"(a)"), "Number of Degrees of Freedom <= 0"
 			ierr=-1
 			errorflag = 1
 			return
@@ -710,7 +710,7 @@ contains
 
 		if ((basis.ne.'TRAIN').and.(basis.ne.'train').and.(basis.ne.'SWARM').and.(basis.ne.'swarm').and.(basis.ne.'SWTRN')&
 			.and.(basis.ne.'swtrn').and.(basis.ne.'GRID').and.(basis.ne.'grid').and.(basis.ne.'GRSWM').and.(basis.ne.'grswm')) then
-			print *, "Invalid value for basis. Must be TRAIN/SWARM/GRID/SWTRN/GRSWM and all upper/lower case Value is ", basis
+			write(0,"(a,a)"), "Invalid value for basis. Must be TRAIN/SWARM/GRID/SWTRN/GRSWM and all upper/lower case Value is ", basis
 			errorflag = 1
 			return
 		else if ((basis.eq.'TRAIN').or.(basis.eq.'train'))then
@@ -726,7 +726,7 @@ contains
 		end if
 
 		if ((matfun.ne.'zgesv').and.(matfun.ne.'ZGESV').and.(matfun.ne.'zheev').and.(matfun.ne.'ZHEEV')) then
-			print *, "Invalid value for matrix function. Must be ZGESV/zgesv or ZHEEV/zheev. Value is ", matfun
+			write(0,"(a,a)"), "Invalid value for matrix function. Must be ZGESV/zgesv or ZHEEV/zheev. Value is ", matfun
 			errorflag = 1
 			return
 		else if ((matfun.eq.'zgesv').or.(matfun.eq.'ZGESV')) then
@@ -737,12 +737,12 @@ contains
 
 		if (basis.eq."GRID") then
 			if (initsp .lt. 0.8d0) then
-				print *, "Error! Grid points are too close together"
+				write(0,"(a)"), "Error! Grid points are too close together"
 				errorflag=1
 				return
 			end if
 			if ((ndim.ne.1).and.(ndim.ne.3)) then
-				print *, "ndim is neither 1 nor 3. This is currently invalid."
+				write(0,"(a)"), "ndim is neither 1 nor 3. This is currently invalid."
 				errorflag=1
 				return
 			else if (ndim==1) then
@@ -762,27 +762,27 @@ contains
 					psizex=0
 					psizey=0
 				else 
-					print *, "Error! The largest grid dimensions do not match. Check the values."
+					write(0,"(a)"), "Error! The largest grid dimensions do not match. Check the values."
 					errorflag = 1
 					return
 				end if
 			end if
 			if ((mod(qsizez,2).ne.mod(psizez,2)).and.(mod(qsizey,2).ne.mod(psizey,2)).and.(mod(qsizex,2).ne.mod(psizex,2))) then
-				print *, "Error! Grid is not symmetrically spaced around initial CS."
-				print *, "There should be equal distance between initial CS and the four closest grid points"
-				print *, "This equates to  all psize and qsize values being either all even or all odd."
+				write(0,"(a)"), "Error! Grid is not symmetrically spaced around initial CS."
+				write(0,"(a)"), "There should be equal distance between initial CS and the four closest grid points"
+				write(0,"(a)"), "This equates to  all psize and qsize values being either all even or all odd."
 				errorflag=1
 				return
 			end if
 			if ((max(qsizex,1)*max(psizex,1)*max(qsizey,1)*max(psizey,1)*max(qsizez,1)*max(psizez,1)).ne.in_nbf) then
-				print *, "Warning! Grid size does not match in_nbf. in_nbf should be product of all psize and qsize"
+				write(6,"(a)"), "Warning! Grid size does not match in_nbf. in_nbf should be product of all psize and qsize"
 				if (mod(qsizez,2)==1) then
 					in_nbf = (max(qsizex,1)*max(psizex,1)*max(qsizey,1)*max(psizey,1)*max(qsizez,1)*max(psizez,1))
-					print "(a,i0,a)", "Altering in_nbf to ", &
+					write(6,"(a,i0,a)"), "Altering in_nbf to ", &
 							 (max(qsizex,1)*max(psizex,1)*max(qsizey,1)*max(psizey,1)*max(qsizez,1)*max(psizez,1)), "..."
 				else
 					in_nbf = (max(qsizex,1)*max(psizex,1)*max(qsizey,1)*max(psizey,1)*max(qsizez,1)*max(psizez,1)) + 1
-					print "(a,i0,a)", "Altering in_nbf to ", &
+					write(6,"(a,i0,a)"), "Altering in_nbf to ", &
 									(max(qsizex,1)*max(psizex,1)*max(qsizey,1)*max(psizey,1)*max(qsizez,1)*max(psizez,1)) + 1, "..."
 				end if
 			end if
@@ -790,47 +790,47 @@ contains
 
 		if (basis.eq."GRSWM") then
 			if (initsp .lt. 0.8d0) then
-				print *, "Error! Grid points are too close together"
+				write(0,"(a)"), "Error! Grid points are too close together"
 				errorflag=1
 				return
 			end if
 			if (ndim.ne.3) then
-				print *, "ndim is not 3. This is currently invalid."
+				write(0,"(a)"), "ndim is not 3. This is currently invalid."
 				errorflag=1
 				return
 			end if
 			if (mod(qsizez,2).ne.mod(psizez,2)) then
-				print *, "Error! Grid is not symmetrically spaced around initial CS."
-				print *, "There should be equal distance between initial CS and the four closest grid points in the grid dimension (z)"
-				print *, "This equates to both psizez and qsizez values being even or odd."
+				write(0,"(a)"), "Error! Grid is not symmetrically spaced around initial CS."
+				write(0,"(a)"), "There should be equal distance between initial CS and the four closest grid points in the grid dimension (z)"
+				write(0,"(a)"), "This equates to both psizez and qsizez values being even or odd."
 				errorflag=1
 				return
 			end if
 			if ((qsizez*psizez).ne.in_nbf) then
-				print *, "Warning! Grid size does not match in_nbf. in_nbf should be product of psizez and qsizez"
+				write(6,"(a)"), "Warning! Grid size does not match in_nbf. in_nbf should be product of psizez and qsizez"
 				if (mod(qsizez,2)==1) then
 					in_nbf = qsizez*psizez
-					print "(a,i0,a)", "Altering in_nbf to ", qsizez*psizez, "..."
+					write(6,"(a,i0,a)"), "Altering in_nbf to ", qsizez*psizez, "..."
 				else
 					in_nbf = qsizez*psizez + 1
-					print "(a,i0,a)", "Altering in_nbf to ", qsizez*psizez+1, "..."
+					write(6,"(a,i0,a)"), "Altering in_nbf to ", qsizez*psizez+1, "..."
 				end if
 			end if
 		end if
 
 		if ((basis.eq."TRAIN").or.(basis.eq."SWTRN")) then
 			if (step.eq."A") then
-				print *, "Trains are only valid for static stepsizes."
+				write(0,"(a)"), "Trains are only valid for static stepsizes."
 				errorflag = 1
 				return
 			end if
 			if (trainsp.le.0) then
-				print *, "Error! Spacing between basis set train elements is <=0"
+				write(0,"(a)"), "Error! Spacing between basis set train elements is <=0"
 				errorflag = 1
 				return
 			end if
 			if ((method.ne."MCEv2").and.(method.ne."CCS")) then
-				print *, "Error! Trains can only work with MCEv2 or CCS. MCEv1 cannot calculate the amplitudes correctly"
+				write(0,"(a)"), "Error! Trains can only work with MCEv2 or CCS. MCEv1 cannot calculate the amplitudes correctly"
 				errorflag = 1
 				return
 			end if        
@@ -839,7 +839,7 @@ contains
 		if ((nbfadapt.ne.'NO').and.(nbfadapt.ne.'YES').and.(nbfadapt.ne.'No').and.(nbfadapt.ne.'Yes') &
 			  .and.(nbfadapt.ne.'yes').and.(nbfadapt.ne.'no').and.(nbfadapt.ne.'Y').and.(nbfadapt.ne.'N') &
 			  .and.(nbfadapt.ne.'y').and.(nbfadapt.ne.'n')) then
-			print *, "Invalid value for nbfadapt. Must be YES/Yes/yes/Y/y or NO/No/no/N/n. Value is ", nbfadapt
+			write(0,"(a,a)"), "Invalid value for nbfadapt. Must be YES/Yes/yes/Y/y or NO/No/no/N/n. Value is ", nbfadapt
 			errorflag = 1
 			return
 		else if ((nbfadapt.eq.'NO').or.(nbfadapt.eq.'No').or.(nbfadapt.eq.'no').or.(nbfadapt.eq.'N') &
@@ -853,7 +853,7 @@ contains
 		if ((cloneflg.ne.'NO').and.(cloneflg.ne.'YES').and.(cloneflg.ne.'No').and.(cloneflg.ne.'Yes') &
 			  .and.(cloneflg.ne.'yes').and.(cloneflg.ne.'no').and.(cloneflg.ne.'Y').and.(cloneflg.ne.'N') &
 			  .and.(cloneflg.ne.'y').and.(cloneflg.ne.'n')) then
-			print *, "Invalid value for nbfadapt. Must be YES/Yes/yes/Y/y or NO/No/no/N/n. Value is ", nbfadapt
+			write(0,"(a,a)"), "Invalid value for nbfadapt. Must be YES/Yes/yes/Y/y or NO/No/no/N/n. Value is ", nbfadapt
 			errorflag = 1
 			return
 		else if ((cloneflg.eq.'NO').or.(cloneflg.eq.'No').or.(cloneflg.eq.'no').or.(cloneflg.eq.'N') &
@@ -866,13 +866,13 @@ contains
 
 		if (nbfadapt.eq."YES") then
 			if ((basis.ne."GRID").and.(basis.ne."GRSWM")) then
-				print *, "Adaptive basis set chosen but gridding disabled. This is currently an invalid combination."
-				print *, "basis should be GRID or GRSWM. Value was ", basis 
+				write(0,"(a)"), "Adaptive basis set chosen but gridding disabled. This is currently an invalid combination."
+				write(0,"(a,a)"), "basis should be GRID or GRSWM. Value was ", basis 
 				errorflag=1
 				return
 			end if
 			if (bfeps.lt.0.0d0) then
-				print *, "Basis set adaptive cutoff parameter less than zero. This is not valid"
+				write(0,"(a)"), "Basis set adaptive cutoff parameter less than zero. This is not valid"
 				errorflag=1
 				return
 			end if
@@ -881,7 +881,7 @@ contains
 		initsp=initsp*dsqrt(2.0d0)      
 
 		if (n.ne.18) then
-			print *, "Not all required variables read in readbsparams subroutine. n=", n
+			write(0,"(a,i0)"), "Not all required variables read in readbsparams subroutine. n=", n
 			errorflag = 1
 			return
 		end if
@@ -906,7 +906,7 @@ contains
 		OPEN(UNIT=127, FILE='input.dat',STATUS='OLD', iostat=ierr)
 
 		if (ierr .ne. 0) then
-			print *, 'error in opening input.dat file'
+			write(0,"(a)"), 'Error in opening input.dat file'
 			errorflag = 1
 			return
 		end if
@@ -919,7 +919,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,initalcmprss
 				if(ierr.ne.0) then
-					print *,  "Error reading compression parameter"
+					write(0,"(a)"),  "Error reading compression parameter"
 					errorflag = 1
 					return
 				end if
@@ -928,7 +928,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,gam
 				if(ierr.ne.0) then
-					print *,  "Error reading gamma factor"
+					write(0,"(a)"),  "Error reading gamma factor"
 					errorflag = 1
 					return
 				end if
@@ -937,7 +937,7 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,mu
 				if(ierr.ne.0) then
-					print *,  "Error reading mu (centre of initial random gaussian)"
+					write(0,"(a)"),  "Error reading mu (centre of initial random gaussian)"
 					errorflag = 1
 					return
 				end if
@@ -946,10 +946,10 @@ contains
 				backspace(127)
 				read(127,*,iostat=ierr)LINE,hbar
 				if(ierr.ne.0) then
-					print *,  "Error reading hbar value. This value is optional, defaulting to 1"
+					write(6,"(a)"),  "Error reading hbar value. This value is optional, defaulting to 1"
 					hbar = 1.0d0
 				else if (hbar.ne.1.0d0) then 
-					print *, "hbar changed from default to ", hbar
+					write(6,"(a,es12.5)"), "hbar changed from default to ", hbar
 				end if
 			end if
 
@@ -963,7 +963,7 @@ contains
 		sigq = sqrt(gam/2.0d0)
 
 		if (n.ne.3) then
-			print *, "Not all required variables read in readzparams subroutine."
+			write(0,"(a)"), "Not all required variables read in readzparams subroutine."
 			errorflag = 1
 			return
 		end if
@@ -995,7 +995,7 @@ contains
 		n = 0
 		cflg = 0
 
-		print "(a)","Starting read subroutine"
+		write(6,"(a)"),"Starting read subroutine"
 
 		if (rep.lt.10) then
 			write (filename,"(a,i1,a)") "Outbs-00", rep, ".out"
@@ -1005,12 +1005,12 @@ contains
 			write(filename,"(a,i3,a)") "Outbs-", rep, ".out"
 		end if
 
-		print *, "Opening file ", trim(filename)
+		write(6,"(a,a)"), "Opening file ", trim(filename)
 
 		open(unit=200, file=filename, status="old", iostat=ierr)
 
 		if (ierr .ne. 0) then
-			print *, 'error in opening Outbs.out file'
+			write(0,"(a)"), 'Error in opening Outbs.out file'
 			errorflag = 1
 			return
 		end if
@@ -1022,68 +1022,68 @@ contains
 				backspace(200)
 				read(200,*,iostat=ierr)LINE,ndim
 				if(ierr.ne.0) then
-					print *,  "Error reading ndim"
+					write(0,"(a)"),  "Error reading ndim"
 					errorflag = 1
 					return
 				end if
-				print *, "ndim   = ", ndim
+				write(6,"(a,i0)"), "ndim   = ", ndim
 				n = n+1
 			else if (LINE=="nconf") then
 				backspace(200)
 				read(200,*,iostat=ierr)LINE,npes
 				if(ierr.ne.0) then
-					print *,  "Error reading npes"
+					write(0,"(a)"),  "Error reading npes"
 					errorflag = 1
 					return
 				end if
-				print *, "npes   = ", npes
+				write(6,"(a,i0)"), "npes   = ", npes
 				n = n+1
 			else if (LINE=="nbasisfns") then
 				backspace(200)
 				read(200,*,iostat=ierr)LINE,in_nbf
 				if(ierr.ne.0) then
-					print *,  "Error reading in_nbf"
+					write(0,"(a)"),  "Error reading in_nbf"
 					errorflag = 1
 					return
 				end if
-				print *, "in_nbf    = ", in_nbf
+				write(6,"(a,i0)"), "in_nbf    = ", in_nbf
 				n = n+1
 			else if (LINE=="initial_PES") then
 				backspace(200)
 				read(200,*,iostat=ierr)LINE,in_pes
 				if(ierr.ne.0) then
-					print *,  "Error reading in_PES"
+					write(0,"(a)"),  "Error reading in_PES"
 					errorflag = 1
 					return
 				end if
-				print *, "in_pes = ", in_pes
+				write(6,"(a,i0)"), "in_pes = ", in_pes
 				n = n+1
 			else if (LINE=="matfun") then
 				backspace(200)
 				read(200,*,iostat=ierr)LINE,matfun
 				if(ierr.ne.0) then
-					print *,  "Error reading matrix function"
+					write(0,"(a)"),  "Error reading matrix function"
 					errorflag = 1
 					return
 				end if
-				print *, "matfun = ", matfun
+				write(6,"(a,a)"), "matfun = ", matfun
 				n = n+1
 			else if (LINE=="time") then
 				backspace(200)
 				read(200,*,iostat=ierr)LINE,t
 				if(ierr.ne.0) then
-					print *,  "Error reading time"
+					write(0,"(a)"),  "Error reading time"
 					errorflag = 1
 					return
 				end if
-				print *, "time = ", t
+				write(6,"(a,es16.8e3)"), "time = ", t
 				n = n+1
 			end if
 			read(200,*,iostat=ierr)LINE
 		end do
 
 		if (n.ne.6) then
-			print "(a,i2,a)", "Error in reading parameters. Only ", n, " of 6 parameters read."
+			write(0,"(a,i2,a)"), "Error in reading parameters. Only ", n, " of 6 parameters read."
 			errorflag = 1
 			return
 		end if 
@@ -1091,24 +1091,24 @@ contains
 		allocate (mup(ndim), stat=ierr)
 		if (ierr == 0) allocate (muq(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of mup and muq"
+			write(0,"(a)"), "Error in allocation of mup and muq"
 			errorflag=1
 		end if
 
 		if (LINE.ne."zinit") then
-			print *, "Error! Expected zinit, but read ", trim(LINE)
+			write(0,"(a,a)"), "Error! Expected zinit, but read ", trim(LINE)
 		end if
 		backspace(200)
 
 		do m=1,ndim
 			read(200,*,iostat=ierr)LINE, j, muq(j), mup(j)
 			if(ierr.ne.0) then
-				print *,  "Error reading zinit value ", m
+				write(0,"(a,a)"),  "Error reading zinit value ", m
 				errorflag = 1
 				return
 			end if
 			if(m.ne.j) then
-				print *,  "Error! Count mismatch in zinit. Expected ", m, "but read ", j
+				write(0,"(a,a)"),  "Error! Count mismatch in zinit. Expected ", m, "but read ", j
 				errorflag = 1
 				return
 			end if
@@ -1117,13 +1117,13 @@ contains
 		read(200,*,iostat=ierr)LINE
 
 		if (LINE.ne."basis") then
-			print *, "Error! Expected basis, but read ", trim(LINE)
+			write(0,"(a,a)"), "Error! Expected basis, but read ", trim(LINE)
 		end if
 
 		backspace(200)
 
 		if (size(bs).ne.in_nbf) then
-			print *, "Basis set size has changed. Reallocating basis set."
+			write(6,"(a)"), "Basis set size has changed. Reallocating basis set."
 			call deallocbs(bs)
 			call allocbs(bs, in_nbf)
 		end if
@@ -1131,66 +1131,66 @@ contains
 		do j=1,in_nbf
 			read(200,*,iostat=ierr)LINE,k
 			if(k.ne.j) then
-				print "(a,i2,a,i2)", "Error. Expected basis function ", j, " but got ", k
+				write(0,"(a,i2,a,i2)"), "Error. Expected basis function ", j, " but got ", k
 			end if
 			read (200,*,iostat=ierr)LINE
 			if (LINE.ne."D") then
-				print *, "Error! Expected D but read ", trim(LINE)
+				write(0,"(a,a)"), "Error! Expected D but read ", trim(LINE)
 			end if
 			backspace(200)
 			read(200,*,iostat=ierr)LINE,rl, im
 			if (LINE.eq."D") then
 				bs(j)%D_big=cmplx(rl,im,kind=8)
 			else
-				print *, "Something has gone very wrong here"
+				write(0,"(a)"), "Something has gone very wrong here"
 				errorflag = 1
 				return
 			end if
 			do r=1,npes
 				read(200,*,iostat=ierr)LINE
 				if (LINE.ne."a") then
-					print *, "Error! Expected a but read ", trim(LINE)
+					write(0,"(a,a)"), "Error! Expected a but read ", trim(LINE)
 				end if
 				backspace(200)
 				read(200,*,iostat=ierr)LINE,k,rl, im
 				if (k.ne.r) then
-					print "(a,i2,a,i2)", "Error. Expected a from pes ", r, "but got ", k
+					write (0,"(a,i2,a,i2)"), "Error. Expected a from pes ", r, "but got ", k
 				end if
 				bs(j)%a_pes(r)=cmplx(rl,im,kind=8)
 			end do
 			do r=1,npes
 				read(200,*,iostat=ierr)LINE
 				if (LINE.ne."d") then
-					print *, "Error! Expected d but read ", trim(LINE)
+					write(0,"(a,a)"), "Error! Expected d but read ", trim(LINE)
 				end if
 				backspace(200)
 				read(200,*,iostat=ierr)LINE,k,rl, im
 				if (k.ne.r) then
-					print "(a,i2,a,i2)", "Error. Expected d from pes ", r, "but got ", k
+					write(0,"(a,i2,a,i2)"), "Error. Expected d from pes ", r, "but got ", k
 				end if
 				bs(j)%d_pes(r)=cmplx(rl,im,kind=8)
 			end do
 			do r=1,npes
 				read(200,*,iostat=ierr)LINE
 				if (LINE.ne."s") then
-					print *, "Error! Expected s but read ", trim(LINE)
+					write(0,"(a,a)"), "Error! Expected s but read ", trim(LINE)
 				end if
 				backspace(200)
 				read(200,*,iostat=ierr)LINE,k,rl
 				if (k.ne.r) then
-					print "(a,i2,a,i2)", "Error. Expected s from pes ", r, "but got ", k
+					write(0,"(a,i2,a,i2)"), "Error. Expected s from pes ", r, "but got ", k
 				end if
 				bs(j)%s_pes(r)=rl
 			end do
 			do m=1,ndim
 				read(200,*,iostat=ierr)LINE
 				if (LINE.ne."z") then
-					print *, "Error! Expected z, but read ", trim(LINE)
+					write(0,"(a,a)"), "Error! Expected z, but read ", trim(LINE)
 				end if
 				backspace(200)
 				read(200,*,iostat=ierr)LINE,k,rl, im
 				if (k.ne.m) then
-					print "(a,i2,a,i2)", "Error. Expected z dimension ", m, "but got ", k
+					write(0,"(a,i2,a,i2)"), "Error. Expected z dimension ", m, "but got ", k
 				end if
 				bs(j)%z(m)=cmplx(rl,im,kind=8)
 			end do
@@ -1223,11 +1223,11 @@ contains
 		else
 			do j=1,in_nbf
 				if ((dble(bs(j)%D_big) /= 1.0d0).and.(method.eq."MCEv1")) then
-					print *, "The D_big amplitudes are not compatible with MCEv1 propagation for t/=0"
+					write(0,"(a)") "The D_big amplitudes are not compatible with MCEv1 propagation for t/=0"
 					errorflag=1
 					return
 				else if ((dble(bs(j)%d_pes(1)) /= 1.0d0).and.(method.eq."CCS")) then
-					print *, "The d_pes amplitudes are not compatible with CCS propagation for t/=0"
+					write(0,"(a)") "The d_pes amplitudes are not compatible with CCS propagation for t/=0"
 					errorflag=1
 					return
 				end if
@@ -1252,7 +1252,7 @@ contains
 		OPEN(UNIT=135, FILE='prop.dat',STATUS='OLD', iostat=ierr)
 
 		if (ierr .ne. 0) then
-			print *, 'error in opening prop.dat file'
+			write(0,"(a)") 'Error in opening prop.dat file'
 			errorflag = 1
 			return
 		end if
@@ -1265,7 +1265,7 @@ contains
 				backspace(135)
 				read(135,*,iostat=ierr)LINE,dtmin 
 				if(ierr.ne.0) then
-					Print *,  "Error reading minimum dt"
+					write(0,"(a)")  "Error reading minimum dt"
 					errorflag = 1
 					return
 				end if
@@ -1274,7 +1274,7 @@ contains
 				backspace(135)
 				read(135,*,iostat=ierr)LINE,dtmax
 				if(ierr.ne.0) then
-					Print *,  "Error reading maximum dt"
+					write(0,"(a)")  "Error reading maximum dt"
 					errorflag = 1
 					return
 				end if
@@ -1283,7 +1283,7 @@ contains
 				backspace(135)
 				read(135,*,iostat=ierr)LINE,dtinit
 				if(ierr.ne.0) then
-					print *,  "Error reading initial dt"
+					write(0,"(a)")  "Error reading initial dt"
 					errorflag = 1
 					return
 				end if
@@ -1292,7 +1292,7 @@ contains
 				backspace(135)
 				read(135,*,iostat=ierr)LINE,timeend
 				if(ierr.ne.0) then
-					print *,  "Error reading end time for propagation"
+					write(0,"(a)")  "Error reading end time for propagation"
 					errorflag = 1
 					return
 				end if
@@ -1301,7 +1301,7 @@ contains
 				backspace(135)
 				read(135,*,iostat=ierr)LINE,timestrt
 				if(ierr.ne.0) then
-					print *,  "Error reading starting time for propagation"
+					write(0,"(a)")  "Error reading starting time for propagation"
 					errorflag = 1
 					return
 				end if
@@ -1310,7 +1310,7 @@ contains
 				backspace(135)
 				read(135,*,iostat=ierr)LINE,LINE2
 				if(ierr.ne.0) then
-					print *,  "Error reading step type for propagation"
+					write(0,"(a)")  "Error reading step type for propagation"
 					errorflag = 1
 					return
 				end if
@@ -1319,7 +1319,7 @@ contains
 				else if ((LINE2(1:1).eq.'A').or.(LINE2(1:1).eq.'a')) then
 					step = "A"
 				else
-					print *, "Error reading step type. Expected 'Static' or 'Adaptive', but got ", trim(LINE2)
+					write(0,"(a,a)") "Error reading step type. Expected 'Static' or 'Adaptive', but got ", trim(LINE2)
 					errorflag = 1
 				end if
 				n = n+1
@@ -1330,7 +1330,7 @@ contains
 		end do
 
 		if (n.ne.6) then
-			print *, "Not all required variables read in readtimepar subroutine."
+			write(0,"(a)") "Not all required variables read in readtimepar subroutine."
 			errorflag = 1
 			return
 		end if

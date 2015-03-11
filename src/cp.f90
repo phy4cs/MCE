@@ -35,7 +35,7 @@ contains
 		open(unit=128, file='inham.dat', status='old', iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, 'Error in opening inham.dat file'
+			write(0,"(a)"), 'Error in opening inham.dat file'
 			errorflag = 1
 			return
 		end if
@@ -47,7 +47,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,mass_cp
 				if (ierr.ne.0) then
-					print *, "Error reading mass value"
+					write(0,"(a)"), "Error reading mass value"
 					errorflag = 1
 					return
 				end if
@@ -56,7 +56,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,freq_cp
 				if (ierr.ne.0) then
-					print *, "Error reading frequency value"
+					write(0,"(a)"), "Error reading frequency value"
 					errorflag = 1
 					return
 				end if
@@ -65,7 +65,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,inten_cp
 				if (ierr.ne.0) then
-					print *, "Error reading laser intensity value"
+					write(0,"(a)"), "Error reading laser intensity value"
 					errorflag = 1
 					return
 				end if
@@ -74,7 +74,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,Rc_cp
 				if (ierr.ne.0) then
-					print *, "Error reading distance-to-centre value"
+					write(0,"(a)"), "Error reading distance-to-centre value"
 					errorflag = 1
 					return
 				end if
@@ -83,7 +83,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,uplimnorm
 				if (ierr.ne.0) then
-					print *, "Error reading upper limit of the norm"
+					write(0,"(a)"), "Error reading upper limit of the norm"
 					errorflag = 1
 					return
 				end if
@@ -92,7 +92,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,lowlimnorm
 				if (ierr.ne.0) then
-					print *, "Error reading lower limit of the norm"
+					write(0,"(a)"), "Error reading lower limit of the norm"
 					errorflag = 1
 					return
 				end if
@@ -104,7 +104,7 @@ contains
 		close (128)
 
 		if (n.ne.5) then
-			print *, "Not all required variables read in readparams_cp subroutine"
+			write(0,"(a)"), "Not all required variables read in readparams_cp subroutine"
 			errorflag = 1
 			return
 		end if
@@ -145,20 +145,20 @@ contains
 		if (errorflag .ne. 0) return
 
 		if (npes.ne.1) then
-			print *, "Error! There is more than 1 pes for the Inverse Gaussian"
+			write(0,"(a)"), "Error! There is more than 1 pes for the Inverse Gaussian"
 			errorflag = 1
 			return
 		end if
 
 		if (ndim.ne.3) then
-			print *, "Error! Coulomb potential is only valid in 3D"
+			write(0,"(a)"), "Error! Coulomb potential is only valid in 3D"
 			errorflag = 1
 			return
 		end if
 
 		allocate (Htemp(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating Htemp in Hij_cp"
+			write(0,"(a)"), "Error allocating Htemp in Hij_cp"
 			errorflag=1
 		end if
 
@@ -255,13 +255,13 @@ contains
 		dipole_cp = (0.0d0,0.0d0)
 
 		if ((ndim.ne.1).and.(ndim.ne.3)) then
-			print *, "Error! ndim should be 1 or 3 but is not."
+			write(0,"(a)"), "Error! ndim should be 1 or 3 but is not."
 			errorflag=1
 			return
 		end if
 
 		if ((npes.ne.1).or.(in_pes.ne.1)) then
-			print *, "Error! npes and in_pes should be 1 but are not."
+			write(0,"(a)"), "Error! npes and in_pes should be 1 but are not."
 			errorflag=1
 			return
 		end if    
@@ -273,7 +273,7 @@ contains
 		if (ierr==0) allocate (rho(ndim), stat=ierr)
 		if (ierr==0) allocate (s(size(bs)), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating basis set variable arrays for dipole calculation"
+			write(0,"(a)"), "Error allocating basis set variable arrays for dipole calculation"
 			errorflag = 1
 			return
 		end if
@@ -318,7 +318,7 @@ contains
 		if (ierr==0) deallocate (rho, stat=ierr)
 		if (ierr==0) deallocate (s, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error deallocating basis set variable arrays for dipole calculation"   
+			write(0,"(a)"), "Error deallocating basis set variable arrays for dipole calculation"   
 			errorflag = 1   
 			return
 		end if

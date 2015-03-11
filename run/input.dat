@@ -4,11 +4,11 @@
 
 # System (Currently can be SB [Spin Boson], HP [Harmonic Potential], FP [Free Particle],
 #    MP [Morse Potential], IV [Inverted Gaussian], CP [Coulomb Potential], or HH [Henon-Heiles]. SB works only with MCE, all others with CCS. 
-System: CP
+System: SB
 
 #Name of running folder [Default : <method>-<system>-<random number> ie CCS-HP-31254 (input "default", case insensitive)
 #                       Otherwise:  <method>-<system>-<runfolder string> ie CCS-HP-withgrids]
-Runfolder 03_Full_Propagations
+Runfolder default
 
 #Debug flag [ 0: no debug outputs, 1: debug outputs. Does not really work for dynamic basis set sizes]
 debug 0
@@ -20,10 +20,10 @@ gen YES
 prop YES
 
 #Flag for adaptive altering of the compression parameter in swarms/grid-swarms/train-swarms or the grid spacing for grids. [YES/NO]
-cmprss NO
+cmprss YES
 
 #Propagation method [can be CCS, MCEv1, MCEv2 or MCE12 (uses both MCE methods). No support for AI-MCE, vMCG or 2L-CCS yet.]
-method CCS
+method MCEv2
 
 #Number of repeats. Do not need to set manually - this is set by the run command.
 Repeats 1
@@ -32,31 +32,31 @@ Repeats 1
 Conjugate_Repeats NO
 
 # Number of basis functions 
-in_nbf 2600
+in_nbf 50
 
 # Number of dimensions
-ndim 3
+ndim 50
 
 #determine which PES you are on initially
 in_PES 1
 
 #determine n.o of configurations for MCE
-npes 1
+npes 2
 
 # determines shape of the initial basis [SWARM/SWTRN/TRAIN/GRID/GRSWM]
-basis GRSWM
+basis SWARM
 
 # Compression parameter (can be tweaked to allow better norm value, or altered automatically)   Used for swarms/swarm-trains/grid-swarms
-ALCMP 750
+ALCMP 35.0
 
 # Flag for adaptive basis set size (yes/no) [Selecting No will give a constant basis set size. This is default behaviour] Used for Grids/grid-swarms
-nbfadapt yes
+nbfadapt no
 
 # Flag for cloning basis functions (yes/no)
 Cloning no
 
 # Basis set trimming parameter. If overlap is less than this value, basis function is removed. Used when nbfadapt = yes
-nbfepsilon 1.0d-03
+nbfepsilon 1.0d-06
 
 # gives grid spacing. If grid is not selected (previous parameter) this parameter will be read, but not used. Used for grids/grid-swarms
 gridsp 1.40

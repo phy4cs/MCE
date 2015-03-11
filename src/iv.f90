@@ -33,7 +33,7 @@ contains
 		open(unit=128, file='inham.dat', status='old', iostat=ierr)
 
 		if (ierr.ne.0) then
-			print *, 'Error in opening inham.dat file'
+			write(0,"(a)"), 'Error in opening inham.dat file'
 			errorflag = 1
 			return
 		end if
@@ -45,7 +45,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,mass_iv
 				if (ierr.ne.0) then
-					print *, "Error reading mass value"
+					write(0,"(a)"), "Error reading mass value"
 					errorflag = 1
 					return
 				end if
@@ -54,7 +54,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,freq_iv
 				if (ierr.ne.0) then
-					print *, "Error reading frequency value"
+					write(0,"(a)"), "Error reading frequency value"
 					errorflag = 1
 					return
 				end if
@@ -63,7 +63,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,lambda_iv
 				if (ierr.ne.0) then
-					print *, "Error reading lambda value"
+					write(0,"(a)"), "Error reading lambda value"
 					errorflag = 1
 					return
 				end if
@@ -72,7 +72,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,inten_iv
 				if (ierr.ne.0) then
-					print *, "Error reading laser intensity value"
+					write(0,"(a)"), "Error reading laser intensity value"
 					errorflag = 1
 					return
 				end if
@@ -81,7 +81,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,uplimnorm
 				if (ierr.ne.0) then
-					print *, "Error reading upper limit of the norm"
+					write(0,"(a)"), "Error reading upper limit of the norm"
 					errorflag = 1
 					return
 				end if
@@ -90,7 +90,7 @@ contains
 				backspace(128)
 				read(128,*,iostat=ierr)LINE,lowlimnorm
 				if (ierr.ne.0) then
-					print *, "Error reading lower limit of the norm"
+					write(0,"(a)"), "Error reading lower limit of the norm"
 					errorflag = 1
 					return
 				end if
@@ -102,7 +102,7 @@ contains
 		close (128)
 
 		if (n.ne.6) then
-			print *, "Not all required variables read in readparams_iv subroutine"
+			write(0,"(a)"), "Not all required variables read in readparams_iv subroutine"
 			errorflag = 1
 			return
 		end if
@@ -142,14 +142,14 @@ contains
 		if (errorflag .ne. 0) return
 
 		if (npes.ne.1) then
-			print *, "Error! There is more than 1 pes for the Inverse Gaussian"
+			write(0,"(a)"), "Error! There is more than 1 pes for the Inverse Gaussian"
 			errorflag = 1
 			return
 		end if
 
 		allocate (Htemp(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating Htemp in Hij_iv"
+			write(0,"(a)"), "Error allocating Htemp in Hij_iv"
 			errorflag=1
 		end if
 
@@ -174,7 +174,7 @@ contains
 		H(1,1) = sum(Htemp(1:ndim))
 		
 		if (H(1,1)/=H(1,1)) then
-			print *, "Error! Hamiltonian element NaN"
+			write(0,"(a)"), "Error! Hamiltonian element NaN"
 			errorflag = 1
 			return
 		end if
@@ -243,13 +243,13 @@ contains
 		eta = gam*lambda_iv/(gam+lambda_iv)
 
 		if ((ndim.ne.1).and.(ndim.ne.3)) then
-			print *, "Error! ndim should be 1 or 3 but is not."
+			write(0,"(a)"), "Error! ndim should be 1 or 3 but is not."
 			errorflag=1
 			return
 		end if
 
 		if ((npes.ne.1).or.(in_pes.ne.1)) then
-			print *, "Error! npes and in_pes should be 1 but are not."
+			write(0,"(a)"), "Error! npes and in_pes should be 1 but are not."
 			errorflag=1
 			return
 		end if		
@@ -261,7 +261,7 @@ contains
 		if (ierr==0) allocate (rho(ndim), stat=ierr)
 		if (ierr==0) allocate (s(size(bs)), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating basis set variable arrays for dipole calculation"
+			write(0,"(a)"), "Error allocating basis set variable arrays for dipole calculation"
 			errorflag = 1
 			return
 		end if
@@ -297,7 +297,7 @@ contains
 		if (ierr==0) deallocate (rho, stat=ierr)
 		if (ierr==0) deallocate (s, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error deallocating basis set variable arrays ",&
+			write(0,"(a,a)"), "Error deallocating basis set variable arrays ",&
 			           "for dipole acceleration calculation"	 
 			errorflag = 1	 
 			return

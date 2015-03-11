@@ -71,9 +71,9 @@ MODULE Ham
 		end do
 
 		if (nonherm.ne.0) then
-			print "(a,i5,a,i5,a,i5)","Error! Overlap matrix is Non-Hermitian. ",2*nonherm,&
+			write(0,"(a,i5,a,i5,a,i5)"),"Error! Overlap matrix is Non-Hermitian. ",2*nonherm,&
 						" unmatched off-diagonal elements found in a ",n,"x",n," matrix"
-			print "(a,es16.8e3)", "Diffsum = ", diffsum
+			write(0,"(a,es16.8e3)"), "Diffsum = ", diffsum
 			errorflag = 1
 			return
 		end if
@@ -111,10 +111,10 @@ MODULE Ham
 		end if
 
 		if (abs(ovrlpchk-dconjg(ovrlpij)).gt.1.0d-10) then
-			print*, "Error in ovrlpij function. Reversing arrays does not conjugate them"
-			print "(2(a,2(es20.12e3)))","Ovrlpij value is ",ovrlpij,&
+			write(0,"(a)"), "Error in ovrlpij function. Reversing arrays does not conjugate them"
+			write(0,"(2(a,2(es20.12e3)))"),"Ovrlpij value is ",ovrlpij,&
 														" while check value is ",ovrlpchk
-			print "(a,es20.12e3)", "Difference is ", abs(ovrlpchk-dconjg(ovrlpij))
+			write(0,"(a,es20.12e3)"), "Difference is ", abs(ovrlpchk-dconjg(ovrlpij))
 			errorflag = 1
 			return
 		end if    
@@ -166,9 +166,9 @@ MODULE Ham
 		end do
 
 		if (nonherm.ne.0) then
-			print "(a,i5,a,i5,a,i5)","Error! Phi overlap is Non-Hermitian. ",2*nonherm,&
+			write(0,"(a,i5,a,i5,a,i5)"),"Error! Phi overlap is Non-Hermitian. ",2*nonherm,&
 						" unmatched off-diagonal elements found in a ", n,"x",n," matrix"
-			print "(a,es16.8e3)", "Diffsum = ", diffsum
+			write(0,"(a,es16.8e3)"), "Diffsum = ", diffsum
 			errorflag = 1
 			return
 		end if
@@ -196,7 +196,7 @@ MODULE Ham
 
 		allocate(zj(ndim), zk(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating z arrays"
+			write(0,"(a)") "Error allocating z arrays"
 			errorflag = 1
 			return
 		end if
@@ -218,9 +218,9 @@ MODULE Ham
 		absnorm=sqrt(dble(norm*dconjg(norm)))
 
 		if (absnorm.gt.1.2d0) then
-			print "(a,a)", "Norm is greater than 1.2. Simulation has failed and",&
+			write(0,"(a,a)"), "Norm is greater than 1.2. Simulation has failed and",&
 												" trajectories are likely to explode"
-			print "(a,e16.8e3)", "Norm had a value of ", absnorm
+			write(0,"(a,e16.8e3)"), "Norm had a value of ", absnorm
 			errorflag = 1
 		end if
 
@@ -244,7 +244,7 @@ MODULE Ham
 
 		allocate(normar(size(bs)), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of normar array in norm2"
+			write(0,"(a)"), "Error in allocation of normar array in norm2"
 			errorflag=1
 			return
 		end if   
@@ -253,8 +253,8 @@ MODULE Ham
 		normar = (0.0d0, 0.0d0)
 
 		if (method/="MCEv2") then
-			print *, "Method is not valid for calculation of single configuration norm."
-			print *, "This subroutine has been incorrectly called"
+			write(0,"(a)"), "Method is not valid for calculation of single configuration norm."
+			write(0,"(a)"), "This subroutine has been incorrectly called"
 			errorflag=1
 			return
 		end if
@@ -269,7 +269,7 @@ MODULE Ham
 
 		deallocate(normar, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of normar array in norm2"
+			write(0,"(a)"), "Error in deallocation of normar array in norm2"
 			errorflag=1
 			return
 		end if
@@ -298,7 +298,7 @@ MODULE Ham
 
 		allocate(zj(ndim), zk(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating z arrays"
+			write(0,"(a)"), "Error allocating z arrays"
 			errorflag = 1
 			return
 		end if
@@ -340,7 +340,7 @@ MODULE Ham
 
 		allocate(zj(ndim), zk(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating z arrays"
+			write(0,"(a)"), "Error allocating z arrays"
 			errorflag = 1
 			return
 		end if
@@ -366,14 +366,14 @@ MODULE Ham
 		absnorm=sqrt(dble(innorm*dconjg(innorm)))
 
 		if ((absnorm.gt.1.2d0).and.(cmprss=="N")) then
-			print *, "Norm is greater than 1.2. Simulation has failed and trajectories ",&
+			write(0,"(a,a)"), "Norm is greater than 1.2. Simulation has failed and trajectories ",&
 								"are likely to explode"
 			errorflag = 1
 		end if
 
 		deallocate(zj, zk, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error deallocating z arrays"
+			write(0,"(a)"), "Error deallocating z arrays"
 			errorflag = 1
 			return
 		end if
@@ -402,7 +402,7 @@ MODULE Ham
 
 		allocate(zj(ndim), zk(ndim), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error allocating z arrays"
+			write(0,"(a)"), "Error allocating z arrays"
 			errorflag = 1
 			return
 		end if
@@ -430,7 +430,7 @@ MODULE Ham
 
 		deallocate(zj, zk, stat=ierr)
 		if (ierr/=0) then
-			print *, "Error deallocating z arrays"
+			write(0,"(a)"), "Error deallocating z arrays"
 			errorflag = 1
 			return
 		end if
@@ -461,7 +461,7 @@ MODULE Ham
 		if (ierr==0) allocate (s(size(bs)), stat=ierr)
 		if (ierr==0) allocate (ovrlp(size(bs)), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of arrays in acf"
+			write(0,"(a)"), "Error in allocation of arrays in acf"
 			errorflag=1
 			return
 		end if
@@ -483,7 +483,7 @@ MODULE Ham
 
 		deallocate(zinit, Dbig, d, s, ovrlp, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of arrays in acf"
+			write(0,"(a)"), "Error in deallocation of arrays in acf"
 			errorflag=1
 			return
 		end if
@@ -518,7 +518,7 @@ MODULE Ham
 		if (ierr==0) allocate(acft(ndim+1), stat=ierr)
 		if (ierr==0) allocate(ovrlpprod(size(bs)), stat=ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of arrays in acf"
+			write(0,"(a)"), "Error in allocation of arrays in acf"
 			errorflag=1
 			return
 		end if
@@ -566,7 +566,7 @@ MODULE Ham
 
 		deallocate(zinit, Dbig, d, s, ovrlp, acft, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of arrays in acf"
+			write(0,"(a)"), "Error in deallocation of arrays in acf"
 			errorflag=1
 			return
 		end if
@@ -593,7 +593,7 @@ MODULE Ham
 		if (errorflag .ne. 0) return
 
 		if (.not.allocated(H)) then
-			print *, "Error! Hord has not been allocated in Hord subroutine."    
+			write(0,"(a)"), "Error! Hord has not been allocated in Hord subroutine."    
 			errorflag = 1
 			return
 		end if
@@ -602,7 +602,7 @@ MODULE Ham
 		if (ierr==0) allocate (z1(ndim), stat = ierr)
 		if (ierr==0) allocate (z2(ndim), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of Hjk_mat matrix in Hord"
+			write(0,"(a)"), "Error in allocation of Hjk_mat matrix in Hord"
 			errorflag=1
 			return
 		end if
@@ -624,7 +624,7 @@ MODULE Ham
 
 		deallocate (Hjk_mat, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of Hjk_mat matrix in Hord"
+			write(0,"(a)"), "Error in deallocation of Hjk_mat matrix in Hord"
 			errorflag=1
 			return
 		end if
@@ -650,7 +650,7 @@ MODULE Ham
 
 		allocate(H(npes,npes), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of H matrix in Hehr"
+			write(0,"(a)"), "Error in allocation of H matrix in Hehr"
 			errorflag=1
 			return
 		end if
@@ -671,7 +671,7 @@ MODULE Ham
 
 		deallocate(H, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of H matrix in Hehr"
+			write(0,"(a)"), "Error in deallocation of H matrix in Hehr"
 			errorflag=1
 			return
 		end if
@@ -704,20 +704,20 @@ MODULE Ham
 
 		allocate(IPIV(size(C_k)), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error IPIV allocation for Linear Algebra function"
+			write(0,"(a)"), "Error IPIV allocation for Linear Algebra function"
 			errorflag=1
 			return
 		end if
 
 		n = size(C_k)
 		if ((size(D).ne.n).or.(size(ovrlp,1).ne.n).or.(size(ovrlp,2).ne.n)) then
-			print *, "Size mismatch in arrays for zgesv subroutine"
+			write(0,"(a)"), "Size mismatch in arrays for zgesv subroutine"
 		end if
 
 		call zgesv(n,nrhs,ovrlp,n,IPIV,C_k,n,info)
 
 		if (info.ne.0) then
-			print *,"Error in zgesv. Info value is ", info
+			write(0,"(a,i0)"),"Error in zgesv. Info value is ", info
 			errorflag=1
 			return
 		end if
@@ -726,7 +726,7 @@ MODULE Ham
 
 		deallocate(IPIV, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of local arrays in lineq"
+			write(0,"(a)"), "Error in deallocation of local arrays in lineq"
 			errorflag=1
 			return
 		end if
@@ -760,13 +760,13 @@ MODULE Ham
 		allocate(WORK(LWORK), stat = ierr)
 		allocate(RWORK(3*n-2), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of arrays for matrix inversion"
+			write(0,"(a)"), "Error in allocation of arrays for matrix inversion"
 			errorflag=1
 			return
 		end if
 
 		if ((size(D).ne.n).or.(size(ovrlp,1).ne.n).or.(size(ovrlp,2).ne.n)) then
-			print *, "Error in matinv subroutine! Array sizes are mismatched."
+			write(0,"(a)"), "Error in matinv subroutine! Array sizes are mismatched."
 			errorflag = 1
 			return
 		end if
@@ -774,20 +774,20 @@ MODULE Ham
 		call zheev('V','U',n,ovrlp,n,om_eigen,WORK,LWORK,RWORK,info)
 
 		if (info.ne.0) then
-			print *,"Error in zheev. Info value is ", info
+			write(0,"(a,i0)"),"Error in zheev. Info value is ", info
 			errorflag=1
 			return
 		end if
 
 		if (minval(abs(om_eigen)) == 0.0d0) then
-			print *, "Error in inverse matrix operation. There exists a zero eigenvalue"
+			write(0,"(a)"), "Error in inverse matrix operation. There exists a zero eigenvalue"
 			restart = 1
 			return       
 		end if
 
 		allocate(om_inv(n,n), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in inverse matrix allocation"
+			write(0,"(a)"), "Error in inverse matrix allocation"
 			errorflag=1
 			return
 		end if
@@ -812,7 +812,7 @@ MODULE Ham
 		end do
 
 		if (nonherm.ne.0) then
-			print "(a,i5,a,i5,a,i5)","Error! Inverse matrix is Non-Hermitian. ",2*nonherm,&
+			write(0,"(a,i5,a,i5,a,i5)"),"Error! Inverse matrix is Non-Hermitian. ",2*nonherm,&
 								" unmatched off-diagonal elements found in a ", n,"x",n," matrix"
 			restart = 1
 			return
@@ -824,7 +824,7 @@ MODULE Ham
 		deallocate(WORK, stat = ierr)
 		deallocate(RWORK, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of local arrays in matinv"
+			write(0,"(a)"), "Error in deallocation of local arrays in matinv"
 			errorflag=1
 			return
 		end if
@@ -856,13 +856,13 @@ MODULE Ham
 		allocate(WORK(LWORK), stat = ierr)
 		allocate(RWORK(3*n-2), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in allocation of arrays for matrix inversion"
+			write(0,"(a)"), "Error in allocation of arrays for matrix inversion"
 			errorflag=1
 			return
 		end if
 
 		if ((size(D).ne.n).or.(size(ovrlp,1).ne.n).or.(size(ovrlp,2).ne.n)) then
-			print *, "Error in matinv subroutine! Array sizes are mismatched."
+			write(0,"(a)"), "Error in matinv subroutine! Array sizes are mismatched."
 			errorflag = 1
 			return
 		end if
@@ -870,20 +870,20 @@ MODULE Ham
 		call zheev('V','U',n,ovrlp,n,om_eigen,WORK,LWORK,RWORK,info)
 
 		if (info.ne.0) then
-			print *,"Error in zheev. Info value is ", info
+			write(0,"(a,i0)"),"Error in zheev. Info value is ", info
 			errorflag=1
 			return
 		end if
 
 		if (minval(abs(om_eigen)) == 0.0d0) then
-			print *, "Error in inverse matrix operation. There exists a zero eigenvalue"
+			write(0,"(a)"), "Error in inverse matrix operation. There exists a zero eigenvalue"
 			errorflag=1
 			return       
 		end if
 
 		allocate(om_inv(n,n), stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in inverse matrix allocation"
+			write(0,"(a)"), "Error in inverse matrix allocation"
 			errorflag=1
 			return
 		end if
@@ -908,7 +908,7 @@ MODULE Ham
 		end do
 
 		if (nonherm.ne.0) then
-			print "(a,i5,a,i5,a,i5)","Error! Inverse matrix is Non-Hermitian. ",2*nonherm,&
+			write(0,"(a,i5,a,i5,a,i5)"),"Error! Inverse matrix is Non-Hermitian. ",2*nonherm,&
 							" unmatched off-diagonal elements found in a ", n,"x",n," matrix"
 			errorflag=1
 			return
@@ -921,7 +921,7 @@ MODULE Ham
 		deallocate(WORK, stat = ierr)
 		deallocate(RWORK, stat = ierr)
 		if (ierr/=0) then
-			print *, "Error in deallocation of local arrays in matinv"
+			write(0,"(a)"), "Error in deallocation of local arrays in matinv"
 			errorflag=1
 			return
 		end if
