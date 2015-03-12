@@ -295,7 +295,7 @@ contains
     type(basisfn), dimension (:), intent(in) :: bs
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(in) :: t
-    integer::m, j, r, ierr
+    integer::m, j, r, ierr, bsunit
     character(LEN=13)::filename
     integer, intent(in) :: reps
     character(LEN=3):: rep
@@ -310,45 +310,47 @@ contains
       filename = "Errbs-"//trim(rep)//".out" 
     end if
 
-    open(unit=135, file=filename, status='unknown', iostat=ierr)
+		bsunit=135+reps
 
-    write(135,"(a,1x,i4)"     ), 'ndof'       , ndim
-    write(135,"(a,1x,i4)"     ), 'nconf'      , npes
-    write(135,"(a,1x,i4)"     ), 'nbasisfns'  , size(bs)
-    write(135,"(a,1x,i4)"     ), 'initial_PES', in_pes
-    write(135,"(a,1x,a)"      ), 'matfun'     , matfun
-    write(135,"(a,1x,es25.17e3)") 'time'       , t
-    write(135,*),""
+    open(unit=bsunit, file=filename, status='unknown', iostat=ierr)
+
+    write(bsunit,"(a,1x,i4)"       ) 'ndof'       , ndim
+    write(bsunit,"(a,1x,i4)"       ) 'nconf'      , npes
+    write(bsunit,"(a,1x,i4)"       ) 'nbasisfns'  , size(bs)
+    write(bsunit,"(a,1x,i4)"       ) 'initial_PES', in_pes
+    write(bsunit,"(a,1x,a)"        ) 'matfun'     , matfun
+    write(bsunit,"(a,1x,es25.17e3)") 'time'       , t
+    write(bsunit,*),""
     do m=1,ndim
-      write(135,"(a,1x,i3,2(1x,es25.17e3))") 'zinit', m, muq(m), mup(m)
+      write(bsunit,"(a,1x,i3,2(1x,es25.17e3))") 'zinit', m, muq(m), mup(m)
     end do
 
     do j=1,size(bs)
-      write(135,*),""
-      write(135,"(a,1x,i5)")'basis', j
-      write(135,"(a,2(1x,es25.17e3))") "D", dble(bs(j)%D_big), dimag(bs(j)%D_big)
+      write(bsunit,*),""
+      write(bsunit,"(a,1x,i5)")'basis', j
+      write(bsunit,"(a,2(1x,es25.17e3))") "D", dble(bs(j)%D_big), dimag(bs(j)%D_big)
       do r=1,npes
-        write(135,"(a,i4,2(1x,es25.17e3))") "a",r, dble(bs(j)%a_pes(r)), dimag(bs(j)%a_pes(r)) 
+        write(bsunit,"(a,i4,2(1x,es25.17e3))") "a",r, dble(bs(j)%a_pes(r)), dimag(bs(j)%a_pes(r)) 
       end do  
       do r=1,npes
-        write(135,"(a,i4,2(1x,es25.17e3))") "d",r, dble(bs(j)%d_pes(r)), dimag(bs(j)%d_pes(r)) 
+        write(bsunit,"(a,i4,2(1x,es25.17e3))") "d",r, dble(bs(j)%d_pes(r)), dimag(bs(j)%d_pes(r)) 
       end do  
       do r=1,npes
-        write(135,"(a,i4,1x,es25.17e3)") "s",r, (bs(j)%s_pes(r))
+        write(bsunit,"(a,i4,1x,es25.17e3)") "s",r, (bs(j)%s_pes(r))
       end do  
       do m=1,ndim
-        write(135,"(a,i4,2(1x,es25.17e3))") "z",m, dble(bs(j)%z(m)), dimag(bs(j)%z(m))
+        write(bsunit,"(a,i4,2(1x,es25.17e3))") "z",m, dble(bs(j)%z(m)), dimag(bs(j)%z(m))
       end do
     end do
 
-    close(135)
+    close(bsunit)
 
     if (((basis=="GRID").or.(basis=="GRSWM")).and.(ndim==3)) then
-      open(unit=136, file="Outgrid"//trim(rep)//".out", status="unknown", iostat=ierr)
+      open(unit=bsunit, file="Outgrid"//trim(rep)//".out", status="unknown", iostat=ierr)
       do j=1,size(bs)
-        if (mod(j,2)==1) write(136,"(3(1x,es25.17e3))") dble(bs(j)%z(1)), dble(bs(j)%z(2)), dble(bs(j)%z(3))
+        if (mod(j,2)==1) write(bsunit,"(3(1x,es25.17e3))") dble(bs(j)%z(1)), dble(bs(j)%z(2)), dble(bs(j)%z(3))
       end do
-      close(136)
+      close(bsunit)
     end if
 
     return
@@ -514,77 +516,77 @@ contains
 
     filenm2="plotacf-"//rep//".gnu"
 
-    open (unit=175,file=filenm2,status="unknown",iostat=ierr)
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
       write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
       errorflag=1
       return
     end if
 
-    write(175,"(a)") 'set terminal png'
-    write(175,"(a,a,a)") 'set output "ACF-',trim(rep),'.png"'
-    write(175,"(a)") 'set title "Graph of Autocorrelation Function"'
-    write(175,"(a)") 'set xlabel "Time (au)"'
-    write(175,"(a)") 'set ylabel "ACF"'
-    write(175,"(a,a,a)") 'plot "', filenm, '" u 1:3 t "Re(ACF)" w l, "" u 1:4 t "Im(ACF)" w l, "" u 1:5 t "|ACF|" w l'
-    close(175)
+    write(fileun,"(a)") 'set terminal png'
+    write(fileun,"(a,a,a)") 'set output "ACF-',trim(rep),'.png"'
+    write(fileun,"(a)") 'set title "Graph of Autocorrelation Function"'
+    write(fileun,"(a)") 'set xlabel "Time (au)"'
+    write(fileun,"(a)") 'set ylabel "ACF"'
+    write(fileun,"(a,a,a)") 'plot "', filenm, '" u 1:3 t "Re(ACF)" w l, "" u 1:4 t "Im(ACF)" w l, "" u 1:5 t "|ACF|" w l'
+    close(fileun)
 
     filenm2="plotnrm-"//rep//".gnu"
 
-    open (unit=176,file=filenm2,status="unknown",iostat=ierr)
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
       write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
       errorflag=1
       return
     end if
 
-    write(176,"(a)") 'set terminal png'
-    write(176,"(a,a,a)") 'set output "Norm-',trim(rep),'.png"'
-    write(176,"(a)") 'set title "Graph of Norm"'
-    write(176,"(a)") 'set xlabel "Time (au)"'
-    write(176,"(a)") 'set ylabel "Norm"'
-    write(176,"(a,a,a)") 'plot "', filenm, '" u 1:2 t "Norm" w l'
-    close(176)
+    write(fileun,"(a)") 'set terminal png'
+    write(fileun,"(a,a,a)") 'set output "Norm-',trim(rep),'.png"'
+    write(fileun,"(a)") 'set title "Graph of Norm"'
+    write(fileun,"(a)") 'set xlabel "Time (au)"'
+    write(fileun,"(a)") 'set ylabel "Norm"'
+    write(fileun,"(a,a,a)") 'plot "', filenm, '" u 1:2 t "Norm" w l'
+    close(fileun)
 
     filenm2="plotext-"//rep//".gnu"
 
-    open (unit=177,file=filenm2,status="unknown",iostat=ierr)
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
       write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
       errorflag=1
       return
     end if
 
-    write(177,"(a)") 'set terminal png'
+    write(fileun,"(a)") 'set terminal png'
     if (sys=="IV") then
-      write(177,"(a,a,a)") 'set output "Dipole-',trim(rep),'.png"'
-      write(177,"(a)") 'set title "Graph of Dipole Acceleration"'
-      write(177,"(a)") 'set ylabel "Dipole Acceleration"'
+      write(fileun,"(a,a,a)") 'set output "Dipole-',trim(rep),'.png"'
+      write(fileun,"(a)") 'set title "Graph of Dipole Acceleration"'
+      write(fileun,"(a)") 'set ylabel "Dipole Acceleration"'
     else
-      write(177,"(a,a,a)") 'set output "Extra-',trim(rep),'.png"'
-      write(177,"(a)") 'set title "Graph of Extra Calculated Quantity"'
-      write(177,"(a)") 'set ylabel "Extra"'
+      write(fileun,"(a,a,a)") 'set output "Extra-',trim(rep),'.png"'
+      write(fileun,"(a)") 'set title "Graph of Extra Calculated Quantity"'
+      write(fileun,"(a)") 'set ylabel "Extra"'
     end if
-    write(177,"(a)") 'set xlabel "Time (au)"'
-    write(177,"(a,a,a)") 'plot "', filenm, '" u 1:6 t "Real" w l, "" u 1:7 t "Imaginary" w l, "" u 1:8 t "Absolute" w l'
-    close(177)
+    write(fileun,"(a)") 'set xlabel "Time (au)"'
+    write(fileun,"(a,a,a)") 'plot "', filenm, '" u 1:6 t "Real" w l, "" u 1:7 t "Imaginary" w l, "" u 1:8 t "Absolute" w l'
+    close(fileun)
 
     filenm2="plotdif-"//rep//".gnu"
 
-    open (unit=178,file=filenm2,status="unknown",iostat=ierr)
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
       write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
       errorflag=1
       return
     end if
 
-    write(178,"(a)") 'set terminal png'
-    write(178,"(a,a,a)") 'set output "PopDiff-',trim(rep),'.png"'
-    write(178,"(a)") 'set title "Graph of Population Difference"'
-    write(178,"(a)") 'set ylabel "Population Difference"'
-    write(178,"(a)") 'set xlabel "Time (au)"'
-    write(178,"(a,a,a)") 'plot "', filenm, '" u 1:13 t "Population Difference" w l, "" u 1:2 t "Norm" w l'
-    close(178)
+    write(fileun,"(a)") 'set terminal png'
+    write(fileun,"(a,a,a)") 'set output "PopDiff-',trim(rep),'.png"'
+    write(fileun,"(a)") 'set title "Graph of Population Difference"'
+    write(fileun,"(a)") 'set ylabel "Population Difference"'
+    write(fileun,"(a)") 'set xlabel "Time (au)"'
+    write(fileun,"(a,a,a)") 'plot "', filenm, '" u 1:13 t "Population Difference" w l, "" u 1:2 t "Norm" w l'
+    close(fileun)
 
    end subroutine outnormpopadapheads
 
@@ -699,41 +701,41 @@ contains
 
     filenm2="plotrendimacf-"//trim(rep)//".gnu"
 
-    open (unit=175,file=filenm2,status="unknown",iostat=ierr)
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
       write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
       errorflag=1
       return
     end if
 
-    write(175,"(a)") 'set terminal png'
-    write(175,"(a,a,a)") 'set output "RendimACF-',trim(rep),'.png"'
-    write(175,"(a)") 'set title "Graph of n 1-dimensional Autocorrelation Functions"'
-    write(175,"(a)") 'set xlabel "Time (au)"'
-    write(175,"(a)") 'set ylabel "ACF"'
+    write(fileun,"(a)") 'set terminal png'
+    write(fileun,"(a,a,a)") 'set output "RendimACF-',trim(rep),'.png"'
+    write(fileun,"(a)") 'set title "Graph of n 1-dimensional Autocorrelation Functions"'
+    write(fileun,"(a)") 'set xlabel "Time (au)"'
+    write(fileun,"(a)") 'set ylabel "ACF"'
     lngchar1 = 'plot "'//trim(filenm)//'" u 1:2 w l'
     do m=1,ndim
       write(dof,"(i0)") m+2   
       lngchar2 = lngchar1
       lngchar1 = trim(lngchar2)//', "" u 1:'//trim(dof)//' w l'
     end do
-    write(175,"(a)") trim(lngchar1)
-    close(175)
+    write(fileun,"(a)") trim(lngchar1)
+    close(fileun)
 
     filenm2="plotimndimacf-"//trim(rep)//".gnu"
 
-    open (unit=176,file=filenm2,status="unknown",iostat=ierr)
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
       write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
       errorflag=1
       return
     end if
 
-    write(176,"(a)") 'set terminal png'
-    write(176,"(a,a,a)") 'set output "ImndimACF-',trim(rep),'.png"'
-    write(176,"(a)") 'set title "Graph of n 1-dimensional Autocorrelation Functions"'
-    write(176,"(a)") 'set xlabel "Time (au)"'
-    write(176,"(a)") 'set ylabel "ACF"'
+    write(fileun,"(a)") 'set terminal png'
+    write(fileun,"(a,a,a)") 'set output "ImndimACF-',trim(rep),'.png"'
+    write(fileun,"(a)") 'set title "Graph of n 1-dimensional Autocorrelation Functions"'
+    write(fileun,"(a)") 'set xlabel "Time (au)"'
+    write(fileun,"(a)") 'set ylabel "ACF"'
     write(dof,"(i0)") 3+ndim
     lngchar1 = 'plot "'//trim(filenm)//'" u 1:'//trim(dof)//' w l'
     do m=1,ndim
@@ -741,23 +743,23 @@ contains
       lngchar2 = lngchar1
       lngchar1 = trim(lngchar2)//', "" u 1:'//trim(dof)//' w l'
     end do
-    write(176,"(a)") trim(lngchar1)
-    close(176)
+    write(fileun,"(a)") trim(lngchar1)
+    close(fileun)
 
     filenm2="plotabndimacf-"//trim(rep)//".gnu"
 
-    open (unit=177,file=filenm2,status="unknown",iostat=ierr)
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
       write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
       errorflag=1
       return
     end if
 
-    write(177,"(a)") 'set terminal png'
-    write(177,"(a,a,a)") 'set output "AbndimACF-',trim(rep),'.png"'
-    write(177,"(a)") 'set title "Graph of n 1-dimensional Autocorrelation Functions"'
-    write(177,"(a)") 'set xlabel "Time (au)"'
-    write(177,"(a)") 'set ylabel "ACF"'
+    write(fileun,"(a)") 'set terminal png'
+    write(fileun,"(a,a,a)") 'set output "AbndimACF-',trim(rep),'.png"'
+    write(fileun,"(a)") 'set title "Graph of n 1-dimensional Autocorrelation Functions"'
+    write(fileun,"(a)") 'set xlabel "Time (au)"'
+    write(fileun,"(a)") 'set ylabel "ACF"'
     write(dof,"(i0)") 4+2*ndim
     lngchar1 = 'plot "'//trim(filenm)//'" u 1:'//trim(dof)//' w l'
     do m=1,ndim
@@ -765,8 +767,8 @@ contains
       lngchar2 = lngchar1
       lngchar1 = trim(lngchar2)//', "" u 1:'//trim(dof)//' w l'
     end do
-    write(177,"(a)") trim(lngchar1)
-    close(177)
+    write(fileun,"(a)") trim(lngchar1)
+    close(fileun)
 
    end subroutine outdimacfheads
 
@@ -870,7 +872,7 @@ contains
    subroutine outvarsheads(reps,nbf)
 
     implicit none
-    integer :: ierr, k
+    integer :: ierr, k, fileun
     character(LEN=16) :: filenm
     character(LEN=21) :: filenm2
     integer, intent(in) :: reps, nbf
@@ -892,8 +894,9 @@ contains
     write(rep,"(i3.3)") reps
 
     filenm = "PropVars-"//rep//".out"
+    fileun = 673+reps
 
-    open(unit=151,file=filenm,status='unknown',iostat=ierr)
+    open(unit=fileun,file=filenm,status='unknown',iostat=ierr)
 
     if (ierr.ne.0) then
       write(0,"(a)") "Error in initial opening of PropVars.dat file"
@@ -901,12 +904,12 @@ contains
       return
     end if
 
-    write(151,"(a)") "Time Re(D(1:nbf)) Im(D(1:nbf)) Re(d1(1:nbf)) Im(d1(1:nbf)) Re(d2(1:nbf)) Im(d2(1:nbf)) ",&
+    write(fileun,"(a)") "Time Re(D(1:nbf)) Im(D(1:nbf)) Re(d1(1:nbf)) Im(d1(1:nbf)) Re(d2(1:nbf)) Im(d2(1:nbf)) ",&
                "S1(1:nbf) S2(1:nbf)"
-    write(151,*), ""
-    write(151,*), ""
+    write(fileun,*), ""
+    write(fileun,*), ""
 
-    close(151)
+    close(fileun)
 
     do k=1,nbf
 
@@ -925,22 +928,22 @@ contains
 
     filenm2="plotamps-"//rep//".gnu"
 
-    open (unit=175,file=filenm2,status="unknown",iostat=ierr)
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
       write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
       errorflag=1
       return
     end if
 
-    write(175,"(a)") 'set terminal png'
-    write(175,"(a,a,a)") 'set output "Amplitudes-',trim(rep),'.png"'
-    write(175,"(a)") 'set nokey'
-    write(175,"(a)") 'unset key'
-    write(175,"(a)") 'set title "Graph of D amplitudes"'
-    write(175,"(a)") 'set xlabel "Re(D)"'
-    write(175,"(a)") 'set ylabel "Im(D)"'
-    write(175,"(a)") trim(lngchar)
-    close (175)
+    write(fileun,"(a)") 'set terminal png'
+    write(fileun,"(a,a,a)") 'set output "Amplitudes-',trim(rep),'.png"'
+    write(fileun,"(a)") 'set nokey'
+    write(fileun,"(a)") 'unset key'
+    write(fileun,"(a)") 'set title "Graph of D amplitudes"'
+    write(fileun,"(a)") 'set xlabel "Re(D)"'
+    write(fileun,"(a)") 'set ylabel "Im(D)"'
+    write(fileun,"(a)") trim(lngchar)
+    close (fileun)
 
     do k=1,nbf
 
@@ -970,22 +973,22 @@ contains
 
     filenm2="plotd-"//rep//".gnu"
 
-    open (unit=176,file=filenm2,status="unknown",iostat=ierr)
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
       write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
       errorflag=1
       return
     end if
 
-    write(176,"(a)") 'set terminal png'
-    write(176,"(a,a,a)") 'set output "SCAmplitudes-',trim(rep),'.png"'
-    write(176,"(a)") 'set title "Graph of single configuration d amplitudes"'
-    write(176,"(a)") 'set nokey'
-    write(176,"(a)") 'unset key'
-    write(176,"(a)") 'set xlabel "Re(d)"'
-    write(176,"(a)") 'set ylabel "Im(d)"'
-    write(176,"(a)") trim(lngchar)
-    close (176)
+    write(fileun,"(a)") 'set terminal png'
+    write(fileun,"(a,a,a)") 'set output "SCAmplitudes-',trim(rep),'.png"'
+    write(fileun,"(a)") 'set title "Graph of single configuration d amplitudes"'
+    write(fileun,"(a)") 'set nokey'
+    write(fileun,"(a)") 'unset key'
+    write(fileun,"(a)") 'set xlabel "Re(d)"'
+    write(fileun,"(a)") 'set ylabel "Im(d)"'
+    write(fileun,"(a)") trim(lngchar)
+    close(fileun)
 
     do k=1,nbf
 
@@ -1014,22 +1017,22 @@ contains
 
     filenm2="plotact-"//rep//".gnu"
 
-    open (unit=177,file=filenm2,status="unknown",iostat=ierr)
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
       write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
       errorflag=1
       return
     end if
 
-    write(177,"(a)") 'set terminal png'
-    write(177,"(a,a,a)") 'set output "Actions-',trim(rep),'.png"'
-    write(177,"(a)") 'set title "Graph of Action with time"'
-    write(177,"(a)") 'set nokey'
-    write(177,"(a)") 'unset key'
-    write(177,"(a)") 'set xlabel "Time"'
-    write(177,"(a)") 'set ylabel "Action"'
-    write(177,"(a)") trim(lngchar)
-    close (177)
+    write(fileun,"(a)") 'set terminal png'
+    write(fileun,"(a,a,a)") 'set output "Actions-',trim(rep),'.png"'
+    write(fileun,"(a)") 'set title "Graph of Action with time"'
+    write(fileun,"(a)") 'set nokey'
+    write(fileun,"(a)") 'unset key'
+    write(fileun,"(a)") 'set xlabel "Time"'
+    write(fileun,"(a)") 'set ylabel "Action"'
+    write(fileun,"(a)") trim(lngchar)
+    close(fileun)
 
 
 
@@ -1045,7 +1048,7 @@ contains
     real(kind=8), intent(in) :: time
     integer, intent (in) :: x
     real(kind=8), dimension(:), allocatable :: s1ar, s2ar, imdbigar, rldbigar, rld1ar, imd1ar, rld2ar, imd2ar
-    integer::ierr, k
+    integer::ierr, k, fileun
     character(LEN=16) :: filenm
     character(LEN=18) :: myfmt
     character(LEN=3):: rep
@@ -1057,6 +1060,7 @@ contains
     write(rep,"(i3.3)") reps
 
     filenm = "PropVars-"//trim(rep)//".out" 
+    fileun = 6703+reps
 
     allocate(s1ar(size(bs)), stat = ierr)
     if (ierr==0) allocate(s2ar(size(bs)), stat = ierr)
@@ -1089,7 +1093,7 @@ contains
       end if       
     end do
 
-    open(unit=151,file=filenm,status='old',access='append',iostat=ierr)
+    open(unit=fileun,file=filenm,status='old',access='append',iostat=ierr)
 
     if (ierr.ne.0) then
       write(0,"(a,a,a,1x,i5)") "Error opening ", filenm, " file for step", x
@@ -1099,10 +1103,10 @@ contains
 
     write(myfmt,"(a,i0,a)") "(", 8*size(bs) + 1, "(1x,e13.5e3))"
 
-    write(151,myfmt), time, rldbigar(1:size(bs)), imdbigar(1:size(bs)), rld1ar(1:size(bs)), imd1ar(1:size(bs)), &
+    write(fileun,myfmt), time, rldbigar(1:size(bs)), imdbigar(1:size(bs)), rld1ar(1:size(bs)), imd1ar(1:size(bs)), &
           rld2ar(1:size(bs)), imd2ar(1:size(bs)), s1ar(1:size(bs)), s2ar(1:size(bs))   
 
-    close(151)
+    close(fileun)
 
     deallocate(s1ar, stat = ierr)
     if (ierr==0) deallocate(s2ar, stat = ierr)
@@ -1125,7 +1129,7 @@ contains
    subroutine outtrajheads(reps, nbf) 
   
     implicit none
-    integer :: ierr, k
+    integer :: ierr, k, fileun
     character(LEN=16) :: filenm
     character(LEN=21) :: filenm2
     integer, intent(in) :: reps, nbf
@@ -1147,8 +1151,9 @@ contains
     write(rep,"(i3.3)") reps
 
     filenm = "Traj-"//trim(rep)//".out"
+    fileun = 1288+reps
 
-    open(unit=151,file=filenm,status='unknown',iostat=ierr)
+    open(unit=fileun,file=filenm,status='unknown',iostat=ierr)
 
     if (ierr.ne.0) then
       write(0,"(a)") "Error in initial opening of Traj.dat file"
@@ -1156,11 +1161,11 @@ contains
       return
     end if
 
-    write(151,*), "Time q(k=1..nbf) p(k=1..nbf)"
-    write(151,*), ""
-    write(151,*), ""
+    write(fileun,*), "Time q(k=1..nbf) p(k=1..nbf)"
+    write(fileun,*), ""
+    write(fileun,*), ""
 
-    close(151)
+    close(fileun)
 
     do k=1,nbf
 
@@ -1179,22 +1184,22 @@ contains
 
     filenm2="plot-"//trim(filenm)
 
-    open (unit=175,file=filenm2,status="unknown",iostat=ierr)
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
       write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
       errorflag=1
       return
     end if
 
-    write(175,"(a)") 'set terminal png'
-    write(175,"(a,a,a)") 'set output "trajectories-',trim(rep),'.png"'
-    write(175,"(a)") 'set title "Graph of convergence with different numbers of repetitions"'
-    write(175,"(a)") 'set nokey'
-    write(175,"(a)") 'unset key'
-    write(175,"(a)") 'set xlabel "q(t)"'
-    write(175,"(a)") 'set ylabel "p(t)"'
-    write(175,"(a)") trim(lngchar)
-    close (175)
+    write(fileun,"(a)") 'set terminal png'
+    write(fileun,"(a,a,a)") 'set output "trajectories-',trim(rep),'.png"'
+    write(fileun,"(a)") 'set title "Graph of convergence with different numbers of repetitions"'
+    write(fileun,"(a)") 'set nokey'
+    write(fileun,"(a)") 'unset key'
+    write(fileun,"(a)") 'set xlabel "q(t)"'
+    write(fileun,"(a)") 'set ylabel "p(t)"'
+    write(fileun,"(a)") trim(lngchar)
+    close(fileun)
 
    end subroutine outtrajheads
 
@@ -1207,7 +1212,7 @@ contains
     real(kind=8), intent(in) :: time
     integer, intent (in) :: x
     real(kind=8), dimension (:), allocatable :: p, q
-    integer::ierr, k, fields
+    integer::ierr, k, fields, fileun
     character(LEN=17) :: filenm, myfmt
     integer, intent(in) :: reps
     character(LEN=3):: rep
@@ -1222,15 +1227,15 @@ contains
 
     write(rep,"(i3.3)") reps
 
-
     filenm = "Traj-"//trim(rep)//".out"  
+    fileun = 5890+reps
 
     do k=1,size(bs)
       q(k) = sum(dble(bs(k)%z(1:ndim)))
       p(k) = sum(dimag(bs(k)%z(1:ndim)))
     end do
 
-    open(unit=151,file=filenm,status='old',access='append',iostat=ierr)
+    open(unit=fileun,file=filenm,status='old',access='append',iostat=ierr)
 
     if (ierr.ne.0) then
       write(0,"(a,a,a,1x,i5)") "Error opening ", filenm, " file for step", x
@@ -1241,9 +1246,9 @@ contains
     fields=size(p)+size(q)+1
     write(myfmt,'(a,i0,a)') '(', fields, '(1x,e13.5e3))'
 
-    write(151,myfmt), time, q(1:size(q)), p(1:size(p))  
+    write(fileun,myfmt), time, q(1:size(q)), p(1:size(p))  
 
-    close(151)
+    close(fileun)
 
    end subroutine outtraj
 
@@ -1269,7 +1274,7 @@ contains
     valid = 0
     lines = 0
     if (mod(timeend-timestrt,dtinit).ne.0) timeend=timeend - (mod(timeend-timestrt,dtinit)) + dtinit
-    timesteps = (timeend-timestrt)/dtinit + 1
+    timesteps = (timeend-timestrt)/dtinit + 2
     allocate (output(cols,timesteps), stat=ierr)
     if (ierr/=0) then
       write(0,"(a)") "Allocation error in output array"
@@ -1288,6 +1293,7 @@ contains
       fileunout = 7150 + i
    
       lines=0
+      LINE=""
       
       write(repstr,"(i3.3)") i  
    
@@ -1365,10 +1371,11 @@ contains
      
       ierr=0
    
+      write(0,*)"total number of lines was ", lines
       do j=1,lines
         read(fileunin,*,iostat=ierr) fileline(1:cols)
         if (ierr/=0) then
-          write(0,"(a)") "Error writing to input array"
+          write(0,"(a,a,a,i0)") "Error writing to input array for rep ", repstr, " on line ", j
           errorflag=1
           return
         end if
@@ -1499,17 +1506,8 @@ contains
       return
     end if
   
-!    if (input(1,2) == timestrt + dtinit) then
-!      output(:,2) = input (:,2)
-!      time = time + dtinit
-!    else
-!      write(0,"(a)") "I expected the first timestep to be the same as the initial timestep"
-!      errorflag = 1
-!      return
-!    end if
-
     jold = 1
-    z=0
+    z=1
     timetmp=timestrt
 
     do while (time.lt.timeend)

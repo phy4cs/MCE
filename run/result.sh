@@ -1,1 +1,1 @@
-./collate.sh /home/phy4cs/Github/MCE/EXEC/CCS-CP-104x26-1.35-400 10 1 27209 $0
+./collate.sh /nobackup/phy4cs/MCEv2-SB-3860 8 1 3860 $0
