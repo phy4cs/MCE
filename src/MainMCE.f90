@@ -72,7 +72,7 @@ Program MainMCE
 !                 reflect that one is for static stepsize, one is for adaptive.     !
 !      30/01/14 - Moved allocation of mup and muq to the main program from separate !
 !                 subroutine, as OpenMP was having trouble allocating in            !
-!                 subroutine, even when call wasenclosed in a critical block.       !
+!                 subroutine, even when call was enclosed in a critical block.      !
 !      10/02/14 - Included interpolation subroutines for the averaging of data from !
 !                 adaptive stepsize propagation system                              !
 !      03/03/14 - Included subroutines which carry out simulations using the        !
@@ -113,12 +113,12 @@ Program MainMCE
 !               - Included the 3D Coulomb Potential                                 !  
 !               - Set functionality to allow starting at t=/=0 when using an input  !
 !                 set, and also set output of the basis set at each timestep        !
-!       04/03/15 - Repaired the adaptive timestep and openMP systems, which now work !
-!                  fully.                                                            !
-!                - Repaired the Coulomb potential, which was not being properly      !
-!                  calculated                                                        !
-!                - Changed the running scripts to allow for use of make to compile   !
-!               - Ensured that the program works properly for all model potentials  !
+!       04/03/15 - Repaired the adaptive timestep and openMP systems, which now work!
+!                  fully.                                                           !
+!                - Repaired the Coulomb potential, which was not being properly     !
+!                  calculated                                                       !
+!                - Changed the running scripts to allow for use of make to compile  !
+!                - Ensured that the program works properly for all model potentials !
 !                                                                                   !
 !***********************************************************************************!
 
@@ -138,11 +138,12 @@ Program MainMCE
   type(basisfn), dimension (:), allocatable :: bset 
   complex(kind=8), dimension (:,:), allocatable :: initgrid
   complex(kind=8)::normtemp, norm2temp, ehren, acft, extmp
+  real(kind=8), dimension(:,:), allocatable :: atrack, atrack2
   real(kind=8), dimension(:), allocatable :: mup, muq, popt, ndimacf
   real(kind=8) :: nrmtmp, nrm2tmp, ehrtmp, gridsp, timestrt_loc
   real(kind=8) :: time, dt, dtnext, dtdone, initehr, initnorm, initnorm2, alcmprss
-  integer, dimension(:), allocatable :: clone
-  integer:: j, k, r, y, x, m, nbf, recalcs, conjrep, restart, reps, ierr, timestpunit
+  integer, dimension(:), allocatable :: clone, clonenum
+  integer:: j, k, l, r, y, x, m, nbf, recalcs, conjrep, restart, reps, ierr, timestpunit
   character(LEN=3):: rep
   
   !Reduction Variables
@@ -156,16 +157,16 @@ Program MainMCE
   real(kind=8) :: num1, num2
   integer(kind=8) :: ranseed
   integer:: tnum, cols, genflg, istat, intvl, rprj, n, nsame, nchange
-  character(LEN=100) :: LINE
+  character(LEN=100) :: LINE, CWD
   
   call CPU_TIME(starttime) !used to calculate the runtime, which is output at the end
   
-  write(6,"(a)") " ______________________________________________________________________ "
-  write(6,"(a)") "|                                                                      |"
-  write(6,"(a)") "|                                                                      |"
-  write(6,"(a)") "|                     MCE Simulation Program v0.970                    |"
-  write(6,"(a)") "|                                                                      |"
-  write(6,"(a)") "|______________________________________________________________________|"
+  write(6,"(a)") " ________________________________________________________________ "
+  write(6,"(a)") "|                                                                |"
+  write(6,"(a)") "|                                                                |"
+  write(6,"(a)") "|                  MCE Simulation Program v0.970                 |"
+  write(6,"(a)") "|                                                                |"
+  write(6,"(a)") "|________________________________________________________________|"
   write(6,"(a)") ""
   write(6,"(a)") ""
   write(6,"(a)") ""
@@ -237,18 +238,18 @@ Program MainMCE
   ! the static stepsize system as the array size must be known beforehand to avoid 
   ! memory leaks.
 
-  !$omp parallel private (bset, initgrid, normtemp, norm2temp, ehren, acft, extmp,  &
-  !$omp                    muq, mup, popt, ndimacf, nrmtmp, nrm2tmp, ehrtmp, gridsp, &
-  !$omp                    timestrt_loc, time, dt, dtnext, dtdone, initehr, initnorm,&
-  !$omp                    initnorm2, alcmprss, clone, j, k, r, y, x, m, nbf,        &
-  !$omp                    recalcs, conjrep, restart, reps, ierr,    &
-  !$omp                     timestpunit, rep                                          )
+  !$omp parallel private (bset, initgrid, atrack, atrack2, normtemp, norm2temp,      &
+  !$omp                    ehren, acft, extmp, muq, mup, popt, ndimacf, nrmtmp,      &
+  !$omp                    nrm2tmp, ehrtmp, gridsp, timestrt_loc, time, dt, dtnext,  &
+  !$omp                    dtdone, initehr, initnorm, initnorm2, alcmprss, clone,    &
+  !$omp                    clonenum, j, k, r, y, l, x, m, nbf, recalcs, conjrep,     &
+  !$omp                    restart, reps, ierr, timestpunit, rep                     )
   
   !$omp do reduction (+:acf_t, extra, pops, absnorm, absnorm2, absehr)
   
   ! This leaves the following variables currently shared actross all threads:
   ! p, q, t, starttime, stoptime, up, down, runtime, num1, num2, ranseed, tnum, 
-  ! cols, genflg, istat, intvl, rprj, n, nsame, nchange, LINE 
+  ! cols, genflg, istat, intvl, rprj, n, nsame, nchange, LINE, CWD 
   
 
   do k=1,reptot,intvl              ! Loop over all repeats. 
@@ -257,7 +258,7 @@ Program MainMCE
     call flush(0)
     
     ierr = 0
-  
+    
     if ((basis=="GRID").or.(basis=="GRSWM")) then
       allocate (initgrid(in_nbf,ndim), stat=ierr)
       if (ierr/=0) then
@@ -371,7 +372,7 @@ Program MainMCE
           end if 
 
           if ((restart.eq.1).and.(recalcs.lt.Ntries)) then
-            if ((errorflag==1).and.(basis=="GRID").and.(cmprss=="N")) call outbs(bset, reps, mup, muq, time)
+            if ((errorflag==1).and.(basis=="GRID").and.(cmprss=="N")) call outbs(bset, reps, mup, muq, time,x)
             call deallocbs(bset)                            !Before recalculation, the basis must be deallocated
             write(6,"(a,i0,a,i0)") "Attempt ", recalcs, " of ", Ntries
           end if
@@ -397,7 +398,7 @@ Program MainMCE
         end if
 
         if ((prop.eq."N").and.(errorflag==0)) then      ! If no propagation, the basis set is output to a file
-          call outbs(bset, reps, mup, muq, time)
+          call outbs(bset, reps, mup, muq, time,x)
         end if    
 
         if (errorflag.eq.0) then  ! Only executes if generation is successful
@@ -417,7 +418,7 @@ Program MainMCE
         if (gen.eq."N") then
           if (conjrep == 2) then  ! Stops it looking for a basis set file if conjugate repetition selected 
             write(0,"(a)") "Propagation only selected with conjugate repeats enabled."
-            write(0,"(a)") "This error message should not ever be seen, and meaqns something's corrupted"
+            write(0,"(a)") "This error message should not ever be seen, and means something's corrupted"
             errorflag=1           ! as these two conditions are incompatible and should be disallowed at 
           else                    ! the run conditions input stage.
             call allocbs(bset,nbf)
@@ -492,16 +493,37 @@ Program MainMCE
           close(4532)
         end if
 
-        if ((sys=="SB").and.(method=="MCEv2").and.(cloneflg=="YES")) then
+        if ((sys=="SB").and.((method=="MCEv2").or.(method=="AIMC1")).and.(cloneflg=="YES")) then
+          write(rep,"(i3.3)") reps
+          open(unit=47756,file="Clonetrack-"//trim(rep)//".out",status="new",iostat=ierr)
+          close(47756)
           allocate (clone(nbf), stat=ierr)
+          if (ierr==0) allocate(clonenum(nbf), stat=ierr)
           if (ierr/=0) then
             write(0,"(a)") "Error in allocating clone arrays"
             errorflag = 1
           end if
           do j=1,nbf
             clone(j) = 0
+            clonenum(j) = 0
           end do
         end if
+
+!        if (cloneflg.eq."YES") then
+!          allocate (atrack(1,nbf), stat=ierr)
+!          if (ierr/=0) then
+!            write (0,"(a)") "Error in initially allocating the atrack array"
+!            errorflag = 1
+!          end if
+!          atrack(1,:) = 1.0d0
+!          do j=1,nbf
+!            do r = 1,npes
+!              atrack(1,j) = atrack(1,j) * abs(bset(j)%a_pes(r))
+!            end do
+!            atrack(1,j) = atrack(1,j)**2.0d0
+!            atrack(1,j) = abs(bset(j)%a_pes(1)) - abs(bset(j)%a_pes(2))
+!          end do
+!        end if
 
         write(6,"(a)") "Beginning Propagation"
 
@@ -511,7 +533,7 @@ Program MainMCE
 
           x = x + 1  ! timestep index
           y = x + 1  ! array index 
-
+          
           if (sys=="HH") call leaking(bset,nbf,x) ! ensures that high energy trajectories are removed for henon-heiles  
 
           if (basis.ne."GRID") call trajchk(bset) !ensures that the position component of the coherent states are not too widely spaced
@@ -520,8 +542,8 @@ Program MainMCE
             call reloc_basis(bset, initgrid, nbf, x, time, gridsp, mup, muq)
           end if
 
-          if ((sys=="SB").and.(method=="MCEv2").and.(cloneflg=="YES")) then
-            call cloning (bset, nbf, x, time, clone)
+          if ((sys=="SB").and.((method=="MCEv2").or.(method=="AIMC1")).and.(cloneflg=="YES")) then
+            call cloning (bset, nbf, x, time, clone, clonenum, reps)
           end if
 
           if (timeend.gt.timestrt_loc) then      
@@ -598,7 +620,45 @@ Program MainMCE
             call outnormpopadap(nrmtmp,acft,extmp,ehrtmp,popt,x,reps,time)
           end if
 
-          call outbs(bset, reps, mup, muq, time)
+          if (method.ne."AIMC1") call outbs(bset, reps, mup, muq, time,x)
+          
+!          if (cloneflg.eq."YES") then
+!            allocate (atrack2(size(atrack,1),size(atrack,2)), stat=ierr)
+!            if (ierr/=0) then
+!              write (0,"(a)") "Error in allocating the atrack2 array"
+!              errorflag = 1
+!            end if
+!            do j=1, size(atrack,2)
+!              do l=1, size(atrack,1)
+!                atrack2(l,j) = atrack(l,j)
+!              end do
+!            end do
+!            deallocate (atrack, stat=ierr)
+!            if (ierr==0) allocate (atrack(y,nbf), stat = ierr)
+!            if (ierr/=0) then
+!              write (0,"(a)") "Error in de- and re-allocating the atrack array"
+!              errorflag = 1
+!            end if            
+!            atrack(:,:) = 0.0d0
+!            do j=1, size(atrack2,2)
+!              do l=1, size(atrack2,1)
+!                atrack(l,j) = atrack2(l,j)
+!              end do
+!            end do 
+!            atrack(y,:) = 1.0d0
+!            do j=1,nbf
+!              do r = 1,npes
+!                atrack(y,j) = atrack(y,j) * abs(bset(j)%a_pes(r))
+!              end do
+!              atrack(y,j) = atrack(y,j)**2.0d0
+!              atrack(y,j) = abs(bset(j)%a_pes(1)) - abs(bset(j)%a_pes(2))
+!            end do
+!            deallocate(atrack2, stat = ierr)
+!            if (ierr/=0) then
+!              write (0,"(a)") "Error in deallocating the atrack2 array"
+!              errorflag = 1
+!            end if
+!          end if
 
           !call conservchk(initehr, initnorm, ehrtmp, nrmtmp, reps)  !Checks that all conserved quantites are conserved.
                                               !Disabled to ensure that small fluctuations aren't disruptive
@@ -622,19 +682,30 @@ Program MainMCE
           write(0,"(a)") "Consider revising timestep parameters"
         end if
 
-        if ((sys=="SB").and.(method=="MCEv2").and.(cloneflg=="YES")) then
+        if ((sys=="SB").and.((method=="MCEv2").or.(method=="AIMC1")).and.(cloneflg=="YES")) then
           deallocate (clone, stat=ierr)
+          if (ierr==0) deallocate(clonenum, stat=ierr)
           if (ierr/=0) then
             write(0,"(a)") "Error in deallocating clone arrays"
             errorflag = 1
           end if
+!          write(rep,"(i3.3)") reps
+!          open (unit=8554,file="atrack"//trim(rep)//".out",status="unknown",iostat=ierr)
+!          if (ierr/=0) then
+!            write (0,"(a,a)") "Error in opening the atrack output file in rep ", trim(rep)
+!            errorflag = 1
+!          end if
+!          do l=1, size(atrack,1)
+!            write(8554,*) atrack(l,:)
+!          end do
+!          close (8554)
         end if
 
       end if 
 
       if (errorflag==1) then
         write(6,"(a)") "Last basis set outputting...."
-        call outbs(bset, reps, mup, muq, time)
+        call outbs(bset, reps, mup, muq, time,x)
       end if 
 
       call deallocbs(bset)     ! Deallocates basis set ready for next repeat 
@@ -747,7 +818,9 @@ Program MainMCE
 
   call CPU_TIME(stoptime)
   runtime = stoptime-starttime
-  if (errorflag.eq.0) write(6,"(a)") 'Successfully Executed MCE Program'
+  call getcwd(CWD)
+  
+  if (errorflag.eq.0) write(6,"(a,a)") 'Successfully Executed MCE Program in ', trim(CWD)
   if (step == "A") then
     write(6,"(a,i0,a,i0,a)") 'Of ', nsame + nchange, ' steps, ', nchange, ' were changed'
   end if 
@@ -760,6 +833,7 @@ Program MainMCE
   else
     write(6,"(a,e12.5,a)") 'Time taken : ', runtime, ' seconds'        
   end if
+  
   
   call flush(6)
   call flush(0)

@@ -22,23 +22,25 @@ MODULE globvars
     complex(kind=8), dimension(:,:), allocatable::Hjk      ! matrix of size npes x npes
   end type hamiltonian
 
-  integer:: in_nbf    ! number of basis functions
-  integer:: ndim      ! number of dimensions/degrees of freedom
-  integer:: npes      ! determines n.o configurations
-  integer:: in_pes    ! potential energy surface 1 or 2
-  integer:: Ntries    ! Number of recalculations allowed before an error occurs
+  integer:: in_nbf     ! number of basis functions
+  integer:: ndim       ! number of dimensions/degrees of freedom
+  integer:: npes       ! determines n.o configurations
+  integer:: in_pes     ! potential energy surface 1 or 2
+  integer:: Ntries     ! Number of recalculations allowed before an error occurs
   integer:: errorflag  ! The global fatal error flag. Stops operation
   integer:: debug      ! Debug flag. Not currently used.
   integer:: conjflg    ! Flag to determine whether Conjugate repetition will occur
-  integer:: reptot    ! Total number of repeats to be carried out in program
-  integer:: qsizex    ! size of grid in q,x coordinate
-  integer:: psizex    ! size of grid in p,x coordinate
-  integer:: qsizey    ! size of grid in q,y coordinate
-  integer:: psizey    ! size of grid in p,y coordinate
-  integer:: qsizez    ! size of grid in q,z coordinate
-  integer:: psizez    ! size of grid in p,z coordinate
+  integer:: reptot     ! Total number of repeats to be carried out in program
+  integer:: qsizex     ! size of grid in q,x coordinate
+  integer:: psizex     ! size of grid in p,x coordinate
+  integer:: qsizey     ! size of grid in q,y coordinate
+  integer:: psizey     ! size of grid in p,y coordinate
+  integer:: qsizez     ! size of grid in q,z coordinate
+  integer:: psizez     ! size of grid in p,z coordinate
   integer:: trainsp    ! number of time steps between adjacent basis functions in a train
   integer:: def_stp    ! default number of basis functions in a train for swarms of trains
+  integer:: clonemax   ! maximum number of cloning events allowed per basis function
+  integer:: clonefreq  ! minimum number of timesteps between concurrent coloning events
 
   real(kind=8),external :: ZBQLNOR                ! The normally distributed random number external function
 

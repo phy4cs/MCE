@@ -452,19 +452,22 @@ contains
 
 !***********************************************************************************!
 
-  subroutine cloning(bs,nbf,x,time,clone)
+  subroutine cloning(bs,nbf,x,time,clone, clonenum, reps)
+  
+    !NOTE: Cloning is only set up for 2 PESs. This needs to be generalised!
 
     implicit none
 
     type(basisfn), dimension(:), allocatable, intent(inout) :: bs
     type(basisfn), dimension(:), allocatable :: bsnew
     real(kind=8), intent(in) :: time
-    integer, dimension(:), allocatable, intent(inout) :: clone
+    integer, dimension(:), allocatable, intent(inout) :: clone, clonenum
     integer, intent (inout) :: nbf
-    integer, intent (in) :: x
+    integer, intent (in) :: x, reps
     real(kind=8) :: brforce
-    integer, dimension(:), allocatable :: clonehere, clonecopy 
+    integer, dimension(:), allocatable :: clonehere, clonecopy, clonecopy2 
     integer :: k, m, j, n, nbfnew, ierr, r, clonetype
+    character(LEN=3)::rep
 
     if (errorflag==1) return
 
@@ -472,6 +475,7 @@ contains
 
     allocate (clonehere(nbf), stat=ierr)
     if (ierr==0) allocate(clonecopy(nbf), stat=ierr)
+    if (ierr==0) allocate(clonecopy2(nbf), stat=ierr)
     if (ierr/=0) then
       write (0,"(a)") "Error allocating the clonehere array"
       errorflag = 1
@@ -479,39 +483,65 @@ contains
     end if
 
     do k=1,nbf
-      if (clone(k).lt.x-50) clone(k)=0
+      if (clone(k).lt.x-clonefreq) clone(k)=0
       clonehere(k) = 0
     end do
 
     if (clonetype==1) then
       do k=1,nbf
-        brforce = ((abs((bs(k)%a_pes(1))*abs(bs(k)%a_pes(2))))**2.0)
-        if ((brforce.gt.0.249).and.(clone(k)==0)) then
+        brforce = ((abs(bs(k)%a_pes(1))*abs(bs(k)%a_pes(2)))**2.0)
+        if ((brforce.gt.0.249).and.(clone(k)==0).and.(clonenum(k).lt.clonemax)) then
           clone(k) = x
           clonehere(k) = 1
         end if 
         clonecopy(k) = clone(k)
+        clonecopy2(k) = clonenum(k)
       end do
     else if (clonetype==2) then
-      if (mod(x,150)==0) then
+      if ((mod(x,300)==0).and.(clonenum(k).lt.clonemax)) then
         do k=1,nbf
           if (clone(k)==0) then
             clone(k) = x
             clonehere(k) = 1
           end if 
           clonecopy(k) = clone(k)
+          clonecopy2(k) = clonenum(k)
         end do 
       end if
     end if          
 
     nbfnew = nbf + sum(clonehere(:))
+    
+    deallocate (clone, stat=ierr)
+    if (ierr==0) deallocate (clonenum, stat=ierr)
+    if (ierr==0) allocate (clone(nbfnew), stat=ierr)
+    if (ierr==0) allocate (clonenum(nbfnew), stat=ierr)
+    if (ierr/=0) then
+      write (0,"(a)") "Error in de- and re-allocation of clone arrays"
+      errorflag = 1
+      return
+    end if
+    do k=1,nbf
+      clone(k) = clonecopy(k)
+      clonenum(k) = clonecopy2(k)
+    end do
+    deallocate(clonecopy, stat=ierr)
+    if (ierr==0) deallocate(clonecopy2, stat=ierr)
+    if (ierr/=0) then
+      write(0,"(a)") "Error deallocating the cloning copy arrays"
+      errorflag = 1
+      return
+    end if 
 
     if (nbfnew/=nbf) then
 
       call allocbs(bsnew, nbfnew)
 
       j=1
-
+      
+      write(rep,"(i3.3)") reps
+      open(unit=47756,file="Clonetrack-"//trim(rep)//".out",status="old",access="append",iostat=ierr)
+      
       do k=1,nbf
         do m=1,ndim
           bsnew(k)%z(m) = bs(k)%z(m)
@@ -520,6 +550,10 @@ contains
           bsnew(k)%s_pes(r) = bs(k)%s_pes(r)
         end do
         if (clonehere(k) == 1) then
+          clone(k) = x
+          clone(nbf+j) = x
+          clonenum(k) = clonenum(k) + 1
+          clonenum(nbf+j) = clonenum(k)
           bsnew(k)%D_big = bs(k)%D_big * abs(bs(k)%a_pes(1))
           bsnew(k)%d_pes(1) = bs(k)%d_pes(1)/abs(bs(k)%a_pes(1))
           do r=2,npes
@@ -527,17 +561,18 @@ contains
             bsnew(k)%s_pes(r) = bs(k)%s_pes(r)
           end do
           bsnew(nbf+j)%D_big = bs(k)%D_big * &
-                                sqrt(1.-(dconjg(bs(k)%a_pes(1)*bs(k)%a_pes(1))))
+                                sqrt(1.-(dconjg(bs(k)%a_pes(1))*bs(k)%a_pes(1)))
           bsnew(nbf+j)%d_pes(1) = (0.0d0,0.0d0)
           bsnew(nbf+j)%s_pes(1) = bs(k)%s_pes(1)
           do r=2,npes
             bsnew(nbf+j)%d_pes(r) = bs(k)%d_pes(r)/&
-                                sqrt(1.-(dconjg(bs(k)%a_pes(1)*bs(k)%a_pes(1))))
+                                sqrt(1.-(dconjg(bs(k)%a_pes(1))*bs(k)%a_pes(1)))
             bsnew(nbf+j)%s_pes(r) = bs(k)%s_pes(r)
           end do
           do m=1,ndim
             bsnew(nbf+j)%z(m) = bs(k)%z(m)
           end do
+          write(47756,"(2i4,2es20.12e3)") k, nbf+j, abs(bs(k)%a_pes(1)), sqrt(1.-((abs(bs(k)%a_pes(1))**2.0d0)))
           j = j+1
         else
           bsnew(k)%D_big = bs(k)%D_big
@@ -546,6 +581,8 @@ contains
           end do
         end if
       end do
+      
+      close (47756)
    
       call deallocbs(bs)
       call allocbs(bs, nbfnew)
@@ -562,19 +599,8 @@ contains
         end do
       end do          
    
-      deallocate (clone, stat=ierr)
-      if (ierr==0) allocate (clone(nbfnew), stat=ierr)
-      if (ierr/=0) then
-        write (0,"(a)") "Error in de- and re-allocation of clone array"
-        errorflag = 1
-        return
-      end if
-   
       n = nbfnew-nbf
    
-      do k=1,nbf
-        clone(k) = clonecopy(k)
-      end do
       if (n.ne.0) then
         do k=1,n
           clone(nbf+k) = x
@@ -587,14 +613,13 @@ contains
       nbf = nbfnew
 
     end if
-
+    
     deallocate(clonehere, stat=ierr)
-    if (ierr==0) deallocate(clonecopy, stat=ierr)
     if (ierr/=0) then
-      write(0,"(a)") "Error deallocating the cloning arrays"
+      write(0,"(a)") "Error deallocating the clone-here array"
       errorflag = 1
       return
-    end if        
+    end if 
 
   end subroutine cloning     
 

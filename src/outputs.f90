@@ -290,29 +290,35 @@ contains
 
 !--------------------------------------------------------------------------------------------------
 
-   subroutine outbs(bs, reps, mup, muq, t)   !   Level 1 Subroutine
+   subroutine outbs(bs, reps, mup, muq, t, x)   !   Level 1 Subroutine
     implicit none
     type(basisfn), dimension (:), intent(in) :: bs
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(in) :: t
     integer::m, j, r, ierr, bsunit
-    character(LEN=13)::filename
-    integer, intent(in) :: reps
+    character(LEN=19)::filename
+    integer, intent(in) :: reps, x
     character(LEN=3):: rep
+    character(LEN=5)::step
 
     ierr = 0
 
     write(rep,"(i3.3)") reps
-
+    write(step,"(i5.5)") x
+    
     if (errorflag.eq.0) then
-      filename = "Outbs-"//trim(rep)//".out" 
+      if (method.eq."AIMC1") then
+        filename = "Outbs-"//trim(rep)//"-"//trim(step)//".out"
+      else
+        filename = "Outbs-"//trim(rep)//".out"
+      end if 
     else
       filename = "Errbs-"//trim(rep)//".out" 
     end if
 
-		bsunit=135+reps
+    bsunit=135+reps
 
-    open(unit=bsunit, file=filename, status='unknown', iostat=ierr)
+    open(unit=bsunit, file=trim(filename), status='unknown', iostat=ierr)
 
     write(bsunit,"(a,1x,i4)"       ) 'ndof'       , ndim
     write(bsunit,"(a,1x,i4)"       ) 'nconf'      , npes
@@ -378,18 +384,18 @@ contains
 
     open(unit=215,file=filenm)
 
-!    k=0
-!    do p=1,psizez
-!       do q=1,qsizez
-!          k=q+((p-1)*qsizez)
-!          write (215,"(3g15.8)") dble(z0(k,1)), dimag(z0(k,1)), DC(k)   
-!       end do
-!       write (215,*),""
-!    end do
+    k=0
+    do p=1,psizez
+       do q=1,qsizez
+          k=q+((p-1)*qsizez)
+          write (215,"(3g15.8)") dble(z0(k,1)), dimag(z0(k,1)), DC(k)   
+       end do
+       write (215,*),""
+    end do
 
-    do k=1,in_nbf
-      write (215,"(3g15.8)") dble(z0(k,1)), dimag(z0(k,1)), DC(k)
-    end do      
+!    do k=1,in_nbf
+!      write (215,"(3g15.8)") dble(z0(k,1)), dimag(z0(k,1)), DC(k)
+!    end do      
 
     close (215)
 

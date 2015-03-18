@@ -94,6 +94,12 @@ contains
       end do
       bs(k)=bf
     end do
+    if ((method.eq."AIMC1").or.(in_nbf.eq.1)) then
+      do m=1,ndim
+        bs(1)%z(m)=cmplx(muq(m),(1.0d0/hbar)*mup(m),kind=8)
+      end do
+      uplimnorm = 1.0d0
+    end if
     call deallocbf(bf)
 
   end subroutine gen_swarm

@@ -69,6 +69,9 @@ contains
       else
         dD_big=bigDdotv2 (bsin,x,time)
       end if
+    else if (method=="AIMC1") then
+      dd=ddotv2(bsin,time)
+      dD_big=bigDdotv1(size(bsin))
     else
       write(0,"(a)") "Error! Method unrecognised!"
       write(0,"(a)") "How did you even get this far?"

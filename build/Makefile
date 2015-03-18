@@ -1,22 +1,23 @@
-#Makefile for use on arcx computers.
+#Makefile for use on chmlinxx computers.
+#Made with the aid of the fmkmf utility (Copyright (c) The University of Edinburgh) 
 
 F90=gfortran
 FFLAGS=-fopenmp -O2
-FLINKS=-Wl,--start-group -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -Wl,--end-group -lpthread
+FLINKS=-lm -Warray-bounds
 VPATH=../src
 
 # Link step
 
 all: Main avrgpops timehist
 
-Main:randgen.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o dcerf.o cp.o hh.o redirect.o Ham.o outputs.o Chks.o derivsMCE.o propMCE.o bsetgen.o bsetalter.o readpars.o MainMCE.o 
-	 $(F90) $(FFLAGS) -o MCE.exe randgen.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o dcerf.o cp.o hh.o redirect.o Ham.o outputs.o Chks.o derivsMCE.o propMCE.o bsetgen.o bsetalter.o readpars.o MainMCE.o $(FLINKS)
+Main:BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o dcerf.o cp.o hh.o redirect.o Ham.o outputs.o Chks.o derivsMCE.o propMCE.o bsetgen.o bsetalter.o readpars.o MainMCE.o 
+	 $(F90) $(FFLAGS) -o MCE.exe BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o dcerf.o cp.o hh.o redirect.o Ham.o outputs.o Chks.o derivsMCE.o propMCE.o bsetgen.o bsetalter.o readpars.o MainMCE.o $(FLINKS)
 	 
 avrgpops:avrgpops.f90
-	 $(F90) -O2 -o avrgpops.exe $<
+	 $(F90) $(FFLAGS) -o avrgpops.exe $<
 	 
 timehist:timehist.f90
-	 $(F90) -O2 -o timehist.exe $<
+	 $(F90) $(FFLAGS) -o timehist.exe $<
 
 # Compile steps
  
@@ -33,7 +34,7 @@ zheev_with_dpndnss.o:zheev_with_dpndnss.f
 	 $(F90) $(FFLAGS) -c $<
 	 
 randgen.o:randgen.f
-	 $(F90) -O2 -c $<
+	 $(F90) $(FFLAGS) -c $<
 
 alarrays.o:alarrays.f90 vars.o 
 	 $(F90) $(FFLAGS) -c $<

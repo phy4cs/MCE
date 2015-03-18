@@ -217,7 +217,7 @@ MODULE Ham
 
     absnorm=sqrt(dble(norm*dconjg(norm)))
 
-    if (absnorm.gt.1.2d0) then
+    if ((absnorm.gt.1.2d0).and.(method.ne."AIMC1")) then
       write(0,"(a,a)") "Norm is greater than 1.2. Simulation has failed and",&
                         " trajectories are likely to explode"
       write(0,"(a,e16.8e3)") "Norm had a value of ", absnorm

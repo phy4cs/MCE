@@ -127,8 +127,13 @@ contains
           method = "MCEv2"
         else if ((LINE2(1:3).eq.'ccs').or.(LINE2(1:3).eq.'CCS')) then
           method = "CCS"
+        else if ((LINE2(1:9).eq.'aimc-mce1').or.(LINE2(1:9).eq.'AIMC-MCE1')) then
+          method = "AIMC1"
+        else if ((LINE2(1:9).eq.'aimc-mce2').or.(LINE2(1:9).eq.'AIMC-MCE2')) then
+          method = "AIMC2"
         else
-          write(0,"(a,a)") "Error. Method must be MCEv1,MCEv2 or CCS. Read ", trim(LINE2)
+          write(0,"(a,a,a)") "Error. Method must be MCEv1, MCEv2, AIMC-MCE1, ",&
+                        "AIMC-MCE2 or CCS. Read ", trim(LINE2)
         end if
         n=n+1
       else if (LINE=='Repeats') then
@@ -240,8 +245,8 @@ contains
           errorflag = 1
           return
         end if
-        if ((method.ne."MCEv1").and.(method.ne."MCEv2")) then
-          write(0,"(a)") "Spin Boson model can only be simulated by MCEv1 or MCEv2"
+        if ((method.ne."MCEv1").and.(method.ne."MCEv2").and.(method.ne."AIMC1").and.(method.ne."AIMC2")) then
+          write(0,"(a)") "Spin Boson model can only be simulated by MCEv1 or MCEv2, or through AIMC-MCE"
           errorflag = 1
           return
         end if
@@ -665,6 +670,24 @@ contains
           return
         end if
         n = n+1
+      else if (LINE=="max_cloning") then
+        backspace(127)
+        read(127,*,iostat=ierr)LINE,clonemax
+        if(ierr.ne.0) then
+          write(0,"(a)")  "Error reading maximum number of clones"
+          errorflag = 1
+          return
+        end if
+        n = n+1
+      else if (LINE=="clon_freq") then
+        backspace(127)
+        read(127,*,iostat=ierr)LINE,clonefreq
+        if(ierr.ne.0) then
+          write(0,"(a)")  "Error reading cloning frequency"
+          errorflag = 1
+          return
+        end if
+        n = n+1
       end if
 
       read(127,*,iostat=ierr) LINE
@@ -864,7 +887,55 @@ contains
            .or.(cloneflg.eq.'y')) then
       cloneflg = 'YES'
     end if
-
+    
+    if (cloneflg.eq.'YES') then
+      if ((method.ne."MCEv2").and.(method.ne."AIMC1")) then
+        write (0,"(a)") "Cloning can only work with MCEv2 or AIMC-MCE (first pass)"
+        errorflag = 1
+        return
+      else if (method.eq."MCEv2") then
+        if ((basis.ne."SWARM").and.(basis.ne."SWTRN").and.(basis.ne."TRAIN")) then
+          write (0,"(a)") "Cloning with MCEv2 can only work on a swarm, a train or a swarm of trains"
+          errorflag = 1
+          return
+        end if
+      else
+        if (basis.ne."SWARM") then
+          write(0,"(a)") "AIMC-MCE (first pass) should be done only with a swarm of train centres."
+          errorflag = 1
+          return
+        end if
+      end if
+    else if (method.eq."AIMC1") then
+      write (0,"(a)") "AIMC-MCE (first pass) requires the cloning flag to be enabled."
+      write (0,"(a)") "Enabling now"
+      cloneflg="YES"
+    end if
+    
+    if (cloneflg.eq.'YES') then
+      if (clonemax.lt.1) then
+        write(0,"(a)") "Maximum number of clones allowed is less than 1 but cloning is enabled!"
+        write(0,"(a)") "These conditions are incompatible"
+        errorflag = 1
+        return
+      else if (clonemax.gt.10) then
+        write(0,"(a)") "Maximum number of clones allowed is greater than 10!"
+        write(0,"(a)") "This will mean that over 1024 clones could be made from EACH member of the initial basis set"
+        write(0,"(a)") "Try again with a lower number (6 should be enough for anyone)"
+        errorflag = 1
+        return
+      end if
+      if (clonefreq.lt.50) then
+        write(0,"(a)") "A Cloning frequency of less than 50 could result in too rapid cloning at the beginning of the simulation"
+        errorflag = 1
+        return
+      else if (clonefreq.gt.1000) then
+        write(0,"(a)") "A cloning frequency of greater than 1000 will result in very little effect of the cloning procedure"
+        errorflag = 1
+        return
+      end if
+    end if 
+        
     if (nbfadapt.eq."YES") then
       if ((basis.ne."GRID").and.(basis.ne."GRSWM")) then
         write(0,"(a)") "Adaptive basis set chosen but gridding disabled. This is currently an invalid combination."
@@ -881,7 +952,7 @@ contains
 
     initsp=initsp*dsqrt(2.0d0)      
 
-    if (n.ne.18) then
+    if (n.ne.20) then
       write(0,"(a,i0)") "Not all required variables read in readbsparams subroutine. n=", n
       errorflag = 1
       return
