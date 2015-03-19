@@ -572,7 +572,7 @@ contains
           do m=1,ndim
             bsnew(nbf+j)%z(m) = bs(k)%z(m)
           end do
-          write(47756,"(2i4,2es20.12e3)") k, nbf+j, abs(bs(k)%a_pes(1)), sqrt(1.-((abs(bs(k)%a_pes(1))**2.0d0)))
+          write(47756,"(3i5,2es20.12e3)") x, k, nbf+j, abs(bs(k)%a_pes(1)), sqrt(1.-((abs(bs(k)%a_pes(1))**2.0d0)))
           j = j+1
         else
           bsnew(k)%D_big = bs(k)%D_big
@@ -607,7 +607,7 @@ contains
         end do
       end if
    
-      write (0,"(i0,a,i0,a,i0)") sum(clonehere(:)), " bfs cloned in step ", x, &
+      write (6,"(i0,a,i0,a,i0)") sum(clonehere(:)), " bfs cloned in step ", x, &
             ". nbf now = ", nbfnew
    
       nbf = nbfnew

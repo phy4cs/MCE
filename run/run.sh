@@ -222,7 +222,7 @@ for a in "${methseq[@]}"; do
  cd ../run/
  echo "#$ -cwd -V -m e" > $FILE
  if [[ $CORES -ne 1 ]]; then echo "#$ -pe smp $CORES" >> $FILE; fi
- if [[ $HPCFLG -eq 1 ]]; then echo "#$ -l h_rt=00:10:00" >> $FILE; fi
+ if [[ $HPCFLG -eq 1 ]]; then echo "#$ -l h_rt=40:00:00" >> $FILE; fi
  echo "#$ -l h_vmem=2G" >> $FILE
  echo "#$ -t 1-$FOLDERS" >> $FILE
 # echo "#$ -tc 40" >> $FILE
