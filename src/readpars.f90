@@ -238,137 +238,6 @@ contains
 
     close(127)
 
-    select case (sys)
-      case ("SB")
-        if (npes.lt.2) then
-          write(0,"(a)") "Spin Boson model must have at least 2 pes'"
-          errorflag = 1
-          return
-        end if
-        if ((method.ne."MCEv1").and.(method.ne."MCEv2").and.(method.ne."AIMC1").and.(method.ne."AIMC2")) then
-          write(0,"(a)") "Spin Boson model can only be simulated by MCEv1 or MCEv2, or through AIMC-MCE"
-          errorflag = 1
-          return
-        end if
-        if (basis.eq."GRID") then
-          write(0,"(a)") "This method must not use a static grid."
-          errorflag = 1
-          return
-        end if 
-      case ("HP")
-        if (npes.ne.1) then
-          write(0,"(a)") "Harmonic Potential only valid for 1 PES"
-          errorflag = 1
-          return
-        end if
-        if (trim(method).ne."CCS") then
-          write(0,"(a)") "Harmonic Potential can only be simulated by CCS"
-          errorflag = 1
-          return  
-        end if
-      case ("FP")
-        if (npes.ne.1) then
-          write(0,"(a)") "Free Particle only valid for 1 PES"
-          errorflag = 1
-          return
-        end if
-        if (trim(method).ne."CCS") then
-          write(0,"(a)") "Free Particle can only be simulated by CCS"
-          errorflag = 1
-          return  
-        end if
-      case ("MP")
-        if (npes.ne.1) then
-          write(0,"(a)") "Morse Potential only valid for 1 PES"
-          errorflag = 1
-          return
-        end if
-        if (trim(method).ne."CCS") then
-          write(0,"(a)") "Morse Potential can only be simulated by CCS"
-          errorflag = 1
-          return  
-        end if 
-      case ("IV")
-        if (npes.ne.1) then
-          write(0,"(a)") "Inverted Gaussian only valid for 1 PES"
-          errorflag = 1
-          return
-        end if
-        if ((ndim.ne.1).and.(ndim.ne.3)) then
-          write(0,"(a)") "Inverted Gaussian is only valid for 1 or 3 dimensional"
-          errorflag = 1
-          return 
-        end if
-        if (trim(method).ne."CCS") then
-          write(0,"(a)") "Inverted Gaussian can only be simulated by CCS"
-          errorflag = 1
-          return  
-        end if 
-        if ((basis.ne."GRID").and.(basis.ne."GRSWM")) then
-          write(0,"(a)") "This method must use a static grid."
-          errorflag = 1
-          return
-        end if
-      case ("CP")
-        if (npes.ne.1) then
-          write(0,"(a)") "Coulomb Potential only valid for 1 PES"
-          errorflag = 1
-          return
-        end if
-        if (mod(qsizez,2)==1) then
-          write(0,"(a)") "Odd parity for the grid parameters will result in a point on the singularity"
-          write(0,"(a)") "This would make reprojection impossible, as well as seriously affecting results"
-          write(0,"(a)") "Change the grid parameters and restart."
-          errorflag=1
-          return
-        end if
-        if (in_nbf.eq.(qsizez*psizez+1)) then
-          write(6,"(a)") "The in_nbf value has been reset so that there is a point on the singularity."
-          write(6,"(a)") "This will make reprojection impossible. Resetting to even parity."
-          in_nbf = qsizez*psizez
-        end if
-        if (ndim.ne.3) then
-          write(0,"(a)") "Coulomb Potential is only valid in 3 dimensions"
-          errorflag = 1
-          return 
-        end if
-        if (trim(method).ne."CCS") then
-          write(0,"(a)") "Coulomb Potential can only be simulated by CCS"
-          errorflag = 1
-          return  
-        end if 
-        if ((basis.ne."GRID").and.(basis.ne."GRSWM")) then
-          write(0,"(a)") "This method must use a static grid."
-          errorflag = 1
-          return
-        end if
-      case ("HH")
-        if (npes.ne.1) then
-          write(0,"(a)") "Inverted Gaussian only valid for 1 PES"
-          errorflag = 1
-          return
-        end if
-        if (trim(method).ne."CCS") then
-          write(0,"(a)") "Henon-Heiles Potential can only be simulated by CCS"
-          errorflag = 1
-          return  
-        end if 
-        if ((ndim.ne.2).and.(ndim.ne.6).and.(ndim.ne.10)) then
-          write(0,"(a)") "Henon-Heiles potential is only valid currently for the 2,6,or 10 dimensional systems"
-          errorflag = 1
-          return 
-        end if
-        if (basis.eq."GRID") then
-          write(0,"(a)") "This method must not use a static grid."
-          errorflag = 1
-          return
-        end if 
-      case default
-        write(0,"(a)") "System is not recognised. Value is ", sys
-        errorflag = 1
-        return
-    end select             
-
     if (n.ne.1) then
       write(0,"(a)") "Not all required variables read in readsys subroutine"
       errorflag = 1
@@ -386,7 +255,7 @@ contains
   subroutine readecut   !   Level 1 Subroutine
 
     implicit none
-    character(LEN=100)::LINE
+    character(LEN=100)::LINE, LINE2
     integer::ierr, n
 
     if (errorflag .ne. 0) return
@@ -408,12 +277,20 @@ contains
 
       if(LINE=='ECheck') then
         backspace(128)
-        read(128,*,iostat=ierr)LINE,ECheck
+        read(128,*,iostat=ierr)LINE,LINE2
         if (ierr.ne.0) then
           write(0,"(a)") "Error reading ECheck value"
           errorflag = 1
           return
         end if
+        if ((LINE2(1:1).eq.'y').or.(LINE2(1:1).eq.'Y')) then
+          Echeck = "YES"
+        else if ((LINE2(1:1).eq.'n').or.(LINE2(1:1).eq.'N')) then
+          Echeck = "NO"
+        else
+          write(0,"(a,a)") "Error. Echeck value must be YES/NO. Read ", trim(LINE2)
+        end if
+
         n = n+1
       else if(LINE=='Ntries') then
         backspace(128)
@@ -449,21 +326,7 @@ contains
     end do
 
     close (128)
-
-    if ((ECheck.ne.'NO').and.(ECheck.ne.'YES').and.(ECheck.ne.'No').and.(ECheck.ne.'Yes') &
-        .and.(ECheck.ne.'yes').and.(ECheck.ne.'no').and.(ECheck.ne.'Y').and.(ECheck.ne.'N') &
-        .and.(ECheck.ne.'y').and.(ECheck.ne.'n')) then
-      write(0,"(a)") "Invalid value for ECheck. Must be YES/NO/Yes/No/yes/no/Y/N/y/n. Value is ", ECheck
-      errorflag = 1
-      return
-    else if ((ECheck.eq.'NO').or.(ECheck.eq.'No').or.(ECheck.eq.'no').or.(ECheck.eq.'N') &
-           .or.(ECheck.eq.'n')) then
-      ECheck = 'NO'
-    else if ((ECheck.eq.'YES').or.(ECheck.eq.'Yes').or.(ECheck.eq.'yes').or.(ECheck.eq.'Y') &
-           .or.(ECheck.eq.'y')) then
-      ECheck = 'YES'
-    end if
-
+    
     if (Ebfmin.ge.Ebfmax) then
       write(0,"(a)") "Invalid values for Ebfmin and/or Ebfmax. Max must be higher than min"
       errorflag = 1
@@ -488,7 +351,7 @@ contains
   subroutine readbsparams   !   Level 1 Subroutine
 
     IMPLICIT NONE
-    character(LEN=100)::LINE
+    character(LEN=100)::LINE, LINE2
     integer::ierr, n
 
     if (errorflag .ne. 0) return
@@ -645,11 +508,18 @@ contains
         n = n+1
       else if (LINE=="nbfadapt") then
         backspace(127)
-        read(127,*,iostat=ierr)LINE,nbfadapt
+        read(127,*,iostat=ierr)LINE,LINE2
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading bf adapt flag"
           errorflag = 1
           return
+        end if
+        if ((LINE2(1:1).eq.'y').or.(LINE2(1:1).eq.'Y')) then
+          nbfadapt = "YES"
+        else if ((LINE2(1:1).eq.'n').or.(LINE2(1:1).eq.'N')) then
+          nbfadapt = "NO"
+        else
+          write(0,"(a,a)") "Error. nbfadapt value must be YES/NO. Read ", trim(LINE2)
         end if
         n = n+1
       else if (LINE=="nbfepsilon") then
@@ -663,11 +533,18 @@ contains
         n = n+1
       else if (LINE=="Cloning") then
         backspace(127)
-        read(127,*,iostat=ierr)LINE,cloneflg
+        read(127,*,iostat=ierr)LINE,LINE2
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading cloning flag"
           errorflag = 1
           return
+        end if
+        if ((LINE2(1:1).eq.'y').or.(LINE2(1:1).eq.'Y')) then
+          cloneflg = "YES"
+        else if ((LINE2(1:1).eq.'n').or.(LINE2(1:1).eq.'N')) then
+          cloneflg = "NO"
+        else
+          write(0,"(a,a)") "Error. cloneflg value must be YES/NO. Read ", trim(LINE2)
         end if
         n = n+1
       else if (LINE=="max_cloning") then
@@ -730,7 +607,7 @@ contains
       errorflag = 1
       return
     end if
-
+    
     if ((basis.ne.'TRAIN').and.(basis.ne.'train').and.(basis.ne.'SWARM').and.(basis.ne.'swarm').and.(basis.ne.'SWTRN')&
       .and.(basis.ne.'swtrn').and.(basis.ne.'GRID').and.(basis.ne.'grid').and.(basis.ne.'GRSWM').and.(basis.ne.'grswm')) then
       write(0,"(a,a)") "Invalid value for basis. Must be TRAIN/SWARM/GRID/SWTRN/GRSWM and all upper/lower case Value is ", basis
@@ -757,12 +634,32 @@ contains
     else
       matfun = 'zheev'
     end if
+    
+    if (n.ne.20) then
+      write(0,"(a,i0)") "Not all required variables read in readbsparams subroutine. n=", n
+      errorflag = 1
+      return
+    end if
 
+    return
+
+  end subroutine readbsparams
+  
+!--------------------------------------------------------------------------------------------------
+
+  subroutine checkparams    !   Subroutiner checks that parameters are compatible with each other
+  
+    implicit none
+    
+    !!!!!! Basis specific checks !!!!!!!
+    
     if (basis.eq."GRID") then
       if (initsp .lt. 0.8d0) then
         write(0,"(a)") "Error! Grid points are too close together"
         errorflag=1
         return
+      else if (initsp .gt. 1.85d0) then
+        write(0,"(a)") "Error! Grid points are too widely spaced"
       end if
       if ((ndim.ne.1).and.(ndim.ne.3)) then
         write(0,"(a)") "ndim is neither 1 nor 3. This is currently invalid."
@@ -810,7 +707,7 @@ contains
         end if
       end if
     end if
-
+    
     if (basis.eq."GRSWM") then
       if (initsp .lt. 0.8d0) then
         write(0,"(a)") "Error! Grid points are too close together"
@@ -853,41 +750,49 @@ contains
         errorflag = 1
         return
       end if
-      if ((method.ne."MCEv2").and.(method.ne."CCS")) then
-        write(0,"(a)") "Error! Trains can only work with MCEv2 or CCS. MCEv1 cannot calculate the amplitudes correctly"
+      if ((method.ne."MCEv2").and.(method.ne."CCS").and.(method.ne."AIMC2")) then
+        write(0,"(a)") "Error! Trains can only work with MCEv2, AIMC-MCE (second pass) or CCS."
+        write(0,"(a)") "MCEv1 and AIMC-MCE (first pass) cannot calculate the amplitudes correctly"
         errorflag = 1
         return
       end if        
     end if
-
-    if ((nbfadapt.ne.'NO').and.(nbfadapt.ne.'YES').and.(nbfadapt.ne.'No').and.(nbfadapt.ne.'Yes') &
-        .and.(nbfadapt.ne.'yes').and.(nbfadapt.ne.'no').and.(nbfadapt.ne.'Y').and.(nbfadapt.ne.'N') &
-        .and.(nbfadapt.ne.'y').and.(nbfadapt.ne.'n')) then
-      write(0,"(a,a)") "Invalid value for nbfadapt. Must be YES/Yes/yes/Y/y or NO/No/no/N/n. Value is ", nbfadapt
-      errorflag = 1
-      return
-    else if ((nbfadapt.eq.'NO').or.(nbfadapt.eq.'No').or.(nbfadapt.eq.'no').or.(nbfadapt.eq.'N') &
-           .or.(nbfadapt.eq.'n')) then
-      nbfadapt = 'NO'
-    else if ((nbfadapt.eq.'YES').or.(nbfadapt.eq.'Yes').or.(nbfadapt.eq.'yes').or.(nbfadapt.eq.'Y') &
-           .or.(nbfadapt.eq.'y')) then
-      nbfadapt = 'YES'
-    end if
-
-    if ((cloneflg.ne.'NO').and.(cloneflg.ne.'YES').and.(cloneflg.ne.'No').and.(cloneflg.ne.'Yes') &
-        .and.(cloneflg.ne.'yes').and.(cloneflg.ne.'no').and.(cloneflg.ne.'Y').and.(cloneflg.ne.'N') &
-        .and.(cloneflg.ne.'y').and.(cloneflg.ne.'n')) then
-      write(0,"(a,a)") "Invalid value for nbfadapt. Must be YES/Yes/yes/Y/y or NO/No/no/N/n. Value is ", nbfadapt
-      errorflag = 1
-      return
-    else if ((cloneflg.eq.'NO').or.(cloneflg.eq.'No').or.(cloneflg.eq.'no').or.(cloneflg.eq.'N') &
-           .or.(cloneflg.eq.'n')) then
-      cloneflg = 'NO'
-    else if ((cloneflg.eq.'YES').or.(cloneflg.eq.'Yes').or.(cloneflg.eq.'yes').or.(cloneflg.eq.'Y') &
-           .or.(cloneflg.eq.'y')) then
-      cloneflg = 'YES'
+    
+    !!!!! Method dependent checks !!!!!!!
+    
+    if (method.eq."AIMC1") then
+      if (basis.ne."SWARM") then
+        write(0,"(a)") "Error! The AIMC-MCE first pass should only be carried out using a swarm basis set"
+        errorflag = 1
+        return
+      end if
+      if (prop == "N") then
+        write (0,"(a)") "Error! The AIMC-MCE first pass should be propagated. Propagation flag set to N"
+        errorflag = 1
+        return
+      end if
+      if (cloneflg == "NO") then
+        write (0,"(a)") "AIMC-MCE first pass requires cloning to be enabled."
+        write (0,"(a)") "Enabling now"
+        cloneflg = "YES"
+      end if
     end if
     
+    if (method.eq."AIMC2") then
+      if (basis.ne."SWTRN") then
+        write (0,"(a)") "Error! Basis must be a swarm of trains for AIMC-MCE second pass"
+        errorflag = 1
+        return
+      end if
+      if (prop.eq."N") then
+        write (0,"(a)") "Error! The AIMC-MCE second pass should be propagated. Propagation flag set to N"
+        errorflag = 1
+        return
+      end if
+    end if
+    
+    !!!!!! Basis set change parameter check!!!!!!
+
     if (cloneflg.eq.'YES') then
       if ((method.ne."MCEv2").and.(method.ne."AIMC1")) then
         write (0,"(a)") "Cloning can only work with MCEv2 or AIMC-MCE (first pass)"
@@ -906,13 +811,6 @@ contains
           return
         end if
       end if
-    else if (method.eq."AIMC1") then
-      write (0,"(a)") "AIMC-MCE (first pass) requires the cloning flag to be enabled."
-      write (0,"(a)") "Enabling now"
-      cloneflg="YES"
-    end if
-    
-    if (cloneflg.eq.'YES') then
       if (clonemax.lt.1) then
         write(0,"(a)") "Maximum number of clones allowed is less than 1 but cloning is enabled!"
         write(0,"(a)") "These conditions are incompatible"
@@ -948,19 +846,144 @@ contains
         errorflag=1
         return
       end if
-    end if     
-
-    initsp=initsp*dsqrt(2.0d0)      
-
-    if (n.ne.20) then
-      write(0,"(a,i0)") "Not all required variables read in readbsparams subroutine. n=", n
-      errorflag = 1
-      return
-    end if
-
-    return
-
-  end subroutine readbsparams
+    end if  
+    
+    !!!!!!!! Check the System!!!!!!  
+    
+    select case (sys)
+      case ("SB")
+        if (npes.lt.2) then
+          write(0,"(a)") "Spin Boson model must have at least 2 pes'"
+          errorflag = 1
+          return
+        end if
+        if ((method.ne."MCEv1").and.(method.ne."MCEv2").and.(method.ne."AIMC1").and.(method.ne."AIMC2")) then
+          write(0,"(a)") "Spin Boson model can only be simulated by MCEv1 or MCEv2, or through AIMC-MCE"
+          errorflag = 1
+          return
+        end if
+        if (basis.eq."GRID") then
+          write(0,"(a)") "This method must not use a static grid."
+          errorflag = 1
+          return
+        end if 
+      case ("HP")
+        if (npes.ne.1) then
+          write(0,"(a)") "Harmonic Potential only valid for 1 PES"
+          errorflag = 1
+          return
+        end if
+        if (trim(method).ne."CCS") then
+          write(0,"(a)") "Harmonic Potential can only be simulated by CCS"
+          errorflag = 1
+          return  
+        end if
+      case ("FP")
+        if (npes.ne.1) then
+          write(0,"(a)") "Free Particle only valid for 1 PES"
+          errorflag = 1
+          return
+        end if
+        if (trim(method).ne."CCS") then
+          write(0,"(a)") "Free Particle can only be simulated by CCS"
+          errorflag = 1
+          return  
+        end if
+      case ("MP")
+        if (npes.ne.1) then
+          write(0,"(a)") "Morse Potential only valid for 1 PES"
+          errorflag = 1
+          return
+        end if
+        if (trim(method).ne."CCS") then
+          write(0,"(a)") "Morse Potential can only be simulated by CCS"
+          errorflag = 1
+          return  
+        end if 
+      case ("IV")
+        if (npes.ne.1) then
+          write(0,"(a)") "Inverted Gaussian only valid for 1 PES"
+          errorflag = 1
+          return
+        end if
+        if ((ndim.ne.1).and.(ndim.ne.3)) then
+          write(0,"(a)") "Inverted Gaussian is only valid for 1 or 3 dimensional"
+          errorflag = 1
+          return 
+        end if
+        if (trim(method).ne."CCS") then
+          write(0,"(a)") "Inverted Gaussian can only be simulated by CCS"
+          errorflag = 1
+          return  
+        end if 
+        if ((basis.ne."GRID").and.(basis.ne."GRSWM")) then
+          write(0,"(a)") "This method must use a static grid."
+          errorflag = 1
+          return
+        end if
+      case ("CP")
+        if (npes.ne.1) then
+          write(0,"(a)") "Coulomb Potential only valid for 1 PES"
+          errorflag = 1
+          return
+        end if
+        if (mod(qsizez,2)==1) then
+          write(0,"(a)") "Odd parity for the grid parameters will result in a point on the singularity"
+          write(0,"(a)") "This would make reprojection impossible, as well as seriously affecting results"
+          write(0,"(a)") "Change the grid parameters and restart."
+          errorflag=1
+          return
+        end if
+        if (in_nbf.eq.(qsizez*psizez+1)) then
+          write(6,"(a)") "The in_nbf value has been reset so that there is a point on the singularity."
+          write(6,"(a)") "This will make reprojection impossible. Resetting to even parity."
+          in_nbf = qsizez*psizez
+        end if
+        if (ndim.ne.3) then
+          write(0,"(a)") "Coulomb Potential is only valid in 3 dimensions"
+          errorflag = 1
+          return 
+        end if
+        if (trim(method).ne."CCS") then
+          write(0,"(a)") "Coulomb Potential can only be simulated by CCS"
+          errorflag = 1
+          return  
+        end if 
+        if ((basis.ne."GRID").and.(basis.ne."GRSWM")) then
+          write(0,"(a)") "This method must use a static grid."
+          errorflag = 1
+          return
+        end if
+      case ("HH")
+        if (npes.ne.1) then
+          write(0,"(a)") "Inverted Gaussian only valid for 1 PES"
+          errorflag = 1
+          return
+        end if
+        if (trim(method).ne."CCS") then
+          write(0,"(a)") "Henon-Heiles Potential can only be simulated by CCS"
+          errorflag = 1
+          return  
+        end if 
+        if ((ndim.ne.2).and.(ndim.ne.6).and.(ndim.ne.10)) then
+          write(0,"(a)") "Henon-Heiles potential is only valid currently for the 2,6,or 10 dimensional systems"
+          errorflag = 1
+          return 
+        end if
+        if (basis.eq."GRID") then
+          write(0,"(a)") "This method must not use a static grid."
+          errorflag = 1
+          return
+        end if 
+      case default
+        write(0,"(a)") "System is not recognised. Value is ", sys
+        errorflag = 1
+        return
+    end select 
+    
+    initsp=initsp*dsqrt(2.0d0) 
+    
+  end subroutine checkparams
 
 !--------------------------------------------------------------------------------------------------
 

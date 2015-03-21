@@ -140,10 +140,10 @@ Program MainMCE
   complex(kind=8)::normtemp, norm2temp, ehren, acft, extmp
   real(kind=8), dimension(:,:), allocatable :: atrack, atrack2
   real(kind=8), dimension(:), allocatable :: mup, muq, popt, ndimacf
-  real(kind=8) :: nrmtmp, nrm2tmp, ehrtmp, gridsp, timestrt_loc
+  real(kind=8) :: nrmtmp, nrm2tmp, ehrtmp, gridsp, timestrt_loc, timeend_loc, timeold
   real(kind=8) :: time, dt, dtnext, dtdone, initehr, initnorm, initnorm2, alcmprss
   integer, dimension(:), allocatable :: clone, clonenum
-  integer:: j, k, l, r, y, x, m, nbf, recalcs, conjrep, restart, reps, ierr, timestpunit
+  integer:: j, k, l, r, y, x, m, nbf, recalcs, conjrep, restart, reps, ierr, timestpunit, stepback
   character(LEN=3):: rep
   
   !Reduction Variables
@@ -193,6 +193,7 @@ Program MainMCE
   call readsys              ! are set up to be application independent at this level, 
   call readecut             ! with application dependent features included at a lower
   call readtimepar          ! levels.
+  call checkparams
 
   if (step=="S") then       ! Static stepsize case.
     tnum = int(abs((timeend-timestrt)/dtinit)) + 2
@@ -238,12 +239,13 @@ Program MainMCE
   ! the static stepsize system as the array size must be known beforehand to avoid 
   ! memory leaks.
 
-  !$omp parallel private (bset, initgrid, atrack, atrack2, normtemp, norm2temp,      &
-  !$omp                    ehren, acft, extmp, muq, mup, popt, ndimacf, nrmtmp,      &
-  !$omp                    nrm2tmp, ehrtmp, gridsp, timestrt_loc, time, dt, dtnext,  &
-  !$omp                    dtdone, initehr, initnorm, initnorm2, alcmprss, clone,    &
-  !$omp                    clonenum, j, k, r, y, l, x, m, nbf, recalcs, conjrep,     &
-  !$omp                    restart, reps, ierr, timestpunit, rep                     )
+  !$omp parallel private (bset, initgrid, atrack, atrack2, normtemp, norm2temp,     &
+  !$omp                    ehren, acft, extmp, muq, mup, popt, ndimacf, nrmtmp,     &
+  !$omp                    nrm2tmp, ehrtmp, gridsp, timestrt_loc, timeend_loc,      &
+  !$omp                    timeold, time, dt, dtnext, dtdone, initehr, initnorm,    &
+  !$omp                    initnorm2, alcmprss, clone, clonenum, j, k, r, y, l, x,  &
+  !$omp                    m, nbf, recalcs, conjrep, restart, reps, ierr,           &
+  !$omp                    timestpunit, stepback, rep                               )
   
   !$omp do reduction (+:acf_t, extra, pops, absnorm, absnorm2, absehr)
   
@@ -396,9 +398,36 @@ Program MainMCE
           write(6,"(a)")"TERMINATING PROGRAM"
           stop
         end if
+        
+        if (method.eq."AIMC1") then
 
-        if ((prop.eq."N").and.(errorflag==0)) then      ! If no propagation, the basis set is output to a file
-          call outbs(bset, reps, mup, muq, time,x)
+          timeold = time
+
+          if (mod(def_stp,2)==1) stepback = ((def_stp-1)/2)*trainsp
+          if (mod(def_stp,2)==0) stepback = ((def_stp/2)*trainsp)-(trainsp/2)
+          dt = -1.0d0*dtinit
+
+          do x=1,stepback
+            call propstep(bset,dt,dtnext,dtdone,time,1,timestrt_loc)
+            time = time + dt
+          end do  
+          
+          dt = dtinit
+          
+          call outbs(bset, reps, mup, muq, time,-1*stepback)
+
+          do x=1,stepback
+            call propstep(bset,dt,dtnext,dtdone,time,1,timestrt_loc)
+            time = time + dt
+            call outbs(bset, reps, mup, muq, time,x-stepback)
+          end do
+          
+          time = timeold
+          
+        end if
+
+        if ((errorflag==0)) then      ! The basis set is output to a file
+          call outbs(bset, reps, mup, muq, time,0)
         end if    
 
         if (errorflag.eq.0) then  ! Only executes if generation is successful
@@ -425,11 +454,17 @@ Program MainMCE
             call readbasis(bset, mup, muq, k, time) ! reads and assigns the basis set parameters and values, ready for propagation.
             timestrt_loc=time
             nbf = in_nbf
-            write(6,"(a,i0,a)") "Starting from previous file. ", int(real(abs((timeend-timestrt_loc)/dtinit))), " steps remaining."
+            write(6,"(a,i0,a)") "Starting from previous file. ", &
+                        int(real(abs((timeend_loc-timestrt_loc)/dtinit))), " steps remaining."
           end if
         end if
 
         dt = dtinit                ! The value read from the input stage. In adaptive step theis changes
+        
+        if (method.eq."AIMC1") then
+          if (mod(def_stp,2)==1) timeend_loc = timeend + ((def_stp-1)/2)*trainsp*dt
+          if (mod(def_stp,2)==0) timeend_loc = timeend + (((def_stp/2)*trainsp)-(trainsp/2))*dt
+        end if
 
         !The initial values of the output parameters are calculated here.
 
@@ -450,7 +485,7 @@ Program MainMCE
         do r=1,npes
           popt(r) = pop(bset, r)   
         end do
-        if (step == "S") then        ! Output parameters only written to arrays if static stepsize
+        if ((step == "S").and.(time.lt.timeend)) then        ! Output parameters only written to arrays if static stepsize
           do r=1,npes
             pops(1,r) = pops(1,r) + popt(r)   
           end do 
@@ -526,8 +561,10 @@ Program MainMCE
 !        end if
 
         write(6,"(a)") "Beginning Propagation"
+        
+        x=0
 
-        do while ((time.lt.timeend).and.(x.le.80000))
+        do while ((time.lt.timeend_loc).and.(x.le.80000))
  
           if (errorflag .ne. 0) exit 
 
@@ -544,12 +581,13 @@ Program MainMCE
 
           if ((sys=="SB").and.((method=="MCEv2").or.(method=="AIMC1")).and.(cloneflg=="YES")) then
             call cloning (bset, nbf, x, time, clone, clonenum, reps)
+            
           end if
 
-          if (timeend.gt.timestrt_loc) then      
-            if ((time+dt-timeend).gt.0.0d0) dt = timeend - time
+          if (timeend_loc.gt.timestrt_loc) then      
+            if ((time+dt-timeend_loc).gt.0.0d0) dt = timeend_loc - time
           else
-            if ((time+dt-timeend).lt.0.0d0) dt = timeend - time
+            if ((time+dt-timeend_loc).lt.0.0d0) dt = timeend_loc - time
           end if
 
           call propstep (bset, dt, dtnext, dtdone, time, genflg, timestrt_loc)     ! This subroutine takes a single timestep
@@ -562,8 +600,8 @@ Program MainMCE
             nchange = nchange + 1
           end if
 
-          if (abs(time+dtdone-timeend).le.1.0d-15) then   ! if time is close enough to end time, set as end time
-            time=timeend
+          if (abs(time+dtdone-timeend_loc).le.1.0d-15) then   ! if time is close enough to end time, set as end time
+            time=timeend_loc
           else
             time = time + dtdone                         ! increment time
           end if
@@ -591,7 +629,7 @@ Program MainMCE
             popt(r) = pop(bset, r)  
           end do
 
-          if (step=="S") then
+          if ((step == "S").and.(time.lt.timeend)) then
             do r=1,npes
               pops(y,r) = pops(y,r) + popt(r)  
             end do
@@ -620,7 +658,7 @@ Program MainMCE
             call outnormpopadap(nrmtmp,acft,extmp,ehrtmp,popt,x,reps,time)
           end if
 
-          if (method.ne."AIMC1") call outbs(bset, reps, mup, muq, time,x)
+          call outbs(bset, reps, mup, muq, time,x)
           
 !          if (cloneflg.eq."YES") then
 !            allocate (atrack2(size(atrack,1),size(atrack,2)), stat=ierr)
@@ -664,11 +702,11 @@ Program MainMCE
                                               !Disabled to ensure that small fluctuations aren't disruptive
           if (mod(x,50)==0) then     !Status reports
             if (step == "S") then
-              write(6,"(a,i8,a,i8,a,i0,a,i0)") "Completed step ", x, " of ", int(real(abs((timeend-timestrt_loc)/dt))),&
+              write(6,"(a,i8,a,i8,a,i0,a,i0)") "Completed step ", x, " of ", int(real(abs((timeend_loc-timestrt_loc)/dt))),&
                   " on rep ", reps, " of ", reptot
             else
               write(6,"(a,i8,a,i8,a,i0,a,i0)") "Completed step ", x, " of approximately ", &
-                  int(real(abs(x*(timeend-timestrt_loc)/(time-timestrt_loc)))), " on rep ", reps, " of ", reptot
+                  int(real(abs(x*(timeend_loc-timestrt_loc)/(time-timestrt_loc)))), " on rep ", reps, " of ", reptot
             end if
           end if
           

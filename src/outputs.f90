@@ -304,7 +304,11 @@ contains
     ierr = 0
 
     write(rep,"(i3.3)") reps
-    write(step,"(i5.5)") x
+    if (x.lt.0) then
+      write(step,"(i5.4)") x
+    else
+      write(step,"(i5.5)") x
+    end if
     
     if (errorflag.eq.0) then
       if (method.eq."AIMC1") then
