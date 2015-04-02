@@ -5,6 +5,7 @@ MODULE derivsMCE
   use alarrays
   use outputs
   use redirect
+  use readpars
 
 !***********************************************************************************!
 !*
@@ -30,67 +31,189 @@ contains
 
 !***********************************************************************************!
 
-  subroutine deriv(bsin, bsout, x, time, genflg)
+  subroutine deriv(bsin, bsout, rkstp, time, genflg, reps, x, old_bfs)
 
     implicit none
     type(basisfn), dimension (:), intent (in) :: bsin
     type(basisfn), dimension (:), intent (inout) :: bsout
-    real(kind=8), intent(in) :: time
+    real(kind=8), intent(inout) :: time
+    integer, intent(inout), dimension(:) :: old_bfs
+    integer, intent(in) :: rkstp, genflg, reps, x
+    
+    type(basisfn), dimension(:), allocatable :: dummybs
     complex(kind=8), dimension(:,:), allocatable :: dz, dd
-    real(kind=8), dimension(:,:), allocatable :: ds
     complex(kind=8), dimension(:), allocatable ::dD_big
-    integer, intent(in) :: x, genflg
+    real(kind=8), dimension(:,:), allocatable :: ds
+    real(kind=8), dimension(:), allocatable :: dummy_arr
     integer :: k, m, r, ierr
 
     if (errorflag .ne. 0) return
 
     ierr = 0
+    
+    allocate(dummy_arr(ndim), stat = ierr)
+    if (ierr/=0) then
+      write (0,"(a,i0)") "Error allocating the dummy array for AIMC-MCE1 outputs. ierr was ", ierr
+      errorflag = 1
+      return
+    end if
+    dummy_arr = 0.0d0
 
     allocate (dz(size(bsin),ndim), stat=ierr)
     if (ierr==0) allocate (dd(size(bsin),npes),stat=ierr)
     if (ierr==0) allocate (ds(size(bsin),npes),stat=ierr)
     if (ierr==0) allocate (dD_big(size(bsin)),stat=ierr)
     if (ierr/=0) then
-      write(0,"(a)") "Error in derivatives array allocation in deriv"
+      write(0,"(a,i0)") "Error in derivatives array allocation in deriv. ierr was ", ierr
       errorflag=1
       return
     end if
 
-    dz=zdot(bsin,time)
-    ds=sdot(bsin,dz,time)
+    select case (method)
+    
+      case ("MCEv1")
+        dz=zdot(bsin,time)
+        ds=sdot(bsin,dz,time)
+        dd=ddotv1(bsin,time)
+        dD_big=(0.0d0,0.0d0)
+        if (errorflag .ne. 0) return     
+        do k = 1,size(bsin)
+          do m = 1,ndim
+            bsout(k)%z(m) = dz(k,m)
+          end do
+          do r = 1,npes
+            bsout(k)%d_pes(r) = dd(k,r)
+            bsout(k)%s_pes(r) = ds(k,r)
+          end do
+          bsout(k)%D_big = dD_big(k)
+        end do
+        
+      case ("MCEv2")
+        dz=zdot(bsin,time)
+        ds=sdot(bsin,dz,time)
+        dd=ddotv2(bsin,time)
+        if (((basis=="TRAIN").or.(basis=="SWTRN")).and.(genflg==1)) then
+          dD_big=(0.0d0,0.0d0)
+        else
+          dD_big=bigDdotv2 (bsin,rkstp,time)
+        end if
+        if (errorflag .ne. 0) return     
+        do k = 1,size(bsin)
+          do m = 1,ndim
+            bsout(k)%z(m) = dz(k,m)
+          end do
+          do r = 1,npes
+            bsout(k)%d_pes(r) = dd(k,r)
+            bsout(k)%s_pes(r) = ds(k,r)
+          end do
+          bsout(k)%D_big = dD_big(k)
+        end do  
+        
+      case ("CCS")
+        dz=zdot(bsin,time)
+        ds=sdot(bsin,dz,time)
+        dd=(0.0d0,0.0d0)
+        if (((basis=="TRAIN").or.(basis=="SWTRN")).and.(genflg==1)) then
+          dD_big=(0.0d0,0.0d0)
+        else
+          dD_big=bigDdotv2 (bsin,rkstp,time)
+        end if
+        if (errorflag .ne. 0) return     
+        do k = 1,size(bsin)
+          do m = 1,ndim
+            bsout(k)%z(m) = dz(k,m)
+          end do
+          do r = 1,npes
+            bsout(k)%d_pes(r) = dd(k,r)
+            bsout(k)%s_pes(r) = ds(k,r)
+          end do
+          bsout(k)%D_big = dD_big(k)
+        end do
+        
+      case ("AIMC1")
+        dz=zdot(bsin,time)
+        ds=sdot(bsin,dz,time)
+        dd=ddotv2(bsin,time)
+        dD_big=(0.0d0,0.0d0)
+        if (errorflag .ne. 0) return     
+        do k = 1,size(bsin)
+          do m = 1,ndim
+            bsout(k)%z(m) = dz(k,m)
+          end do
+          do r = 1,npes
+            bsout(k)%d_pes(r) = dd(k,r)
+            bsout(k)%s_pes(r) = ds(k,r)
+          end do
+          bsout(k)%D_big = dD_big(k)
+        end do
+        call outbs (bsout, reps, dummy_arr, dummy_arr, time, x, rkstp)
+        
+      case ("AIMC2")
+        call constrtrain (dummybs, x, time, reps, dummy_arr, dummy_arr ,rkstp, genflg, size(bsin), old_bfs)
+        if (size(dummybs).ne.(size(bsin))) then
+          write (0,"(a)") "Size of basis set in memory does not match basis set in input file"
+          write (0,"(a)") "This could be caused by an incorrect handling of a cloning event"
+          write (0,"(2(a,i0))") "Expected ", size(bsin), " but got ", size(dummybs)
+          errorflag = 1
+          return
+        end if
+        dD_big=bigDdotv2 (bsin,rkstp,time)
+        if (errorflag .ne. 0) return     
+        do k = 1,size(bsin)
+          do m = 1,ndim
+            bsout(k)%z(m) = dummybs(k)%z(m)
+          end do
+          do r = 1,npes
+            bsout(k)%d_pes(r) = dummybs(k)%d_pes(r)
+            bsout(k)%s_pes(r) = dummybs(k)%s_pes(r)
+          end do
+          bsout(k)%D_big = dD_big(k)
+        end do  
+        call deallocbs(dummybs)  
+            
+      case default  
+        write(0,"(a)") "Error! Method unrecognised!"
+        write(0,"(a)") "How did you even get this far?"
+        errorflag = 1
+        return
+        
+    end select                 
 
-    if (method=="MCEv1") then
-      dd=ddotv1(bsin,time)
-      dD_big=bigDdotv1(size(bsin))
-    else if ((method=="MCEv2").or.(trim(method)=="CCS")) then
-      dd=ddotv2(bsin,time)
-      if (((basis=="TRAIN").or.(basis=="SWTRN")).and.(genflg==1)) then
-        dD_big=bigDdotv1(size(bsin))
-      else
-        dD_big=bigDdotv2 (bsin,x,time)
-      end if
-    else if (method=="AIMC1") then
-      dd=ddotv2(bsin,time)
-      dD_big=bigDdotv1(size(bsin))
-    else
-      write(0,"(a)") "Error! Method unrecognised!"
-      write(0,"(a)") "How did you even get this far?"
-      errorflag = 1
-      return
-    end if  
+!    dz=zdot(bsin,time)
+!    ds=sdot(bsin,dz,time)
 
-    if (errorflag .ne. 0) return     
+!    if (method=="MCEv1") then
+!      dd=ddotv1(bsin,time)
+!      dD_big=bigDdotv1(size(bsin))
+!    else if ((method=="MCEv2").or.(trim(method)=="CCS")) then
+!      dd=ddotv2(bsin,time)
+!      if (((basis=="TRAIN").or.(basis=="SWTRN")).and.(genflg==1)) then
+!        dD_big=(0.0d0,0.0d0)
+!      else
+!        dD_big=bigDdotv2 (bsin,x,time)
+!      end if
+!    else if (method=="AIMC1") then
+!      dd=ddotv2(bsin,time)
+!      dD_big=bigDdotv1(size(bsin))
+!    else
+!      write(0,"(a)") "Error! Method unrecognised!"
+!      write(0,"(a)") "How did you even get this far?"
+!      errorflag = 1
+!      return
+!    end if  
 
-    do k = 1,size(bsin)
-      do m = 1,ndim
-        bsout(k)%z(m) = dz(k,m)
-      end do
-      do r = 1,npes
-        bsout(k)%d_pes(r) = dd(k,r)
-        bsout(k)%s_pes(r) = ds(k,r)
-      end do
-      bsout(k)%D_big = dD_big(k)
-    end do
+!    if (errorflag .ne. 0) return     
+
+!    do k = 1,size(bsin)
+!      do m = 1,ndim
+!        bsout(k)%z(m) = dz(k,m)
+!      end do
+!      do r = 1,npes
+!        bsout(k)%d_pes(r) = dd(k,r)
+!        bsout(k)%s_pes(r) = ds(k,r)
+!      end do
+!      bsout(k)%D_big = dD_big(k)
+!    end do
 
     deallocate (dz,dd,ds,dD_big, stat=ierr)
     if (ierr/=0) then
@@ -438,7 +561,7 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  function bigDdotv2(bsin,x, time)
+  function bigDdotv2(bsin,rkstp, time)
 
     implicit none
 
@@ -451,7 +574,7 @@ contains
     complex(kind=8), dimension(size(bsin)) :: bigDdotv2
     complex(kind=8) :: ovrlpdif
     real(kind=8), intent(in) :: time
-    integer, intent(in) :: x
+    integer, intent(in) :: rkstp
     integer :: j, k, nbf, ierr
     real(kind=8)::absB
 
@@ -483,7 +606,7 @@ contains
     ovrlp = ovrlpmat(bsin)
     ovrlpphi = ovrlpphimat(bsin)
 
-    if ((x.eq.1).and.(time.eq.0.0d0)) then
+    if ((rkstp.eq.1).and.(time.eq.0.0d0)) then
       do j=1,nbf
         do k=1,nbf
           ovrlpdif = ovrlpphi(j,k) - ovrlp(j,k) 

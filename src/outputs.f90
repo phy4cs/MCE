@@ -290,16 +290,17 @@ contains
 
 !--------------------------------------------------------------------------------------------------
 
-   subroutine outbs(bs, reps, mup, muq, t, x)   !   Level 1 Subroutine
+   subroutine outbs(bs, reps, mup, muq, t, x, y)   !   Level 1 Subroutine
     implicit none
     type(basisfn), dimension (:), intent(in) :: bs
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(in) :: t
     integer::m, j, r, ierr, bsunit
-    character(LEN=19)::filename
-    integer, intent(in) :: reps, x
+    character(LEN=21)::filename
+    integer, intent(in) :: reps, x, y
     character(LEN=3):: rep
     character(LEN=5)::step
+    character(LEN=1)::rkstp
 
     ierr = 0
 
@@ -312,7 +313,8 @@ contains
     
     if (errorflag.eq.0) then
       if (method.eq."AIMC1") then
-        filename = "Outbs-"//trim(rep)//"-"//trim(step)//".out"
+        write(rkstp,"(i1.1)") y
+        filename = "Outbs-"//trim(rep)//"-"//trim(step)//"-"//trim(rkstp)//".out"
       else
         filename = "Outbs-"//trim(rep)//".out"
       end if 
@@ -323,6 +325,12 @@ contains
     bsunit=135+reps
 
     open(unit=bsunit, file=trim(filename), status='unknown', iostat=ierr)
+    
+    if (size(bs).eq.0) then
+      write(bsunit,"(a)") "Basis set cannot be output as it is not allocated properly"
+      errorflag = 1
+      return
+    end if
 
     write(bsunit,"(a,1x,i4)"       ) 'ndof'       , ndim
     write(bsunit,"(a,1x,i4)"       ) 'nconf'      , npes

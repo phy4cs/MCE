@@ -10,8 +10,8 @@ VPATH=../src
 
 all: Main avrgpops timehist
 
-Main:BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o dcerf.o cp.o hh.o redirect.o Ham.o outputs.o Chks.o derivsMCE.o propMCE.o bsetgen.o bsetalter.o readpars.o MainMCE.o 
-	 $(F90) $(FFLAGS) -o MCE.exe BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o dcerf.o cp.o hh.o redirect.o Ham.o outputs.o Chks.o derivsMCE.o propMCE.o bsetgen.o bsetalter.o readpars.o MainMCE.o $(FLINKS)
+Main:BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o dcerf.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o cp.o hh.o outputs.o redirect.o Ham.o Chks.o bsetalter.o readpars.o derivsMCE.o propMCE.o bsetgen.o MainMCE.o 
+	 $(F90) $(FFLAGS) -o MCE.exe BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o dcerf.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o cp.o hh.o outputs.o redirect.o Ham.o Chks.o bsetalter.o readpars.o derivsMCE.o propMCE.o bsetgen.o MainMCE.o $(FLINKS)
 	 
 avrgpops:avrgpops.f90
 	 $(F90) $(FFLAGS) -o avrgpops.exe $<
@@ -21,9 +21,6 @@ timehist:timehist.f90
 
 # Compile steps
  
-vars.o:vars.f90  
-	 $(F90) $(FFLAGS) -c $<
-	  
 BLAS.o:BLAS.f
 	 $(F90) $(FFLAGS) -c $<
 	
@@ -34,6 +31,12 @@ zheev_with_dpndnss.o:zheev_with_dpndnss.f
 	 $(F90) $(FFLAGS) -c $<
 	 
 randgen.o:randgen.f
+	 $(F90) $(FFLAGS) -c $<
+	 
+dcerf.o:dcerf.f90  
+	 $(F90) $(FFLAGS) -c $<
+	 
+vars.o:vars.f90  
 	 $(F90) $(FFLAGS) -c $<
 
 alarrays.o:alarrays.f90 vars.o 
@@ -53,14 +56,14 @@ mp.o:mp.f90 vars.o
 
 iv.o:iv.f90 vars.o 
 	 $(F90) $(FFLAGS) -c $<
-
-dcerf.o:dcerf.f90  
-	 $(F90) $(FFLAGS) -c $<
-
+	 
 cp.o:cp.f90 dcerf.o vars.o 
 	 $(F90) $(FFLAGS) -c $<
-
+	 
 hh.o:hh.f90 vars.o 
+	 $(F90) $(FFLAGS) -c $<
+	 
+outputs.o:outputs.f90 vars.o 
 	 $(F90) $(FFLAGS) -c $<
 
 redirect.o:redirect.f90 vars.o sb.o hp.o fp.o mp.o iv.o cp.o hh.o 
@@ -69,33 +72,27 @@ redirect.o:redirect.f90 vars.o sb.o hp.o fp.o mp.o iv.o cp.o hh.o
 Ham.o:Ham.f90 vars.o alarrays.o redirect.o 
 	 $(F90) $(FFLAGS) -c $<
 
-outputs.o:outputs.f90 vars.o 
-	 $(F90) $(FFLAGS) -c $<
-
 Chks.o:Chks.f90 vars.o Ham.o 
 	 $(F90) $(FFLAGS) -c $<
-
-derivsMCE.o:derivsMCE.f90 vars.o Ham.o alarrays.o outputs.o redirect.o 
+	 
+bsetalter.o:bsetalter.f90 vars.o Ham.o alarrays.o outputs.o 
 	 $(F90) $(FFLAGS) -c $<
 	 
-propMCE.o:propMCE.f90 alarrays.o vars.o derivsMCE.o 
+readpars.o:readpars.f90 vars.o alarrays.o Ham.o redirect.o 
+	 $(F90) $(FFLAGS) -c $<
+
+derivsMCE.o:derivsMCE.f90 vars.o Ham.o alarrays.o outputs.o redirect.o readpars.o 
+	 $(F90) $(FFLAGS) -c $<
+	 
+propMCE.o:propMCE.f90 alarrays.o vars.o derivsMCE.o
 	 $(F90) $(FFLAGS) -c $<
 
 bsetgen.o:bsetgen.f90 vars.o Ham.o alarrays.o outputs.o Chks.o redirect.o propMCE.o 
 	 $(F90) $(FFLAGS) -c $<
 
-bsetalter.o:bsetalter.f90 vars.o Ham.o alarrays.o outputs.o 
-	 $(F90) $(FFLAGS) -c $<
-
-readpars.o:readpars.f90 vars.o alarrays.o Ham.o redirect.o 
-	 $(F90) $(FFLAGS) -c $<
-
 MainMCE.o:MainMCE.f90 bsetgen.o bsetalter.o Ham.o vars.o readpars.o outputs.o alarrays.o Chks.o propMCE.o redirect.o 
 	 $(F90) $(FFLAGS) -c $<
 	 
-# This entry allows you to type " make clean " to get rid of
-# all object and module files 
-
 clean:
 	rm -rf f_{files,modd}* *.o *.mod *.exe *~ ../run/*.exe ../run/*~ ../src/*~
   

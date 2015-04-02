@@ -48,11 +48,20 @@ for i in "${folseq[@]}"; do
   if [[ -f normpop.out ]]; then
    mv normpop.out "$RESDIR"/normpop_$i.out
   fi
+  if [[ -f Clonetrack-001.out ]]; then
+   for j in Clonetrack*; do
+    mv $j $RESDIR/${j%.out}_$i.out
+   done
+  fi
   grep -i "prop NO" input.dat > /dev/null
   propchk=$?
   if [[ propchk -eq 0 ]]; then
    for p in Outbs-*.out ; do mv $p "$RESDIR"/${p%.out}_$i.out; done
   fi
+  if [[ -f $SUBDIR/Outbs-001-00000-0.out ]]; then
+   echo "yes"
+   for p in Outbs-*.out ; do mv $p "$RESDIR"/${p%.out}_$i.out; done
+  fi  
   if [[ -f timehist.out ]]; then
    mv timehist.out "$RESDIR"/timehist_$i.out
    mv timesteps.out "$RESDIR"/timesteps_$i.out

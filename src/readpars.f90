@@ -776,6 +776,10 @@ contains
         write (0,"(a)") "Enabling now"
         cloneflg = "YES"
       end if
+      if (mod(def_stp,2)==0) then
+        write(0,"(2(a,i0))") "For AIMC-MCE, def_stp should be odd. Changed from ", def_stp, " to ", def_stp+1
+        def_stp = def_stp+1
+      end if
     end if
     
     if (method.eq."AIMC2") then
@@ -789,6 +793,16 @@ contains
         errorflag = 1
         return
       end if
+      if (mod(def_stp,2)==0) then
+        write(0,"(2(a,i0))") "For AIMC-MCE, def_stp should be odd. Changed from ", def_stp, " to ", def_stp+1
+        def_stp = def_stp+1
+      end if
+!      if (gen.eq."Y") then
+!        write (0,"(a,a)") "Error! The AIMC-MCE second pass relies on precalculated basis functions, but",&
+!                        " generation flag set to Y"
+!        errorflag = 1
+!        return
+!      end if
     end if
     
     !!!!!! Basis set change parameter check!!!!!!
@@ -1075,7 +1089,7 @@ contains
 
     implicit none
     type(basisfn), dimension (:), allocatable, intent(inout) :: bs
-    integer::ierr, n, j, k, m, r, cflg
+    integer::ierr, n, j, k, m, r, cflg, bsunit
     real(kind=8), dimension(:), allocatable, intent(out) :: mup, muq 
     real(kind=8), intent(inout) :: t
     integer, intent(in) :: rep  
@@ -1092,17 +1106,13 @@ contains
 
     write(6,"(a)")"Starting read subroutine"
 
-    if (rep.lt.10) then
-      write (filename,"(a,i1,a)") "Outbs-00", rep, ".out"
-    else if (rep.lt.100) then
-      write(filename,"(a,i2,a)") "Outbs-0", rep, ".out"
-    else
-      write(filename,"(a,i3,a)") "Outbs-", rep, ".out"
-    end if
+    write(filename,"(a,i3.3,a)") "Outbs-", rep, ".out"
 
     write(6,"(a,a)") "Opening file ", trim(filename)
+    
+    bsunit = 200+rep
 
-    open(unit=200, file=filename, status="old", iostat=ierr)
+    open(unit=bsunit, file=filename, status="old", iostat=ierr)
 
     if (ierr .ne. 0) then
       write(0,"(a)") 'Error in opening Outbs.out file'
@@ -1110,71 +1120,71 @@ contains
       return
     end if
 
-    read(200,*,iostat=ierr)LINE
+    read(bsunit,*,iostat=ierr)LINE
 
     do while ((LINE.ne."zinit").and.(ierr==0))
       if (LINE=="ndof") then
-        backspace(200)
-        read(200,*,iostat=ierr)LINE,ndim
+        backspace(bsunit)
+        read(bsunit,*,iostat=ierr)LINE,ndim
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading ndim"
           errorflag = 1
           return
         end if
-        write(6,"(a,i0)") "ndim   = ", ndim
+        write(6,"(a,i0)") "ndim    = ", ndim
         n = n+1
       else if (LINE=="nconf") then
-        backspace(200)
-        read(200,*,iostat=ierr)LINE,npes
+        backspace(bsunit)
+        read(bsunit,*,iostat=ierr)LINE,npes
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading npes"
           errorflag = 1
           return
         end if
-        write(6,"(a,i0)") "npes   = ", npes
+        write(6,"(a,i0)") "npes    = ", npes
         n = n+1
       else if (LINE=="nbasisfns") then
-        backspace(200)
-        read(200,*,iostat=ierr)LINE,in_nbf
+        backspace(bsunit)
+        read(bsunit,*,iostat=ierr)LINE,in_nbf
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading in_nbf"
           errorflag = 1
           return
         end if
-        write(6,"(a,i0)") "in_nbf    = ", in_nbf
+        write(6,"(a,i0)") "in_nbf     = ", in_nbf
         n = n+1
       else if (LINE=="initial_PES") then
-        backspace(200)
-        read(200,*,iostat=ierr)LINE,in_pes
+        backspace(bsunit)
+        read(bsunit,*,iostat=ierr)LINE,in_pes
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading in_PES"
           errorflag = 1
           return
         end if
-        write(6,"(a,i0)") "in_pes = ", in_pes
+        write(6,"(a,i0)") "in_pes  = ", in_pes
         n = n+1
       else if (LINE=="matfun") then
-        backspace(200)
-        read(200,*,iostat=ierr)LINE,matfun
+        backspace(bsunit)
+        read(bsunit,*,iostat=ierr)LINE,matfun
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading matrix function"
           errorflag = 1
           return
         end if
-        write(6,"(a,a)") "matfun = ", matfun
+        write(6,"(a,a)") "matfun  = ", matfun
         n = n+1
       else if (LINE=="time") then
-        backspace(200)
-        read(200,*,iostat=ierr)LINE,t
+        backspace(bsunit)
+        read(bsunit,*,iostat=ierr)LINE,t
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading time"
           errorflag = 1
           return
         end if
-        write(6,"(a,es16.8e3)") "time = ", t
+        write(6,"(a,es16.8e3)") "time =", t
         n = n+1
       end if
-      read(200,*,iostat=ierr)LINE
+      read(bsunit,*,iostat=ierr)LINE
     end do
 
     if (n.ne.6) then
@@ -1193,10 +1203,10 @@ contains
     if (LINE.ne."zinit") then
       write(0,"(a,a)") "Error! Expected zinit, but read ", trim(LINE)
     end if
-    backspace(200)
+    backspace(bsunit)
 
     do m=1,ndim
-      read(200,*,iostat=ierr)LINE, j, muq(j), mup(j)
+      read(bsunit,*,iostat=ierr)LINE, j, muq(j), mup(j)
       if(ierr.ne.0) then
         write(0,"(a,a)")  "Error reading zinit value ", m
         errorflag = 1
@@ -1209,13 +1219,13 @@ contains
       end if
     end do
      
-    read(200,*,iostat=ierr)LINE
+    read(bsunit,*,iostat=ierr)LINE
 
     if (LINE.ne."basis") then
       write(0,"(a,a)") "Error! Expected basis, but read ", trim(LINE)
     end if
 
-    backspace(200)
+    backspace(bsunit)
 
     if (size(bs).ne.in_nbf) then
       write(6,"(a)") "Basis set size has changed. Reallocating basis set."
@@ -1224,16 +1234,16 @@ contains
     end if
 
     do j=1,in_nbf
-      read(200,*,iostat=ierr)LINE,k
+      read(bsunit,*,iostat=ierr)LINE,k
       if(k.ne.j) then
         write(0,"(a,i2,a,i2)") "Error. Expected basis function ", j, " but got ", k
       end if
-      read (200,*,iostat=ierr)LINE
+      read (bsunit,*,iostat=ierr)LINE
       if (LINE.ne."D") then
         write(0,"(a,a)") "Error! Expected D but read ", trim(LINE)
       end if
-      backspace(200)
-      read(200,*,iostat=ierr)LINE,rl, im
+      backspace(bsunit)
+      read(bsunit,*,iostat=ierr)LINE,rl, im
       if (LINE.eq."D") then
         bs(j)%D_big=cmplx(rl,im,kind=8)
       else
@@ -1242,48 +1252,48 @@ contains
         return
       end if
       do r=1,npes
-        read(200,*,iostat=ierr)LINE
+        read(bsunit,*,iostat=ierr)LINE
         if (LINE.ne."a") then
           write(0,"(a,a)") "Error! Expected a but read ", trim(LINE)
         end if
-        backspace(200)
-        read(200,*,iostat=ierr)LINE,k,rl, im
+        backspace(bsunit)
+        read(bsunit,*,iostat=ierr)LINE,k,rl, im
         if (k.ne.r) then
           write (0,"(a,i2,a,i2)") "Error. Expected a from pes ", r, "but got ", k
         end if
         bs(j)%a_pes(r)=cmplx(rl,im,kind=8)
       end do
       do r=1,npes
-        read(200,*,iostat=ierr)LINE
+        read(bsunit,*,iostat=ierr)LINE
         if (LINE.ne."d") then
           write(0,"(a,a)") "Error! Expected d but read ", trim(LINE)
         end if
-        backspace(200)
-        read(200,*,iostat=ierr)LINE,k,rl, im
+        backspace(bsunit)
+        read(bsunit,*,iostat=ierr)LINE,k,rl, im
         if (k.ne.r) then
           write(0,"(a,i2,a,i2)") "Error. Expected d from pes ", r, "but got ", k
         end if
         bs(j)%d_pes(r)=cmplx(rl,im,kind=8)
       end do
       do r=1,npes
-        read(200,*,iostat=ierr)LINE
+        read(bsunit,*,iostat=ierr)LINE
         if (LINE.ne."s") then
           write(0,"(a,a)") "Error! Expected s but read ", trim(LINE)
         end if
-        backspace(200)
-        read(200,*,iostat=ierr)LINE,k,rl
+        backspace(bsunit)
+        read(bsunit,*,iostat=ierr)LINE,k,rl
         if (k.ne.r) then
           write(0,"(a,i2,a,i2)") "Error. Expected s from pes ", r, "but got ", k
         end if
         bs(j)%s_pes(r)=rl
       end do
       do m=1,ndim
-        read(200,*,iostat=ierr)LINE
+        read(bsunit,*,iostat=ierr)LINE
         if (LINE.ne."z") then
           write(0,"(a,a)") "Error! Expected z, but read ", trim(LINE)
         end if
-        backspace(200)
-        read(200,*,iostat=ierr)LINE,k,rl, im
+        backspace(bsunit)
+        read(bsunit,*,iostat=ierr)LINE,k,rl, im
         if (k.ne.m) then
           write(0,"(a,i2,a,i2)") "Error. Expected z dimension ", m, "but got ", k
         end if
@@ -1330,6 +1340,459 @@ contains
     end if   
        
   end subroutine readbasis
+  
+!--------------------------------------------------------------------------------------------------
+
+  subroutine constrtrain(bs, x, time, reps, mup, muq, rkstp, genflg,nbf,old_bfs)
+  
+    implicit none
+    type(basisfn), intent(inout), dimension (:), allocatable :: bs
+    real(kind=8),  intent(inout), dimension (:), allocatable :: mup, muq
+    real(kind=8),  intent(inout) :: time
+    integer, intent(inout), dimension (:) :: old_bfs
+    integer, intent(in) :: x, reps,rkstp, genflg, nbf
+    real(kind=8) :: t, rl, im
+    integer, dimension (:), allocatable :: bfs
+    integer :: carriage, stpback, bsunit, j, k, l, m, n, r, p, q, ierr, nbftrk, nbftrk2, temppar
+    character(LEN=255) :: LINE
+    character(LEN=21) filename
+    character(LEN=3) :: rep
+    character(LEN=5) :: step, tempchar
+    character(LEN=1) :: rkstp_char
+
+    stpback = ((def_stp-1)/2)*trainsp
+    
+    carriage = x-stpback
+    write(rep,"(i3.3)") reps
+    write(rkstp_char,"(i1.1)") rkstp
+    
+    if (allocated(bs)) then
+      write (0,"(a)") "The basis set in the train construction subroutine should be unallocated at call time"
+      write (0,"(a)") "This means either a dummy basis set variable or the unallocated initial basis should "
+      write (0,"(a)") "be sent to the subroutine, as it will be allocated based on the input file sizes"
+      errorflag = 1
+      return
+    end if
+    
+    do j=1,def_stp
+      bsunit=(7065+carriage)*reps
+      if (carriage.lt.0) then
+        write(step,"(i5.4)") carriage
+      else
+        write(step,"(i5.5)") carriage
+      end if
+      filename="Outbs-"//trim(rep)//"-"//trim(step)//"-"//trim(rkstp_char)//".out"
+      open(unit=bsunit,file=trim(filename),status="old",iostat=ierr)
+      if (ierr/=0) then
+        write(0,"(a,a,a,i0)") "Error opening file ", trim(filename), " in step ", x
+        write(0,"(a,i0)") "ierr was ", ierr 
+        errorflag = 1
+        return
+      end if
+      carriage = carriage + trainsp
+    end do
+
+    if ((x==1).and.(rkstp==0).and.(genflg==1)) then 
+    
+      bsunit = 7065*reps+1
+      n=0
+    
+      read(bsunit,*,iostat=ierr)LINE
+
+      do while ((LINE.ne."zinit").and.(ierr==0))
+        if (LINE=="ndof") then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,ndim
+          if(ierr.ne.0) then
+            write(0,"(a)")  "Error reading ndim"
+            errorflag = 1
+            return
+          end if
+          write(6,"(a,i0)") "ndim   = ", ndim
+          n = n+1
+        else if (LINE=="nconf") then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,npes
+          if(ierr.ne.0) then
+            write(0,"(a)")  "Error reading npes"
+            errorflag = 1
+            return
+          end if
+          write(6,"(a,i0)") "npes   = ", npes
+          n = n+1
+        else if (LINE=="initial_PES") then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,in_pes
+          if(ierr.ne.0) then
+            write(0,"(a)")  "Error reading in_PES"
+            errorflag = 1
+            return
+          end if
+          write(6,"(a,i0)") "in_pes = ", in_pes
+          n = n+1
+        else if (LINE=="nbasisfns") then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,in_nbf
+          if(ierr.ne.0) then
+            write(0,"(a)")  "Error reading in_nbf"
+            errorflag = 1
+            return
+          end if
+          write(6,"(a,i0)") "in_nbf = ", in_nbf
+          n = n+1
+        else if (LINE=="matfun") then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,matfun
+          if(ierr.ne.0) then
+            write(0,"(a)")  "Error reading matrix function"
+            errorflag = 1
+            return
+          end if
+          write(6,"(a,a)") "matfun = ", matfun
+          n = n+1
+        else if (LINE=="time") then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,time
+          if(ierr.ne.0) then
+            write(0,"(a)")  "Error reading time"
+            errorflag = 1
+            return
+          end if
+          write(6,"(a,es16.8e3)") "time   = ", time
+          n = n+1
+        end if
+        read(bsunit,*,iostat=ierr)LINE
+      end do 
+
+      if (n.ne.6) then
+        write(0,"(a,i0,a)") "Error in reading parameters from initial point. ", n, " of 6 parameters read."
+        errorflag = 1
+        return
+      end if 
+
+      allocate (mup(ndim), stat=ierr)
+      if (ierr == 0) allocate (muq(ndim), stat=ierr)
+      if (ierr/=0) then
+        write(0,"(a)") "Error in allocation of mup and muq"
+        errorflag=1
+      end if
+      
+      backspace(bsunit)
+      
+      do m=1,ndim
+        read(bsunit,*,iostat=ierr)LINE, j, muq(j), mup(j)
+        if(ierr.ne.0) then
+          write(0,"(a,i0)")  "Error reading zinit value ", m
+          errorflag = 1
+          return
+        end if
+        if(m.ne.j) then
+          write(0,"(2(a,i0))")  "Error! Count mismatch in zinit. Expected ", m, " but read ", j
+          errorflag = 1
+          return
+        end if
+      end do
+      
+      rewind (bsunit)    
+      
+    end if
+    
+    carriage = x-stpback
+    nbftrk = 0
+    allocate(bfs(def_stp), stat = ierr)
+    if (ierr/=0) then
+      write (0,"(a,i0)") "Error allocating the basis functions. ierr was ", ierr
+      errorflag = 1
+      return
+    end if
+    
+    do j=1,def_stp
+
+      bsunit=(7065+carriage)*reps
+      n=0
+     
+      read(bsunit,*,iostat=ierr)LINE
+
+      do while ((LINE.ne."basis").and.(ierr==0))
+        if (LINE=="ndof") then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,temppar
+          if(ierr.ne.0) then
+            write(0,"(a,i0)")  "Error reading ndim for carriage ", carriage
+            errorflag = 1
+            return
+          end if
+          if (temppar.ne.ndim) then
+            write(0,"(2(a,i0))") "Mismatch in ndim values! Expected ", ndim, " but got ", temppar
+            errorflag = 1
+            return
+          end if
+          n = n+1
+        else if (LINE=="nconf") then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,temppar
+          if(ierr.ne.0) then
+            write(0,"(a,i0)")  "Error reading npes for carriage ", carriage
+            errorflag = 1
+            return
+          end if
+          if (temppar.ne.npes) then
+            write(0,"(2(a,i0))") "Mismatch in npes values! Expected ", npes, " but got ", temppar
+            errorflag = 1
+            return
+          end if
+          n = n+1
+        else if (LINE=="nbasisfns") then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,temppar
+          if(ierr.ne.0) then
+            write(0,"(a,i0)")  "Error reading swarm nbf for carriage ", carriage
+            errorflag = 1
+            return
+          end if
+          nbftrk = nbftrk + temppar
+          bfs(j) = temppar
+          n = n+1
+        else if (LINE=="initial_PES") then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,temppar
+          if(ierr.ne.0) then
+            write(0,"(a)")  "Error reading in_pes for carriage ", carriage
+            errorflag = 1
+            return
+          end if
+          if (temppar.ne.in_pes) then
+            write(0,"(a)") "Mismatch in in_pes values! Expected ", in_pes, " but got ", temppar
+            errorflag = 1
+            return
+          end if
+          n = n+1
+        else if (LINE=="matfun") then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,tempchar
+          if(ierr.ne.0) then
+            write(0,"(a,i0)")  "Error reading matrix function for carriage ", carriage
+            errorflag = 1
+            return
+          end if
+          if (tempchar.ne.matfun) then
+            write(0,"(4a)") "Mismatch in matfun values! Expected ", matfun, " but got ", tempchar
+            errorflag = 1
+            return
+          end if
+          n = n+1
+        else if ((LINE=="time").and.(carriage.eq.x)) then
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,t
+          if(ierr.ne.0) then
+            write(0,"(a,i0)")  "Error reading time in carriage ", carriage
+            errorflag = 1
+            return
+          end if
+          if (t-time.gt.dtinit/1.0d3) then
+            write(0,"(2(a,es16.8e3))") "Mismatch in time values! Expected ", time, " but got ", t
+            write(0,"(3(a,i0))") "This happened in rep ", reps, " at step ", x, " and rkstp ", rkstp
+            errorflag = 1
+            return
+          end if
+          n = n+1
+        end if
+        read(bsunit,*,iostat=ierr)LINE
+      end do
+
+      if ((n.ne.5).and.(carriage.ne.x)) then
+        write(0,"(a,i0,a)") "Error in reading parameters. Only ", n, " of 5 parameters read."
+        errorflag = 1
+        return
+      else if ((n.ne.6).and.(carriage.eq.x)) then
+        write(0,"(a,i0,a)") "Error in reading parameters. Only ", n, " of 6 parameters read."
+        errorflag = 1
+        return
+      end if 
+      backspace (bsunit)
+      carriage = carriage + trainsp
+    end do      
+
+    call allocbs(bs,nbftrk)
+    nbftrk2 = 0
+    carriage = x+stpback
+    p=0
+    n=0
+ 
+    do l=def_stp,1,-1
+      bsunit=(7065+carriage)*reps
+      do j=1,bfs(l)
+        n=n+1
+        if (j.gt.in_nbf) p = p+1
+        read(bsunit,*,iostat=ierr)LINE,k
+        if (ierr/=0) then
+          write(0,"(a,i0,a,i0)") "Error reading Outbs file ", carriage, " at basis number ", j
+          write(0,"(a)") "Was trying to read basis number line" 
+          write (0,"(a,i0)") "ierr was ", ierr
+          errorflag = 1
+          return
+        end if
+        if(k.ne.j) then
+          write(0,"(a,i0,a,i0)") "Error. Expected basis function ", j, " but got ", k
+          errorflag = 1
+          return
+        end if
+        if (LINE.ne."basis") then
+          write(0,"(a,a)") 'Error. Expected to read "basis ', j, '" but read ',trim(LINE), ' ', k 
+          errorflag = 1
+          return
+        end if
+        read (bsunit,*,iostat=ierr)LINE
+        if (ierr/=0) then
+          write(0,"(a,i0,a,i0)") "Error reading Outbs file ", carriage, " at basis number ", j
+          write(0,"(a)") "Was trying to D line" 
+          write (0,"(a,i0)") "ierr was ", ierr
+          errorflag = 1
+          return
+        end if
+        if (LINE.ne."D") then
+          write(0,"(a,a)") "Error! Expected D but read ", trim(LINE)
+        end if
+        do r=1,npes
+          read(bsunit,*,iostat=ierr)LINE
+          if (ierr/=0) then
+            write(0,"(a,i0,a,i0)") "Error reading Outbs file ", carriage, " at basis number ", j
+            write(0,"(a,i0)") "Was trying to read a_pes identifier for pes ", r 
+            write (0,"(a,i0)") "ierr was ", ierr
+            errorflag = 1
+            return
+          end if
+          if (LINE.ne."a") then
+            write(0,"(a,a)") "Error! Expected a but read ", trim(LINE)
+          end if
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,k,rl, im
+          if (ierr/=0) then
+            write(0,"(a,i0,a,i0)") "Error reading Outbs file ", carriage, " at basis number ", j
+            write(0,"(a,i0)") "Was trying to read a_pes line for pes ", r 
+            write (0,"(a,i0)") "ierr was ", ierr
+            errorflag = 1
+            return
+          end if
+          if (k.ne.r) then
+            write (0,"(a,i2,a,i2)") "Error. Expected a from pes ", r, "but got ", k
+          end if
+          if (j.gt.in_nbf) then
+            bs(def_stp*in_nbf+p)%a_pes(r)=cmplx(rl,im,kind=8)
+          else
+            bs(j+nbftrk2)%a_pes(r)=cmplx(rl,im,kind=8)
+          end if
+        end do
+        do r=1,npes
+          read(bsunit,*,iostat=ierr)LINE
+          if (ierr/=0) then
+            write(0,"(a,i0,a,i0)") "Error reading Outbs file ", carriage, " at basis number ", j
+            write(0,"(a,i0)") "Was trying to read d_pes identifier for pes ", r 
+            write (0,"(a,i0)") "ierr was ", ierr
+            errorflag = 1
+            return
+          end if
+          if (LINE.ne."d") then
+            write(0,"(a,a)") "Error! Expected d but read ", trim(LINE)
+          end if
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,k,rl, im
+          if (ierr/=0) then
+            write(0,"(a,i0,a,i0)") "Error reading Outbs file ", carriage, " at basis number ", j
+            write(0,"(a,i0)") "Was trying to read d_pes line for pes ", r 
+            write (0,"(a,i0)") "ierr was ", ierr
+            errorflag = 1
+            return
+          end if
+          if (k.ne.r) then
+            write(0,"(a,i2,a,i2)") "Error. Expected d from pes ", r, "but got ", k
+          end if
+          if (j.gt.in_nbf) then
+            bs(def_stp*in_nbf+p)%d_pes(r)=cmplx(rl,im,kind=8)
+          else
+            bs(j+nbftrk2)%d_pes(r)=cmplx(rl,im,kind=8)
+          end if
+        end do
+        do r=1,npes
+          read(bsunit,*,iostat=ierr)LINE
+          if (ierr/=0) then
+            write(0,"(a,i0,a,i0)") "Error reading Outbs file ", carriage, " at basis number ", j
+            write(0,"(a,i0)") "Was trying to read s_pes identifier for pes ", r 
+            write (0,"(a,i0)") "ierr was ", ierr
+            errorflag = 1
+            return
+          end if
+          if (LINE.ne."s") then
+            write(0,"(a,a)") "Error! Expected s but read ", trim(LINE)
+          end if
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,k,rl
+          if (ierr/=0) then
+            write(0,"(a,i0,a,i0)") "Error reading Outbs file ", carriage, " at basis number ", j
+            write(0,"(a,i0)") "Was trying to read s_pes line for pes ", r 
+            write (0,"(a,i0)") "ierr was ", ierr
+            errorflag = 1
+            return
+          end if
+          if (k.ne.r) then
+            write(0,"(a,i2,a,i2)") "Error. Expected s from pes ", r, "but got ", k
+          end if
+          if (j.gt.in_nbf) then
+            bs(def_stp*in_nbf+p)%s_pes(r)=rl
+          else
+            bs(j+nbftrk2)%s_pes(r)=rl
+          end if
+        end do
+        do m=1,ndim
+          read(bsunit,*,iostat=ierr)LINE
+          if (ierr/=0) then
+            write(0,"(a,i0,a,i0)") "Error reading Outbs file ", carriage, " at basis number ", j
+            write(0,"(a,i0)") "Was trying to read z identifier for dof ", m 
+            write (0,"(a,i0)") "ierr was ", ierr
+            errorflag = 1
+            return
+          end if
+          if (LINE.ne."z") then
+            write(0,"(a,a)") "Error! Expected z, but read ", trim(LINE)
+          end if
+          backspace(bsunit)
+          read(bsunit,*,iostat=ierr)LINE,k,rl, im
+          if (ierr/=0) then
+            write(0,"(a,i0,a,i0)") "Error reading Outbs file ", carriage, " at basis number ", j
+            write(0,"(a,i0)") "Was trying to read z line for dof ", m 
+            write (0,"(a,i0)") "ierr was ", ierr
+            errorflag = 1
+            return
+          end if
+          if (k.ne.m) then
+            write(0,"(a,i2,a,i2)") "Error. Expected z dimension ", m, "but got ", k
+          end if
+          if (j.gt.in_nbf) then
+            bs(def_stp*in_nbf+p)%z(m)=cmplx(rl,im,kind=8)
+          else
+            bs(j+nbftrk2)%z(m)=cmplx(rl,im,kind=8)
+          end if
+        end do
+      end do
+
+      nbftrk2 = nbftrk2 + in_nbf  
+      carriage = carriage-trainsp
+      close(bsunit)
+    end do 
+    
+    do l=1,def_stp
+      old_bfs(l) = bfs(l)
+    end do
+    
+    if (nbftrk.ne.nbftrk2+p) then
+      write(0,"(a)") "The two nbf trackers do not agree. Problem with cloning indices!"
+      errorflag = 1
+      return
+    end if  
+
+    return
+    
+  end subroutine constrtrain
 
 !--------------------------------------------------------------------------------------------------
 

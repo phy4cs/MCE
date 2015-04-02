@@ -21,14 +21,16 @@ contains
 
 !*************************************************************************************************!
 
-  subroutine propstep (bs, dt, dtout, dtfin, time, genflg, timestrt_loc)
+  subroutine propstep (bs, dt, dtout, dtfin, time, genflg, timestrt_loc, x, reps, old_bfs)
 
     implicit none
     type(basisfn), dimension (:), intent (inout) :: bs
-    type(basisfn), dimension (:), allocatable :: dbs_dt1, bserr0, tempbs
     real(kind=8), intent (inout) :: dtout, dtfin
-    real(kind=8), intent(in) :: time, timestrt_loc, dt
-    integer, intent(in) :: genflg
+    real(kind=8), intent(inout) :: time, timestrt_loc, dt
+    integer, intent(inout), dimension(:) :: old_bfs
+    integer, intent(in) :: genflg, x, reps
+    
+    type(basisfn), dimension (:), allocatable :: dbs_dt1, bserr0, tempbs
     integer::k
 
     if (errorflag .ne. 0) return
@@ -36,7 +38,7 @@ contains
     call allocbs(dbs_dt1,size(bs))
     call allocbs(tempbs,size(bs))
 
-    call deriv(bs, dbs_dt1, 1, time, genflg)
+    call deriv(bs, dbs_dt1, 1, time, genflg, reps, x, old_bfs)
 
     if (step == "A") then
 
@@ -49,11 +51,11 @@ contains
         bserr0(k)%D_big = bs(k)%D_big + dbs_dt1(k)%D_big + tiny(0.0d0)
       end do
 
-      call rkstpctrl (bs, dbs_dt1, dt, bserr0, dtfin, dtout, tempbs, time, genflg)
+      call rkstpctrl (bs, dbs_dt1, dt, bserr0, dtfin, dtout, tempbs, time, genflg, reps, x, old_bfs)
 
     else if (step == "S") then
 
-      call rk4 (bs, dbs_dt1, dt, dtfin, dtout, tempbs, time, genflg)
+      call rk4 (bs, dbs_dt1, dt, dtfin, dtout, tempbs, time, genflg, x, reps, old_bfs)
   
     end if
 
@@ -69,17 +71,18 @@ contains
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine rkstpctrl(bs,dbs_dt1,dtprev,bserr0,dtfin,dtnext, tempbs, time, genflg)
+  subroutine rkstpctrl(bs,dbs_dt1,dtprev,bserr0,dtfin,dtnext, tempbs, time, genflg, reps, x, old_bfs)
 
     implicit none
     type(basisfn), dimension (:), intent (inout) :: tempbs
     type(basisfn), dimension (:), intent (in) :: dbs_dt1, bserr0, bs
     type(basisfn), dimension(:), allocatable :: bserr1
-    real(kind=8), intent (in) :: dtprev, time
+    real(kind=8), intent (inout) :: dtprev, time
     real(kind=8), intent (out) :: dtfin, dtnext
     real(kind=8) :: dt, diff, errmin
     real(kind=8), dimension(:), allocatable :: err1z, err0z
-    integer, intent(in) :: genflg
+    integer, intent(inout), dimension(:) :: old_bfs    
+    integer, intent(in) :: genflg, reps, x
     integer::k, r, adap, ierr
 
     if (errorflag .ne. 0) return
@@ -102,7 +105,7 @@ contains
 
     do
 
-      call rkck45(bs,dbs_dt1,dt,tempbs,bserr1, time, genflg)
+      call rkck45(bs,dbs_dt1,dt,tempbs,bserr1, time, genflg, reps, x, old_bfs)
 
       do k=1,size(bs)
         err1z(k) = sum(dble(dconjg(bserr1(k)%z(1:ndim))*(bserr1(k)%z(1:ndim))))
@@ -164,17 +167,18 @@ contains
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine rkck45(bsin,dbs_dt1,dt,tempbs,errbs, time, genflg)
+  subroutine rkck45(bsin,dbs_dt1,dt,tempbs,errbs, time, genflg, reps, x, old_bfs)
 
     implicit none 
     
     type(basisfn), dimension (:), intent (in) :: bsin, dbs_dt1
     type(basisfn), dimension (:), intent (inout) :: tempbs, errbs
     type(basisfn), dimension (:,:), allocatable::dbs_dt
-    real(kind=8),intent(in)::dt, time
+    real(kind=8),intent(inout)::dt, time
     real(kind=8),dimension(:), allocatable::a,c,d
     real(kind=8),dimension(:,:), allocatable::b
-    integer, intent(in) :: genflg
+    integer, intent(inout), dimension(:) :: old_bfs
+    integer, intent(in) :: genflg, reps, x
     integer::k, l, n, ierr
 
     if (errorflag .ne. 0) return
@@ -256,7 +260,7 @@ contains
         end do
       end do
 
-      call deriv(tempbs, dbs_dt(n,:), n, time, genflg)
+      call deriv(tempbs, dbs_dt(n,:), n, time, genflg, reps, x, old_bfs)
 
     end do
 
@@ -299,17 +303,19 @@ contains
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine rk4 (bsin, dbs_dt1, dt, dtfin, dtout, tempbs, time, genflg)
+  subroutine rk4 (bsin, dbs_dt1, dt, dtfin, dtout, tempbs, time, genflg, x, reps, old_bfs)
 
     implicit none 
     
     type(basisfn), dimension (:), intent (in) :: bsin, dbs_dt1
     type(basisfn), dimension (:), intent (inout) :: tempbs
     type(basisfn), dimension (:,:), allocatable :: dbs_dt
+    real(kind=8), dimension(ndim) :: dummy_arr
     real(kind=8),intent(inout)::dtfin, dtout
-    real(kind=8), intent(in) :: time, dt
+    real(kind=8), intent(inout) :: time, dt
     real(kind=8),dimension(:), allocatable::a,b,c
-    integer, intent(in) :: genflg
+    integer, intent(inout), dimension(:) :: old_bfs
+    integer, intent(in) :: genflg, x, reps
     integer::k, l, n, ierr
 
     if (errorflag .ne. 0) return
@@ -320,6 +326,8 @@ contains
       errorflag=1
       return
     end if 
+    
+    dummy_arr=0.0d0
 
 ! Coeffs for Runge-Kutta 4 method
 
@@ -363,7 +371,7 @@ contains
         tempbs(k)%a_pes(1:npes)=tempbs(k)%d_pes(1:npes)*exp(i*tempbs(k)%s_pes(1:npes))
       end do
 
-      call deriv(tempbs, dbs_dt(n,:), n, time, genflg)
+      call deriv(tempbs, dbs_dt(n,:), n, time, genflg, reps, x, old_bfs)
 
     end do
 

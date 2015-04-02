@@ -245,15 +245,38 @@ for a in "${methseq[@]}"; do
    mv $SUBDIR/input2.dat $SUBDIR/input.dat
   fi
   if [[ $gen -eq 0 ]]; then
-   if [[ -f "Outbs-001_$i.out" ]]; then 
-    echo "Outbs-001_$i.out found in $PWD"
-    for x in Outbs-*_$i.out; do
-     cp $x $SUBDIR/${x%_$i.out}.out
-    done
+   if [[ $method -eq "AIMC-MCE2" ]]; then
+    if [[ -f "Outbs-001-00000-0_$i.out" ]]; then
+     echo "Outbs-001-00000-0_$i.out found in $PWD"
+     for x in Outbs-*_$i.out; do
+      cp $x $SUBDIR/${x%_$i.out}.out
+     done
+    else
+     echo "Outbs-001-00000-0_$i.out not found in $PWD"
+     echo "For propagation to occur without basis set generation, all relevant input bases must be present"
+     exit 1
+    fi
+    if [[ -f "Clonetrack-001_$i.out" ]]; then
+     echo "Clonetrack-001_$i.out found in $PWD"
+     for x in Clonetrack-*_$i.out; do
+      cp $x $SUBDIR/${x%_$i.out}.out
+     done
+    else
+     echo "Clonetrack-001_$i.out not found in $PWD"
+     echo "For correct propagation with AQIMC-MCE second pass, the cloning tracking file must be present"
+     exit 1
+    fi 
    else
-    echo "Outbs-001_$i.out not found in $PWD"
-    echo "For propagation to occur without basis set generation, all relevant input bases must be present"
-    exit 1
+    if [[ -f "Outbs-001_$i.out" ]]; then 
+     echo "Outbs-001_$i.out found in $PWD"
+     for x in Outbs-*_$i.out; do
+      cp $x $SUBDIR/${x%_$i.out}.out
+     done
+    else
+     echo "Outbs-001_$i.out not found in $PWD"
+     echo "For propagation to occur without basis set generation, all relevant input bases must be present"
+     exit 1
+    fi
    fi
   fi
   if [ $HSTFLG -eq 0 ]; then

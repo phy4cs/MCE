@@ -572,7 +572,7 @@ contains
           do m=1,ndim
             bsnew(nbf+j)%z(m) = bs(k)%z(m)
           end do
-          write(47756,"(3i5,2es20.12e3)") x, k, nbf+j, abs(bs(k)%a_pes(1)), sqrt(1.-((abs(bs(k)%a_pes(1))**2.0d0)))
+          write(47756,"(3i5,2es25.17e3)") x, k, nbf+j, abs(bs(k)%a_pes(1)), sqrt(1.-((abs(bs(k)%a_pes(1))**2.0d0)))
           j = j+1
         else
           bsnew(k)%D_big = bs(k)%D_big
@@ -621,7 +621,145 @@ contains
       return
     end if 
 
-  end subroutine cloning     
+  end subroutine cloning   
+  
+!------------------------------------------------------------------------------------
+
+  subroutine retrieveclon (dummybs, bset, reps, x, time, nbf, initnorm)   ! Currently only works for 2pes.
+                                                     ! and for swarm trains - no aimce for swarms
+    implicit none
+  
+    type(basisfn), dimension (:), intent(inout), allocatable :: bset, dummybs 
+    real(kind=8), intent(in) :: time, initnorm
+    integer, intent(inout) :: nbf
+    integer, intent (in) :: reps, x
+
+    real(kind=8), dimension(ndim) ::dummyarr  
+    real(kind=8) :: amp1, amp2
+    integer, dimension(:), allocatable :: carriages
+    integer :: k, m, r, ierr, step, inbf, finbf, stepfwd, p, q, locnbf
+    character(LEN=3) :: rep 
+    
+    write(rep,"(i3.3)") reps
+    p=0
+    
+    locnbf = size(bset)
+    dummyarr = 0.0d0
+    
+    if (locnbf.eq.size(dummybs)) then
+      do k=1,locnbf
+        do r=1,npes
+          if ((abs(bset(k)%d_pes(r)) - abs(dummybs(k)%d_pes(r))).gt.1.0d-6) then
+            write (0,*) "Difference in expected and calculated a values too large in step ", x, " bf ", k
+            write (0,*) (bset(k)%a_pes(r)), (dummybs(k)%a_pes(r))
+          end if
+!          bset(k)%a_pes(r) = dummybs(k)%a_pes(r)
+!          bset(k)%d_pes(r) = dummybs(k)%d_pes(r)
+!          bset(k)%s_pes(r) = dummybs(k)%s_pes(r)
+        end do
+!        do m=1,ndim
+!          bset(k)%z(m) = dummybs(k)%z(m)
+!        end do
+      end do
+    else
+      do k=1,locnbf
+        dummybs(k)%D_big = bset(k)%D_big
+      end do
+      open (unit=354+reps, file="Clonetrack-"//rep//".out", status="old",iostat=ierr)
+      if (ierr/=0) then
+        write(0,"(3a,i0)") "Error opening Clonetrack-", rep, ".out file. ierr was ", ierr
+        errorflag = 1
+        return
+      end if
+      allocate (carriages(def_stp), stat = ierr)
+      if (ierr/=0) then
+        write(0,"(2(a,i0))") "Error allocating carriages array for step ", x, ". ierr was ", ierr
+        errorflag = 1
+        return
+      end if
+            
+      stepfwd = x - ((def_stp-1)/2)*trainsp
+      do q=1,def_stp
+        carriages(q) = stepfwd + (q-1)*trainsp
+      end do
+      
+      do while (ierr==0)
+        read (354+reps,"(3i5,2es25.17e3)", iostat=ierr) step, inbf, finbf, amp1, amp2
+        do q=1,def_stp
+          if ((step==carriages(q)).and.(ierr==0)) then
+            p=p+1
+            k=((def_stp-q)*in_nbf)+inbf
+            dummybs(k)%D_big = bset(k)%D_big * amp1
+            dummybs(locnbf+p)%D_big = bset(k)%D_big * amp2
+            write (0,"(2(a,i0))") "Cloned basis set ", k, " to basis set ", locnbf+p
+            if (dble(dummybs(locnbf+p)%a_pes(2))-(dble(bset(k)%a_pes(2))/amp2).gt.1.0d-6) then
+              write (0,"(4(a,es25.17e3),a)") "read a_pes values     : (", dble(dummybs(k)%a_pes(1)),",", &
+                         dimag(dummybs(k)%a_pes(1)),") , (", dble(dummybs(k)%a_pes(2)),",",dimag(dummybs(k)%a_pes(2)),")"
+              write (0,"(4(a,es25.17e3),a)") "                        (", dble(dummybs(locnbf+p)%a_pes(1)),",", &
+                               dimag(dummybs(locnbf+p)%a_pes(1)),") , (", dble(dummybs(locnbf+p)%a_pes(2)),",",&
+                               dimag(dummybs(locnbf+p)%a_pes(2)),")"
+              write (0,"(4(a,es25.17e3),a)") "expected a_pes values : (", dble(bset(k)%a_pes(1))/amp1,",", &
+                         dimag(bset(k)%a_pes(1))/amp1,") , (", 0.0d0,",",0.0d0,")"
+              write (0,"(4(a,es25.17e3),a)") "                        (", 0.0d0,",", &
+                               0.0d0,") , (", dble(bset(k)%a_pes(2))/amp2,",",&
+                               dimag(bset(k)%a_pes(2))/amp2,")"
+              call outbs(dummybs,reps,dummyarr, dummyarr, time,x,0)
+              errorflag = 1
+              return
+            end if
+          end if
+        end do
+      end do
+      close (354+reps)
+      deallocate (carriages, stat = ierr)
+      if (ierr/=0) then
+        write(0,"(2(a,i0))") "Error deallocating carriages array for step ", x, ". ierr was ", ierr
+        errorflag = 1
+        return
+      end if 
+      
+      if (p==0) then
+        write (0,"(3a)") "Expected cloning, but no cloning was found in the Cloningtrack-", rep,".out file"
+        write (0,"(a,i0)") "This should not have happened. Stepfwd was ", stepfwd
+        write (0,"(2(a,i0))") "Size of bset was ", locnbf, " and size of dummybs was ", size(dummybs)
+        errorflag = 1
+        return
+      else if (size(dummybs)-locnbf.ne.p) then
+        write(0,"(2a,i0)")"The difference between the basis set sizes was not equal to the number of ",&
+                    "cloning events found for step ", x+stepfwd
+        write(0,"(2(a,i0))") "Difference was ",size(dummybs)-locnbf, " and number of cloning events was ", p 
+        errorflag = 1
+        return
+      else
+        write (6,"(i0,a,i0)") p, " Cloning events occurred in step ", x
+      end if
+      
+      call deallocbs(bset)
+      call allocbs(bset,size(dummybs))
+      do k=1,size(dummybs)
+        bset(k)%D_big = dummybs(k)%D_big
+        do r=1,npes
+          bset(k)%a_pes(r) = dummybs(k)%a_pes(r)
+          bset(k)%d_pes(r) = dummybs(k)%d_pes(r)
+          bset(k)%s_pes(r) = dummybs(k)%s_pes(r)
+        end do
+        do m=1,ndim
+          bset(k)%z(m) = dummybs(k)%z(m)
+        end do
+      end do
+      
+    end if 
+    
+!    do k=1, size(bset)
+!      bset(k)%D_big = bset(k)%D_big/initnorm
+!    end do
+    
+    nbf = size(dummybs)
+    call deallocbs(dummybs)       
+          
+    return
+    
+  end subroutine retrieveclon
 
 !***********************************************************************************!
 end module bsetalter
