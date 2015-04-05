@@ -640,6 +640,8 @@ contains
     integer :: k, m, r, ierr, step, inbf, finbf, stepfwd, p, q, locnbf
     character(LEN=3) :: rep 
     
+    if (errorflag.ne.0) return
+    
     write(rep,"(i3.3)") reps
     p=0
     
@@ -691,7 +693,7 @@ contains
             k=((def_stp-q)*in_nbf)+inbf
             dummybs(k)%D_big = bset(k)%D_big * amp1
             dummybs(locnbf+p)%D_big = bset(k)%D_big * amp2
-            write (0,"(2(a,i0))") "Cloned basis set ", k, " to basis set ", locnbf+p
+            write (6,"(3(a,i4))") "Cloned basis set ", k, " to basis set ", locnbf+p, " in step ", x
             if (dble(dummybs(locnbf+p)%a_pes(2))-(dble(bset(k)%a_pes(2))/amp2).gt.1.0d-6) then
               write (0,"(4(a,es25.17e3),a)") "read a_pes values     : (", dble(dummybs(k)%a_pes(1)),",", &
                          dimag(dummybs(k)%a_pes(1)),") , (", dble(dummybs(k)%a_pes(2)),",",dimag(dummybs(k)%a_pes(2)),")"
@@ -722,6 +724,9 @@ contains
         write (0,"(3a)") "Expected cloning, but no cloning was found in the Cloningtrack-", rep,".out file"
         write (0,"(a,i0)") "This should not have happened. Stepfwd was ", stepfwd
         write (0,"(2(a,i0))") "Size of bset was ", locnbf, " and size of dummybs was ", size(dummybs)
+        do k=1,size(carriages)
+          write (0,*) carriages(k)
+        end do
         errorflag = 1
         return
       else if (size(dummybs)-locnbf.ne.p) then
@@ -730,8 +735,6 @@ contains
         write(0,"(2(a,i0))") "Difference was ",size(dummybs)-locnbf, " and number of cloning events was ", p 
         errorflag = 1
         return
-      else
-        write (6,"(i0,a,i0)") p, " Cloning events occurred in step ", x
       end if
       
       call deallocbs(bset)
@@ -749,10 +752,6 @@ contains
       end do
       
     end if 
-    
-!    do k=1, size(bset)
-!      bset(k)%D_big = bset(k)%D_big/initnorm
-!    end do
     
     nbf = size(dummybs)
     call deallocbs(dummybs)       

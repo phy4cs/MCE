@@ -21,13 +21,13 @@ contains
 
 !*************************************************************************************************!
 
-  subroutine propstep (bs, dt, dtout, dtfin, time, genflg, timestrt_loc, x, reps, old_bfs)
+  subroutine propstep (bs, dt, dtout, dtfin, time, genflg, timestrt_loc, x, reps, map_bfs)
 
     implicit none
     type(basisfn), dimension (:), intent (inout) :: bs
     real(kind=8), intent (inout) :: dtout, dtfin
     real(kind=8), intent(inout) :: time, timestrt_loc, dt
-    integer, intent(inout), dimension(:) :: old_bfs
+    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
     integer, intent(in) :: genflg, x, reps
     
     type(basisfn), dimension (:), allocatable :: dbs_dt1, bserr0, tempbs
@@ -38,7 +38,7 @@ contains
     call allocbs(dbs_dt1,size(bs))
     call allocbs(tempbs,size(bs))
 
-    call deriv(bs, dbs_dt1, 1, time, genflg, reps, x, old_bfs)
+    call deriv(bs, dbs_dt1, 1, time, genflg, reps, x, map_bfs)
 
     if (step == "A") then
 
@@ -51,11 +51,11 @@ contains
         bserr0(k)%D_big = bs(k)%D_big + dbs_dt1(k)%D_big + tiny(0.0d0)
       end do
 
-      call rkstpctrl (bs, dbs_dt1, dt, bserr0, dtfin, dtout, tempbs, time, genflg, reps, x, old_bfs)
+      call rkstpctrl (bs, dbs_dt1, dt, bserr0, dtfin, dtout, tempbs, time, genflg, reps, x, map_bfs)
 
     else if (step == "S") then
 
-      call rk4 (bs, dbs_dt1, dt, dtfin, dtout, tempbs, time, genflg, x, reps, old_bfs)
+      call rk4 (bs, dbs_dt1, dt, dtfin, dtout, tempbs, time, genflg, x, reps, map_bfs)
   
     end if
 
@@ -71,7 +71,7 @@ contains
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine rkstpctrl(bs,dbs_dt1,dtprev,bserr0,dtfin,dtnext, tempbs, time, genflg, reps, x, old_bfs)
+  subroutine rkstpctrl(bs,dbs_dt1,dtprev,bserr0,dtfin,dtnext, tempbs, time, genflg, reps, x, map_bfs)
 
     implicit none
     type(basisfn), dimension (:), intent (inout) :: tempbs
@@ -81,7 +81,7 @@ contains
     real(kind=8), intent (out) :: dtfin, dtnext
     real(kind=8) :: dt, diff, errmin
     real(kind=8), dimension(:), allocatable :: err1z, err0z
-    integer, intent(inout), dimension(:) :: old_bfs    
+    integer, intent(inout), dimension(:,:), allocatable :: map_bfs    
     integer, intent(in) :: genflg, reps, x
     integer::k, r, adap, ierr
 
@@ -105,7 +105,7 @@ contains
 
     do
 
-      call rkck45(bs,dbs_dt1,dt,tempbs,bserr1, time, genflg, reps, x, old_bfs)
+      call rkck45(bs,dbs_dt1,dt,tempbs,bserr1, time, genflg, reps, x, map_bfs)
 
       do k=1,size(bs)
         err1z(k) = sum(dble(dconjg(bserr1(k)%z(1:ndim))*(bserr1(k)%z(1:ndim))))
@@ -167,7 +167,7 @@ contains
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine rkck45(bsin,dbs_dt1,dt,tempbs,errbs, time, genflg, reps, x, old_bfs)
+  subroutine rkck45(bsin,dbs_dt1,dt,tempbs,errbs, time, genflg, reps, x, map_bfs)
 
     implicit none 
     
@@ -177,7 +177,7 @@ contains
     real(kind=8),intent(inout)::dt, time
     real(kind=8),dimension(:), allocatable::a,c,d
     real(kind=8),dimension(:,:), allocatable::b
-    integer, intent(inout), dimension(:) :: old_bfs
+    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
     integer, intent(in) :: genflg, reps, x
     integer::k, l, n, ierr
 
@@ -260,7 +260,7 @@ contains
         end do
       end do
 
-      call deriv(tempbs, dbs_dt(n,:), n, time, genflg, reps, x, old_bfs)
+      call deriv(tempbs, dbs_dt(n,:), n, time, genflg, reps, x, map_bfs)
 
     end do
 
@@ -303,7 +303,7 @@ contains
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine rk4 (bsin, dbs_dt1, dt, dtfin, dtout, tempbs, time, genflg, x, reps, old_bfs)
+  subroutine rk4 (bsin, dbs_dt1, dt, dtfin, dtout, tempbs, time, genflg, x, reps, map_bfs)
 
     implicit none 
     
@@ -314,7 +314,7 @@ contains
     real(kind=8),intent(inout)::dtfin, dtout
     real(kind=8), intent(inout) :: time, dt
     real(kind=8),dimension(:), allocatable::a,b,c
-    integer, intent(inout), dimension(:) :: old_bfs
+    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
     integer, intent(in) :: genflg, x, reps
     integer::k, l, n, ierr
 
@@ -371,7 +371,7 @@ contains
         tempbs(k)%a_pes(1:npes)=tempbs(k)%d_pes(1:npes)*exp(i*tempbs(k)%s_pes(1:npes))
       end do
 
-      call deriv(tempbs, dbs_dt(n,:), n, time, genflg, reps, x, old_bfs)
+      call deriv(tempbs, dbs_dt(n,:), n, time, genflg, reps, x, map_bfs)
 
     end do
 

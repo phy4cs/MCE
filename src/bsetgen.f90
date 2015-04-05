@@ -32,14 +32,14 @@ contains
 !              Populate/Generate array Subroutines
 !***********************************************************************************!
 
-  subroutine genbasis(bs, mup, muq, alcmprss, gridsp, t, initgrid, reps, old_bfs) 
+  subroutine genbasis(bs, mup, muq, alcmprss, gridsp, t, initgrid, reps, map_bfs) 
 
     implicit none
     type(basisfn), dimension(:), intent(inout) :: bs
     complex(kind=8), dimension(:,:), intent(inout)::initgrid
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(inout) :: alcmprss, gridsp, t
-    integer, intent(inout), dimension(:) :: old_bfs
+    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
     integer, intent(in)::reps
 
     if (errorflag .ne. 0) return
@@ -48,9 +48,9 @@ contains
       case ("SWARM")
         call gen_swarm(bs,mup,muq,alcmprss,t)
       case ("TRAIN")
-        call gen_train(bs,mup,muq,t,reps,old_bfs)
+        call gen_train(bs,mup,muq,t,reps,map_bfs)
       case ("SWTRN")
-        call gen_swtrn(bs,mup,muq,alcmprss,t,reps,old_bfs)
+        call gen_swtrn(bs,mup,muq,alcmprss,t,reps,map_bfs)
       case ("GRID")
         call gen_grid(bs,mup,muq,initgrid,gridsp,t)
       case ("GRSWM")
@@ -103,13 +103,13 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  subroutine gen_train(bs,mup,muq,t,reps,old_bfs)
+  subroutine gen_train(bs,mup,muq,t,reps,map_bfs)
 
     implicit none
     type(basisfn), dimension(:), intent(inout) :: bs
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(inout) :: t
-    integer, intent(inout), dimension(:) :: old_bfs
+    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
     integer, intent(in)::reps
     type (basisfn), dimension(:), allocatable :: bf
     real(kind=8) :: dt, dtnext, dtdone, timeold
@@ -137,7 +137,7 @@ contains
     dt = -1.0d0*dtinit
 
     do x=1,stepback
-      call propstep(bf,dt,dtnext,dtdone,t,genflg,timestrt,x,reps,old_bfs)
+      call propstep(bf,dt,dtnext,dtdone,t,genflg,timestrt,x,reps,map_bfs)
       t = t + dt
     end do
 
@@ -152,7 +152,7 @@ contains
         bs(((x-1)/trainsp)+1)%d_pes = bf(1)%d_pes
         bs(((x-1)/trainsp)+1)%s_pes = bf(1)%s_pes
       end if
-      call propstep(bf,dt,dtnext,dtdone,t,genflg,timestrt,x,reps,old_bfs)
+      call propstep(bf,dt,dtnext,dtdone,t,genflg,timestrt,x,reps,map_bfs)
       t = t + dt
     end do
 
@@ -168,13 +168,13 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  subroutine gen_swtrn(bs,mup,muq,alcmprss,t,reps,old_bfs)
+  subroutine gen_swtrn(bs,mup,muq,alcmprss,t,reps,map_bfs)
 
     implicit none
     type(basisfn), dimension(:), intent(inout) :: bs
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(inout) :: alcmprss, t
-    integer, intent(inout), dimension(:) :: old_bfs
+    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
     integer, intent(in)::reps
     type(basisfn), dimension(:), allocatable :: swrmbf, tmpbf
     type(basisfn) :: bf
@@ -253,7 +253,7 @@ contains
       dt = -1.0d0*dtinit
 
       do x=1,stepback
-        call propstep(swrmbf,dt,dtnext,dtdone,t,genflg,timestrt,x-stepback,reps,old_bfs)
+        call propstep(swrmbf,dt,dtnext,dtdone,t,genflg,timestrt,x-stepback,reps,map_bfs)
         t = t + dt
       end do
 
@@ -270,7 +270,7 @@ contains
             bs((((x-1)*swrmsize)/trainsp)+j)%s_pes = swrmbf(j)%s_pes
           end do
         end if
-        call propstep(swrmbf,dt,dtnext,dtdone,t,genflg,timestrt,x,reps,old_bfs)
+        call propstep(swrmbf,dt,dtnext,dtdone,t,genflg,timestrt,x,reps,map_bfs)
         t = t + dt
       end do
 
@@ -289,7 +289,7 @@ contains
         dt = -1.0d0*dtinit
 
         do x=1,stepback
-          call propstep(tmpbf,dt,dtnext,dtdone,t,genflg,timestrt,x,reps,old_bfs)
+          call propstep(tmpbf,dt,dtnext,dtdone,t,genflg,timestrt,x,reps,map_bfs)
           t = t + dt
         end do
 
@@ -305,7 +305,7 @@ contains
             bs(((x-1)/trainsp)+1)%d_pes = tmpbf(1)%d_pes
             bs(((x-1)/trainsp)+1)%s_pes = tmpbf(1)%s_pes
           end if
-          call propstep(tmpbf,dt,dtnext,dtdone,t,genflg,timestrt,x,reps,old_bfs)
+          call propstep(tmpbf,dt,dtnext,dtdone,t,genflg,timestrt,x,reps,map_bfs)
           t = t + dt
         end do
 

@@ -31,13 +31,13 @@ contains
 
 !***********************************************************************************!
 
-  subroutine deriv(bsin, bsout, rkstp, time, genflg, reps, x, old_bfs)
+  subroutine deriv(bsin, bsout, rkstp, time, genflg, reps, x, map_bfs)
 
     implicit none
     type(basisfn), dimension (:), intent (in) :: bsin
     type(basisfn), dimension (:), intent (inout) :: bsout
     real(kind=8), intent(inout) :: time
-    integer, intent(inout), dimension(:) :: old_bfs
+    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
     integer, intent(in) :: rkstp, genflg, reps, x
     
     type(basisfn), dimension(:), allocatable :: dummybs
@@ -149,7 +149,7 @@ contains
         call outbs (bsout, reps, dummy_arr, dummy_arr, time, x, rkstp)
         
       case ("AIMC2")
-        call constrtrain (dummybs, x, time, reps, dummy_arr, dummy_arr ,rkstp, genflg, size(bsin), old_bfs)
+        call constrtrain (dummybs, x, time, reps, dummy_arr, dummy_arr ,rkstp, genflg, size(bsin), map_bfs)
         if (size(dummybs).ne.(size(bsin))) then
           write (0,"(a)") "Size of basis set in memory does not match basis set in input file"
           write (0,"(a)") "This could be caused by an incorrect handling of a cloning event"

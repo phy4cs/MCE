@@ -14,7 +14,7 @@ Runfolder default
 debug 0
 
 #Basis Set Generation flag [YES/NO for generating the basis set]
-gen YES
+gen NO
 
 #Basis Set Propagation flag [YES/NO for prop YES
 prop YES
@@ -23,7 +23,7 @@ prop YES
 cmprss YES
 
 #Propagation method [can be CCS, MCEv1, MCEv2, AIMC-MCE1 (first pass), AIMC-MCE2 (Second pass) or MCE12 (uses both MCE methods). No support for vMCG, F-CCS or 2L-CCS yet.]
-method AIMC-MCE1
+method AIMC-MCE2
 
 #Number of repeats. Do not need to set manually - this is set by the run command.
 Repeats 1
@@ -32,7 +32,7 @@ Repeats 1
 Conjugate_Repeats NO
 
 # Number of basis functions 
-in_nbf 40
+in_nbf 10
 
 # Number of dimensions
 ndim 50
@@ -44,7 +44,7 @@ in_PES 1
 npes 2
 
 # determines shape of the initial basis [SWARM/SWTRN/TRAIN/GRID/GRSWM]
-basis SWARM
+basis SWTRN
 
 # Compression parameter (can be tweaked to allow better norm value, or altered automatically)   Used for swarms/swarm-trains/grid-swarms
 ALCMP 55.0
@@ -77,7 +77,7 @@ qsizez 100
 psizez 26
 
 # Flag for cloning basis functions (yes/no)
-Cloning yes
+Cloning no
 
 # Maximum number of Cloning events allowed
 max_cloning 8

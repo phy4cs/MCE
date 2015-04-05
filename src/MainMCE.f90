@@ -142,9 +142,11 @@ Program MainMCE
   real(kind=8), dimension(:,:), allocatable :: atrack, atrack2
   real(kind=8), dimension(:), allocatable :: mup, muq, popt, ndimacf
   real(kind=8) :: nrmtmp, nrm2tmp, ehrtmp, gridsp, timestrt_loc, timeend_loc, timeold
-  real(kind=8) :: time, dt, dtnext, dtdone, initehr, initnorm, initnorm2, alcmprss
-  integer, dimension(:), allocatable :: clone, clonenum, old_bfs
-  integer:: j, k, l, r, y, x, m, nbf, recalcs, conjrep, restart, reps, ierr, timestpunit, stepback
+  real(kind=8) :: time, dt, dtnext, dtdone, initehr, initnorm, initnorm2, alcmprss, dum_re1, dum_re2
+  integer, dimension(:,:), allocatable :: map_bfs
+  integer, dimension(:), allocatable :: clone, clonenum
+  integer :: j, k, l, r, y, x, m, nbf, recalcs, conjrep, restart, reps
+  integer :: ierr, timestpunit, stepback, dum_in1, dum_in2, dum_in3, finbf
   character(LEN=3):: rep
   
   !Reduction Variables
@@ -244,9 +246,10 @@ Program MainMCE
   !$omp                    norm2temp, ehren, acft, extmp, muq, mup, popt, ndimacf,  &
   !$omp                    nrmtmp, nrm2tmp, ehrtmp, gridsp, timestrt_loc,           &
   !$omp                    timeend_loc, timeold, time, dt, dtnext, dtdone, initehr, &
-  !$omp                    initnorm, initnorm2, alcmprss, clone, clonenum, old_bfs, &
+  !$omp                    initnorm, initnorm2, alcmprss, clone, clonenum, map_bfs, &
   !$omp                    j, k, r, y, l, x, m, nbf, recalcs, conjrep, restart,     &
-  !$omp                    reps, ierr, timestpunit, stepback, rep                   )
+  !$omp                    reps, ierr, timestpunit, stepback, dum_in1, dum_in2,     &
+  !$omp                    finbf, dum_in3, dum_re1, dum_re2, rep                    )
   
   !$omp do reduction (+:acf_t, extra, pops, absnorm, absnorm2, absehr)
   
@@ -347,7 +350,7 @@ Program MainMCE
           call allocbs(bset, nbf)
 
           !$omp critical             ! Critical block needed for random number gen. 
-          call genbasis(bset, mup, muq, alcmprss, gridsp, time, initgrid,reps,old_bfs) 
+          call genbasis(bset, mup, muq, alcmprss, gridsp, time, initgrid,reps,map_bfs) 
           !$omp end critical         
 
           call genD_big(bset, mup, muq, restart) !Generates the multi config D  
@@ -410,7 +413,7 @@ Program MainMCE
           dt = -1.0d0*dtinit
 
           do x=1,stepback
-            call propstep(bset,dt,dtnext,dtdone,time,1,timestrt_loc,x-stepback,reps,old_bfs)
+            call propstep(bset,dt,dtnext,dtdone,time,1,timestrt_loc,x-stepback,reps,map_bfs)
             time = time + dt
           end do  
           
@@ -420,7 +423,7 @@ Program MainMCE
 
           do x=1,stepback
             call outbs(bset, reps, mup, muq, time,x-stepback,0)
-            call propstep(bset,dt,dtnext,dtdone,time,1,timestrt_loc, x-stepback, reps, old_bfs)
+            call propstep(bset,dt,dtnext,dtdone,time,1,timestrt_loc, x-stepback, reps, map_bfs)
             time = time + dt    
           end do
           
@@ -462,13 +465,27 @@ Program MainMCE
                         int(real(abs((timeend_loc-timestrt_loc)/dtinit))), " steps remaining."
           else
             restart = 0
-            allocate(old_bfs(def_stp), stat=ierr)
+            finbf = 0
+            write(rep,"(i3.3)") reps
+            open (unit=354+reps, file="Clonetrack-"//rep//".out", status = "old", iostat = ierr)
             if (ierr/=0) then
-              write (0,"(a,i0)") "Error allocating old_bfs array. ierr was ", ierr
+              write (0,"(a,i0,a)") "Error opening the Clone tracking file in rep ", reps, " to find max cloning size"
+              write (0,"(a,i0)") "ierr was ", ierr
               errorflag = 1
             end if
-            old_bfs = in_nbf
-            call constrtrain (bset, 1, time, reps, mup, muq,0,1,def_stp*in_nbf, old_bfs)
+            do while (ierr==0)
+              read (354+reps,"(3i5,2es25.17e3)", iostat=ierr) dum_in1, dum_in2, dum_in3, dum_re1, dum_re2
+              if (dum_in3.gt.finbf) finbf = dum_in3
+            end do
+            close(354+reps)
+            allocate(map_bfs(def_stp,finbf), stat=ierr)
+            if (ierr/=0) then
+              write (0,"(a,i0)") "Error allocating map_bfs array. ierr was ", ierr
+              errorflag = 1
+            end if
+            write(0,"(2(a,i0))") "map_bfs size is ", def_stp, " by ", finbf
+            map_bfs = 0
+            call constrtrain (bset, 1, time, reps, mup, muq,0,1,def_stp*in_nbf, map_bfs)
             call genD_big(bset, mup, muq, restart)
             if (restart == 1 ) then
               write (0,"(a)") "Could not properly generate the D prefactors for the basis set"
@@ -607,7 +624,7 @@ Program MainMCE
           if (method=="AIMC1") call outbs(bset, reps, mup, muq, time,x,0)
           
           if (method=="AIMC2") then
-            call constrtrain (dummybs, x, time, reps, mup, muq,0,0,nbf,old_bfs)
+            call constrtrain (dummybs, x, time, reps, mup, muq,0,0,nbf,map_bfs)
             call retrieveclon (dummybs, bset, reps, x, time, nbf, nrmtmp)
           end if
 
@@ -617,7 +634,7 @@ Program MainMCE
             if ((time+dt-timeend_loc).lt.0.0d0) dt = timeend_loc - time
           end if
 
-          call propstep (bset, dt, dtnext, dtdone, time, genflg, timestrt_loc,x,reps, old_bfs)     ! This subroutine takes a single timestep
+          call propstep (bset, dt, dtnext, dtdone, time, genflg, timestrt_loc,x,reps, map_bfs)     ! This subroutine takes a single timestep
 
           if (dtdone.eq.dt) then   ! nsame and nchange are used to keep track of changes to the stepsize.
             !$omp atomic           !atomic parameter used to ensure two threads do not write to the same       
@@ -767,9 +784,9 @@ Program MainMCE
 !          close (8554)
         end if
         if (method=="AIMC2") then
-          deallocate(old_bfs, stat=ierr)
+          deallocate(map_bfs, stat=ierr)
           if (ierr/=0) then
-            write (0,"(a,i0)") "Error deallocating old_bfs array. ierr was ", ierr
+            write (0,"(a,i0)") "Error deallocating map_bfs array. ierr was ", ierr
             errorflag = 1
           end if 
         end if         
@@ -900,12 +917,12 @@ Program MainMCE
   end if 
   if (runtime/3600.0d0 .gt. 1.0d0)then
     runtime = runtime/3600.0d0
-    write(6,"(a,e12.5,a)") 'Time taken : ', runtime, ' hours' 
+    write(6,"(a,es12.5,a)") 'Time taken : ', runtime, ' hours' 
   else if (runtime/60.0d0 .gt. 1.0d0)then
     runtime = runtime/60.0d0 
-    write(6,"(a,e12.5,a)") 'Time taken : ', runtime , ' mins'
+    write(6,"(a,es12.5,a)") 'Time taken : ', runtime , ' mins'
   else
-    write(6,"(a,e12.5,a)") 'Time taken : ', runtime, ' seconds'        
+    write(6,"(a,es12.5,a)") 'Time taken : ', runtime, ' seconds'        
   end if
   
   

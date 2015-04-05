@@ -1343,26 +1343,30 @@ contains
   
 !--------------------------------------------------------------------------------------------------
 
-  subroutine constrtrain(bs, x, time, reps, mup, muq, rkstp, genflg,nbf,old_bfs)
+  subroutine constrtrain(bs, x, time, reps, mup, muq, rkstp, genflg,nbf,map_bfs)
   
     implicit none
     type(basisfn), intent(inout), dimension (:), allocatable :: bs
     real(kind=8),  intent(inout), dimension (:), allocatable :: mup, muq
     real(kind=8),  intent(inout) :: time
-    integer, intent(inout), dimension (:) :: old_bfs
+    integer, intent(inout), dimension (:,:), allocatable :: map_bfs
     integer, intent(in) :: x, reps,rkstp, genflg, nbf
+    
     real(kind=8) :: t, rl, im
+    integer, dimension(:,:), allocatable :: temp_map
     integer, dimension (:), allocatable :: bfs
-    integer :: carriage, stpback, bsunit, j, k, l, m, n, r, p, q, ierr, nbftrk, nbftrk2, temppar
+    integer :: carriage, stpback, bsunit, j, k, l, m, n, r, p, q, ierr, nbftrk, nbftrk2, temppar, maxbf
     character(LEN=255) :: LINE
     character(LEN=21) filename
     character(LEN=3) :: rep
     character(LEN=5) :: step, tempchar
     character(LEN=1) :: rkstp_char
+    
+    if (errorflag.ne.0) return
 
     stpback = ((def_stp-1)/2)*trainsp
     
-    carriage = x-stpback
+    carriage = x+stpback
     write(rep,"(i3.3)") reps
     write(rkstp_char,"(i1.1)") rkstp
     
@@ -1389,14 +1393,14 @@ contains
         errorflag = 1
         return
       end if
-      carriage = carriage + trainsp
+      carriage = carriage - trainsp
     end do
 
     if ((x==1).and.(rkstp==0).and.(genflg==1)) then 
     
       bsunit = 7065*reps+1
       n=0
-    
+      
       read(bsunit,*,iostat=ierr)LINE
 
       do while ((LINE.ne."zinit").and.(ierr==0))
@@ -1469,7 +1473,13 @@ contains
         errorflag = 1
         return
       end if 
-
+      
+      do j=1,def_stp
+        do k=1,in_nbf
+          map_bfs(j,k) = ((j-1)*in_nbf)+k
+        end do
+      end do
+      
       allocate (mup(ndim), stat=ierr)
       if (ierr == 0) allocate (muq(ndim), stat=ierr)
       if (ierr/=0) then
@@ -1495,9 +1505,9 @@ contains
       
       rewind (bsunit)    
       
-    end if
+    end if          !!!!!! End of initial reading of basis set parameters
     
-    carriage = x-stpback
+    carriage = x+stpback
     nbftrk = 0
     allocate(bfs(def_stp), stat = ierr)
     if (ierr/=0) then
@@ -1610,20 +1620,28 @@ contains
         return
       end if 
       backspace (bsunit)
-      carriage = carriage + trainsp
+      carriage = carriage - trainsp
     end do      
 
     call allocbs(bs,nbftrk)
+    
     nbftrk2 = 0
     carriage = x+stpback
     p=0
     n=0
+    maxbf = maxval(map_bfs)
  
-    do l=def_stp,1,-1
+    do l=1,def_stp
       bsunit=(7065+carriage)*reps
       do j=1,bfs(l)
         n=n+1
-        if (j.gt.in_nbf) p = p+1
+        if (map_bfs(l,j)==0) then
+          p=p+1
+          q=maxbf+p
+          map_bfs(l,j) = q
+        else
+          q=map_bfs(l,j)
+        end if  
         read(bsunit,*,iostat=ierr)LINE,k
         if (ierr/=0) then
           write(0,"(a,i0,a,i0)") "Error reading Outbs file ", carriage, " at basis number ", j
@@ -1677,11 +1695,7 @@ contains
           if (k.ne.r) then
             write (0,"(a,i2,a,i2)") "Error. Expected a from pes ", r, "but got ", k
           end if
-          if (j.gt.in_nbf) then
-            bs(def_stp*in_nbf+p)%a_pes(r)=cmplx(rl,im,kind=8)
-          else
-            bs(j+nbftrk2)%a_pes(r)=cmplx(rl,im,kind=8)
-          end if
+          bs(q)%a_pes(r)=cmplx(rl,im,kind=8)
         end do
         do r=1,npes
           read(bsunit,*,iostat=ierr)LINE
@@ -1707,11 +1721,7 @@ contains
           if (k.ne.r) then
             write(0,"(a,i2,a,i2)") "Error. Expected d from pes ", r, "but got ", k
           end if
-          if (j.gt.in_nbf) then
-            bs(def_stp*in_nbf+p)%d_pes(r)=cmplx(rl,im,kind=8)
-          else
-            bs(j+nbftrk2)%d_pes(r)=cmplx(rl,im,kind=8)
-          end if
+          bs(q)%d_pes(r)=cmplx(rl,im,kind=8)
         end do
         do r=1,npes
           read(bsunit,*,iostat=ierr)LINE
@@ -1737,11 +1747,7 @@ contains
           if (k.ne.r) then
             write(0,"(a,i2,a,i2)") "Error. Expected s from pes ", r, "but got ", k
           end if
-          if (j.gt.in_nbf) then
-            bs(def_stp*in_nbf+p)%s_pes(r)=rl
-          else
-            bs(j+nbftrk2)%s_pes(r)=rl
-          end if
+          bs(q)%s_pes(r)=rl
         end do
         do m=1,ndim
           read(bsunit,*,iostat=ierr)LINE
@@ -1767,25 +1773,17 @@ contains
           if (k.ne.m) then
             write(0,"(a,i2,a,i2)") "Error. Expected z dimension ", m, "but got ", k
           end if
-          if (j.gt.in_nbf) then
-            bs(def_stp*in_nbf+p)%z(m)=cmplx(rl,im,kind=8)
-          else
-            bs(j+nbftrk2)%z(m)=cmplx(rl,im,kind=8)
-          end if
+          bs(q)%z(m)=cmplx(rl,im,kind=8)
         end do
       end do
 
-      nbftrk2 = nbftrk2 + in_nbf  
       carriage = carriage-trainsp
       close(bsunit)
     end do 
     
-    do l=1,def_stp
-      old_bfs(l) = bfs(l)
-    end do
-    
-    if (nbftrk.ne.nbftrk2+p) then
+    if (maxval(map_bfs).ne.maxbf+p) then
       write(0,"(a)") "The two nbf trackers do not agree. Problem with cloning indices!"
+      write(0,"(2(a,i0))") "maxval(map_bfs) was ", maxval(map_bfs), " and maxbf+p was ", maxbf+p 
       errorflag = 1
       return
     end if  
