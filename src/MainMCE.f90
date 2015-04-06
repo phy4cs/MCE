@@ -625,7 +625,7 @@ Program MainMCE
           
           if (method=="AIMC2") then
             call constrtrain (dummybs, x, time, reps, mup, muq,0,0,nbf,map_bfs)
-            call retrieveclon (dummybs, bset, reps, x, time, nbf, nrmtmp)
+            call retrieveclon (dummybs, bset, reps, x, time, nbf, nrmtmp, map_bfs)
           end if
 
           if (timeend_loc.gt.timestrt_loc) then      

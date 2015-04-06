@@ -39,7 +39,7 @@ contains
     complex(kind=8), dimension(:,:), intent(inout)::initgrid
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(inout) :: alcmprss, gridsp, t
-    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
+    integer, intent(inout), dimension(:,:) :: map_bfs
     integer, intent(in)::reps
 
     if (errorflag .ne. 0) return
@@ -109,7 +109,7 @@ contains
     type(basisfn), dimension(:), intent(inout) :: bs
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(inout) :: t
-    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
+    integer, intent(inout), dimension(:,:) :: map_bfs
     integer, intent(in)::reps
     type (basisfn), dimension(:), allocatable :: bf
     real(kind=8) :: dt, dtnext, dtdone, timeold
@@ -174,7 +174,7 @@ contains
     type(basisfn), dimension(:), intent(inout) :: bs
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(inout) :: alcmprss, t
-    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
+    integer, intent(inout), dimension(:,:) :: map_bfs
     integer, intent(in)::reps
     type(basisfn), dimension(:), allocatable :: swrmbf, tmpbf
     type(basisfn) :: bf

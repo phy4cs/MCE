@@ -32,7 +32,7 @@ Repeats 1
 Conjugate_Repeats NO
 
 # Number of basis functions 
-in_nbf 40
+in_nbf 20
 
 # Number of dimensions
 ndim 50

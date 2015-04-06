@@ -37,7 +37,7 @@ contains
     type(basisfn), dimension (:), intent (in) :: bsin
     type(basisfn), dimension (:), intent (inout) :: bsout
     real(kind=8), intent(inout) :: time
-    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
+    integer, intent(inout), dimension(:,:) :: map_bfs
     integer, intent(in) :: rkstp, genflg, reps, x
     
     type(basisfn), dimension(:), allocatable :: dummybs

@@ -1349,7 +1349,7 @@ contains
     type(basisfn), intent(inout), dimension (:), allocatable :: bs
     real(kind=8),  intent(inout), dimension (:), allocatable :: mup, muq
     real(kind=8),  intent(inout) :: time
-    integer, intent(inout), dimension (:,:), allocatable :: map_bfs
+    integer, intent(inout), dimension (:,:) :: map_bfs
     integer, intent(in) :: x, reps,rkstp, genflg, nbf
     
     real(kind=8) :: t, rl, im

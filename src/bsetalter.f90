@@ -625,19 +625,20 @@ contains
   
 !------------------------------------------------------------------------------------
 
-  subroutine retrieveclon (dummybs, bset, reps, x, time, nbf, initnorm)   ! Currently only works for 2pes.
+  subroutine retrieveclon (dummybs, bset, reps, x, time, nbf, initnorm, map_bfs)   ! Currently only works for 2pes.
                                                      ! and for swarm trains - no aimce for swarms
     implicit none
   
     type(basisfn), dimension (:), intent(inout), allocatable :: bset, dummybs 
     real(kind=8), intent(in) :: time, initnorm
+    integer, dimension(:,:), intent(in) :: map_bfs
     integer, intent(inout) :: nbf
     integer, intent (in) :: reps, x
 
     real(kind=8), dimension(ndim) ::dummyarr  
     real(kind=8) :: amp1, amp2
     integer, dimension(:), allocatable :: carriages
-    integer :: k, m, r, ierr, step, inbf, finbf, stepfwd, p, q, locnbf
+    integer :: k, l, m, r, ierr, step, inbf, finbf, stepfwd, p, q, locnbf
     character(LEN=3) :: rep 
     
     if (errorflag.ne.0) return
@@ -680,9 +681,9 @@ contains
         return
       end if
             
-      stepfwd = x - ((def_stp-1)/2)*trainsp
+      stepfwd = x + ((def_stp-1)/2)*trainsp
       do q=1,def_stp
-        carriages(q) = stepfwd + (q-1)*trainsp
+        carriages(q) = stepfwd - (q-1)*trainsp
       end do
       
       do while (ierr==0)
@@ -690,16 +691,17 @@ contains
         do q=1,def_stp
           if ((step==carriages(q)).and.(ierr==0)) then
             p=p+1
-            k=((def_stp-q)*in_nbf)+inbf
+            k=map_bfs(q,inbf)
+            l=map_bfs(q,finbf)
             dummybs(k)%D_big = bset(k)%D_big * amp1
-            dummybs(locnbf+p)%D_big = bset(k)%D_big * amp2
-            write (6,"(3(a,i4))") "Cloned basis set ", k, " to basis set ", locnbf+p, " in step ", x
-            if (dble(dummybs(locnbf+p)%a_pes(2))-(dble(bset(k)%a_pes(2))/amp2).gt.1.0d-6) then
+            dummybs(l)%D_big = bset(k)%D_big * amp2
+            write (6,"(3(a,i4))") "Cloned basis set ", k, " to basis set ", l, " in step ", x
+            if (dble(dummybs(l)%a_pes(2))-(dble(bset(k)%a_pes(2))/amp2).gt.1.0d-6) then
               write (0,"(4(a,es25.17e3),a)") "read a_pes values     : (", dble(dummybs(k)%a_pes(1)),",", &
                          dimag(dummybs(k)%a_pes(1)),") , (", dble(dummybs(k)%a_pes(2)),",",dimag(dummybs(k)%a_pes(2)),")"
-              write (0,"(4(a,es25.17e3),a)") "                        (", dble(dummybs(locnbf+p)%a_pes(1)),",", &
-                               dimag(dummybs(locnbf+p)%a_pes(1)),") , (", dble(dummybs(locnbf+p)%a_pes(2)),",",&
-                               dimag(dummybs(locnbf+p)%a_pes(2)),")"
+              write (0,"(4(a,es25.17e3),a)") "                        (", dble(dummybs(l)%a_pes(1)),",", &
+                               dimag(dummybs(l)%a_pes(1)),") , (", dble(dummybs(l)%a_pes(2)),",",&
+                               dimag(dummybs(l)%a_pes(2)),")"
               write (0,"(4(a,es25.17e3),a)") "expected a_pes values : (", dble(bset(k)%a_pes(1))/amp1,",", &
                          dimag(bset(k)%a_pes(1))/amp1,") , (", 0.0d0,",",0.0d0,")"
               write (0,"(4(a,es25.17e3),a)") "                        (", 0.0d0,",", &

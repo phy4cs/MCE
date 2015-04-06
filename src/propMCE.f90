@@ -27,7 +27,7 @@ contains
     type(basisfn), dimension (:), intent (inout) :: bs
     real(kind=8), intent (inout) :: dtout, dtfin
     real(kind=8), intent(inout) :: time, timestrt_loc, dt
-    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
+    integer, intent(inout), dimension(:,:) :: map_bfs
     integer, intent(in) :: genflg, x, reps
     
     type(basisfn), dimension (:), allocatable :: dbs_dt1, bserr0, tempbs
@@ -81,7 +81,7 @@ contains
     real(kind=8), intent (out) :: dtfin, dtnext
     real(kind=8) :: dt, diff, errmin
     real(kind=8), dimension(:), allocatable :: err1z, err0z
-    integer, intent(inout), dimension(:,:), allocatable :: map_bfs    
+    integer, intent(inout), dimension(:,:) :: map_bfs    
     integer, intent(in) :: genflg, reps, x
     integer::k, r, adap, ierr
 
@@ -177,7 +177,7 @@ contains
     real(kind=8),intent(inout)::dt, time
     real(kind=8),dimension(:), allocatable::a,c,d
     real(kind=8),dimension(:,:), allocatable::b
-    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
+    integer, intent(inout), dimension(:,:) :: map_bfs
     integer, intent(in) :: genflg, reps, x
     integer::k, l, n, ierr
 
@@ -314,7 +314,7 @@ contains
     real(kind=8),intent(inout)::dtfin, dtout
     real(kind=8), intent(inout) :: time, dt
     real(kind=8),dimension(:), allocatable::a,b,c
-    integer, intent(inout), dimension(:,:), allocatable :: map_bfs
+    integer, intent(inout), dimension(:,:) :: map_bfs
     integer, intent(in) :: genflg, x, reps
     integer::k, l, n, ierr
 
