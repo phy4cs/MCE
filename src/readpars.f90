@@ -1894,6 +1894,57 @@ contains
     return
 
   end subroutine readtimepar
+  
+!--------------------------------------------------------------------------------------------------
+
+  subroutine readclone(clonenum, reps, clone)
+  
+    implicit none
+    
+    integer, dimension(:), intent(inout) :: clonenum, clone
+    integer, intent(in) :: reps
+    
+    integer :: j, k, p, q, n, ierr
+    character(LEN=255) :: filename
+    character(LEN=3) :: rep
+    
+    if (errorflag .ne. 0) return
+    
+    write(rep,"(i3.3)") reps
+    filename="clonearr-"//rep//".out"
+    
+    n = 90254+reps
+    
+    open(unit=n,file=trim(filename),status="old",iostat=ierr)
+    if (ierr/=0) then
+      write (0,"(3a,i0)") "Error opening ", trim(filename), " file. Ierr was ", ierr
+      errorflag = 1
+      return
+    end if
+    
+    do j=1,size(clonenum)
+      read (n,*,iostat=ierr) k, p, q
+      if (ierr/=0) then
+        write (0,"(3a,i0,a,i0)") "Error reading from ", trim(filename), " file when j = ", j, &
+                                  ". Ierr was ", ierr
+        errorflag = 1
+        return
+      end if
+      if (k.ne.j) then
+        write (0,"(3a,i0,a,i0)") "Error reading from ", trim(filename), " file. Expected j = ", j, &
+                                  " but read k = ", k
+        errorflag = 1
+        return
+      end if  
+      clonenum(j) = p
+      clone(j) = q
+    end do
+    
+    close(n)
+        
+    return
+  
+  end subroutine readclone  
     
 !*************************************************************************************************!
 

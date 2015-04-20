@@ -377,6 +377,42 @@ contains
 
 !--------------------------------------------------------------------------------------------------
 
+  subroutine outclones(clonenum, reps, clone)
+  
+    implicit none
+    
+    integer, dimension(:), intent(in) :: clonenum, clone
+    integer, intent(in) :: reps
+    
+    integer :: j, n, ierr
+    character(LEN=255) :: filename
+    character(LEN=3) :: rep
+    
+    
+    if (errorflag .ne. 0) return
+    
+    write(rep,"(i3.3)") reps
+    filename="clonearr-"//rep//".out"
+    
+    n = 90254+reps
+    
+    open(unit=n,file=trim(filename),status="unknown",iostat=ierr)
+    if (ierr/=0) then
+      write (0,"(3a,i0)") "Error opening ", trim(filename), " file. Ierr was ", ierr
+      errorflag = 1
+      return
+    end if
+
+    do j=1,size(clonenum)
+      write(n,"(i5,1x,i2,1x,i5)") j, clonenum(j), clone(j)
+    end do
+    
+    close(n)
+    
+  end subroutine outclones
+
+!--------------------------------------------------------------------------------------------------
+
    subroutine graphwavefn(DC, x, z0)
 
     implicit none

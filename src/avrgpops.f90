@@ -1,13 +1,14 @@
 Program avrgnorm
 
   implicit none
-  integer::ierr, i=1, k=1, l=1, n, m, tot=0,folders, folreps, totreps
-  real(kind=8),dimension(:),allocatable::pop1, pop2, popsum, popdiff, nrm, rlacf
+  integer::ierr, i=1, j=1, k=1, l=1, n, m, tot=0,folders, folreps, totreps, cols
+  real(kind=8), dimension (:,:), allocatable :: pops
+  real(kind=8),dimension(:),allocatable::pop1, pop2, popsum, popdiff, nrm, rlacf, popsav
   real(kind=8),dimension(:),allocatable::imacf, abacf, ehr, time, rlex, imex, abex
   real(kind=8)::pop1av, pop2av, popsumav, popdiffav, nrmav, rlacfav, imacfav
   real(kind=8)::abacfav, rlexav, imexav, abexav, ehrav, timeav
   character(LEN=100)::LINE, filename
-  character(LEN=17)::myfmt
+  character(LEN=19)::myfmt
   character(LEN=6)::repstr, lstr, timestp
   character(LEN=5000)::lngchar, lngchar2
   integer, dimension(:),allocatable::valid, lines
@@ -28,6 +29,13 @@ Program avrgnorm
     stop
   end if
   read (LINE,*) totreps
+  call getarg(3,LINE)
+  if (ierr==-1) then
+    write (0,"(a,a)") "Error! Could not read third argument for ", trim(filename)
+    write (0,"(a)") "This should be the number of columns in each normpop file."
+    stop
+  end if
+  read (LINE,*) cols  
 
   folreps = totreps/folders
 
@@ -86,10 +94,15 @@ Program avrgnorm
   allocate(imex(tot))
   allocate(abex(tot))
   allocate(ehr(tot))
-  allocate(pop1(tot))
-  allocate(pop2(tot))
-  allocate(popsum(tot))
-  allocate(popdiff(tot))
+  if (cols==13) then
+    allocate(pop1(tot))
+    allocate(pop2(tot))
+    allocate(popsum(tot))
+    allocate(popdiff(tot))
+  else
+    allocate(pops(cols-9,tot))
+    allocate(popsav(cols-9))
+  end if
   n = 1130
   m = 7150
 
@@ -139,8 +152,13 @@ Program avrgnorm
       stop
     end if
 
-    write (m,*) "Time Norm Re(ACF(t)) Im(ACF(t) |ACF(t)| Re(Extra) Im(Extra)", &
+    if (cols==13) then
+      write (m,"(2a)") "Time Norm Re(ACF(t)) Im(ACF(t) |ACF(t)| Re(Extra) Im(Extra)", &
                            " |Extra| Sum(HEhr) Pop1 Pop2 Pop1+Pop2 Pop2-Pop1"
+    else
+      write (m,"(2a)") "Time Norm Re(ACF(t)) Im(ACF(t) |ACF(t)| Re(Extra) Im(Extra)", &
+                           " |Extra| Sum(HEhr) Pops(1..n)"
+    end if
     write (m,*) ""
     write (m,*) ""
 
@@ -174,13 +192,25 @@ Program avrgnorm
       imexav = sum(imex(1:i))/i
       abexav = sum(abex(1:i))/i
       ehrav = sum(ehr(1:i))/i
-      pop1av = sum(pop1(1:i))/i
-      pop2av = sum(pop2(1:i))/i
-      popsumav = sum(popsum(1:i))/i
-      popdiffav = sum(popdiff(1:i))/i
+      if (cols==13) then
+        pop1av = sum(pop1(1:i))/i
+        pop2av = sum(pop2(1:i))/i
+        popsumav = sum(popsum(1:i))/i
+        popdiffav = sum(popdiff(1:i))/i
+      else
+        do j=1,size(popsav)
+          popsav(j) = sum(pops(j,1:i))/i
+        end do
+      end if
 
-      write (m,"(13(1x,e15.8))") timeav,nrmav,rlacfav,imacfav,abacfav,rlexav,&
+      if (cols == 13) then
+        write (m,"(13(1x,es16.8e3))") timeav,nrmav,rlacfav,imacfav,abacfav,rlexav,&
                         imexav,abexav,ehrav,pop1av,pop2av,popsumav,popdiffav
+      else
+        write(myfmt,"(a,i0,a)") '"(', cols, '(1x,es16.8e3))"'
+        write(m,myfmt) timeav,nrmav,rlacfav,imacfav,abacfav,rlexav,&
+                        imexav,abexav,ehrav,popsav
+      end if
 
     end do
 
@@ -218,8 +248,23 @@ Program avrgnorm
   write(175,"(a)") 'set ylabel "Population difference"'
   write(175,"(a)") trim(lngchar)
   close (175)
+  
+  open (unit=175,file="plottotpopdiff.gpl",status="unknown",iostat=ierr)
+  if (ierr .ne. 0) then
+    write (0,"(a)") 'Error in opening plottotpopdiff.gpl output file'
+    stop
+  end if
 
-  if (tot .gt. 1) then
+  write(175,"(a)") 'set terminal png'
+  write(175,"(a)") 'set output "popstot.png"'
+  write(175,"(a)") 'set title "Graph total population difference"'
+  write(175,"(a)") 'set xlabel "Time"'
+  write(175,"(a)") 'set ylabel "Population difference"'
+  write(175,"(a)") 'plot "normpop_cumul_'//trim(repstr)//'.out" u 1:13 t "' & 
+                         //trim(repstr)//' Reps" w l, "" u 1:2 t "Total Av Norm" w l'
+  close (175)  
+
+  if ((tot .gt. 1).and.(cols==13)) then
 
     open(unit=180,file="popdiffresiduals.out",status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
@@ -232,7 +277,7 @@ Program avrgnorm
       rewind(n)
       do
         read(n,*,iostat=ierr) LINE
-        if (LINE=="0.00000000E+00") then
+        if (LINE=="0.00000000E+000") then
           backspace(n)
           exit
         else
@@ -248,7 +293,7 @@ Program avrgnorm
         read(n,*,iostat=ierr)time(i),nrm(i),rlacf(i),imacf(i),abacf(i),rlex(i),&
                       imex(i),abex(i),ehr(i),pop1(i),pop2(i),popsum(i),popdiff(i)
         if (time(i).ne.time(1)) then
-          write (0,"(a,a,e15.8,a,i0)"),"File synchronisation error when reading at",&
+          write (0,"(a,a,es16.8e3,a,i0)"),"File synchronisation error when reading at",&
                                "time ", time(1) ," in unit ", n
           write (0,"(a,i0,a,i0,a,i0)") "i = ", i, " n = ", n
           stop
@@ -259,7 +304,7 @@ Program avrgnorm
         popdiff(i)=popdiff(tot)-popdiff(i)
       end do
 
-      write (myfmt,'(a,i0,a)') '(', tot+1, '(1x,e12.5))'
+      write (myfmt,'(a,i4.4,a)') '(', tot+1, '(1x,es16.8e3))'
        
       write (180,trim(myfmt)) time(1), popdiff
 
