@@ -2,7 +2,7 @@ Program MainMCE
 
 !***********************************************************************************!
 !                                                                                   !
-!  MCE program - by Chris Symonds     Version 0.970              Date : 04/03/15    !
+!  MCE program - by Chris Symonds     Version 0.980              Date : 04/03/15    !
 !                                                                                   !
 !  This Program performs simulations using the Multi-Configurational Ehrenfest      !
 !  method with the formulations given in D. Shalashilin's 2010 (MCEv2) and          !
@@ -39,12 +39,9 @@ Program MainMCE
 !         histogram is generatedwith which an appropriate static stepsize is        !
 !         generated.                                                                !
 !                                                                                   !
-!  To do list as of 14/04/2014:                                                     !
+!  To do list as of 08/04/2015:                                                     !
 !      1) Include multilayer CCS and possible Fermionic CCS capability              !
-!      2) Write a post-propagation processing system to allow for the use of        !
-!          AIMC-MCE propagation, as cloned swarm/trains takes a very long time to    !
-!         complete                                                                  !
-!      3) Clean and fully comment code to bring it up to a version 1.0 level        !
+!      2) Clean and fully comment code to bring it up to a version 1.0 level        !
 !                                                                                   !
 !  Changelog :                                                                      !
 !      25/09/13 - Added Comments and large preamble section to Main and preamble to !
@@ -113,12 +110,18 @@ Program MainMCE
 !               - Included the 3D Coulomb Potential                                 !  
 !               - Set functionality to allow starting at t=/=0 when using an input  !
 !                 set, and also set output of the basis set at each timestep        !
-!       04/03/15 - Repaired the adaptive timestep and openMP systems, which now work!
-!                  fully.                                                           !
-!                - Repaired the Coulomb potential, which was not being properly     !
-!                  calculated                                                       !
-!                - Changed the running scripts to allow for use of make to compile  !
-!                - Ensured that the program works properly for all model potentials !
+!      04/03/15 - Repaired the adaptive timestep and openMP systems, which now work !
+!                 fully.                                                            !
+!               - Repaired the Coulomb potential, which was not being properly      !
+!                 calculated                                                        !
+!               - Changed the running scripts to allow for use of make to compile   !
+!               - Ensured that the program works properly for all model potentials  !
+!      08/04/15 - Implemented the AIMC-MCE propagation system which allows the      !
+!                 propagation of the single configurations separately from the      !
+!                 multi-configurational part. This is not really vital for the      !
+!                 simulation of models, as the single configuration equations are   !
+!                 not very expensive, however if the program were to be extended to !
+!                 QMD with real molecules it would be useful.                       !
 !                                                                                   !
 !***********************************************************************************!
 
@@ -141,8 +144,9 @@ Program MainMCE
   complex(kind=8)::normtemp, norm2temp, ehren, acft, extmp
   real(kind=8), dimension(:,:), allocatable :: atrack, atrack2
   real(kind=8), dimension(:), allocatable :: mup, muq, popt, ndimacf
-  real(kind=8) :: nrmtmp, nrm2tmp, ehrtmp, gridsp, timestrt_loc, timeend_loc, timeold
-  real(kind=8) :: time, dt, dtnext, dtdone, initehr, initnorm, initnorm2, alcmprss, dum_re1, dum_re2
+  real(kind=8) :: nrmtmp, nrm2tmp, ehrtmp, gridsp, timestrt_loc 
+  real(kind=8) :: timeend_loc, timeold, time, dt, dtnext, dtdone, initehr
+  real(kind=8) :: initnorm, initnorm2, alcmprss, dum_re1, dum_re2
   integer, dimension(:,:), allocatable :: map_bfs
   integer, dimension(:), allocatable :: clone, clonenum
   integer :: j, k, l, r, y, x, m, nbf, recalcs, conjrep, restart, reps
@@ -167,7 +171,7 @@ Program MainMCE
   write(6,"(a)") " ________________________________________________________________ "
   write(6,"(a)") "|                                                                |"
   write(6,"(a)") "|                                                                |"
-  write(6,"(a)") "|                  MCE Simulation Program v0.970                 |"
+  write(6,"(a)") "|                  MCE Simulation Program v0.980                 |"
   write(6,"(a)") "|                                                                |"
   write(6,"(a)") "|________________________________________________________________|"
   write(6,"(a)") ""
@@ -350,7 +354,7 @@ Program MainMCE
           call allocbs(bset, nbf)
 
           !$omp critical             ! Critical block needed for random number gen. 
-          call genbasis(bset, mup, muq, alcmprss, gridsp, time, initgrid,reps,map_bfs) 
+          call genbasis(bset,mup,muq,alcmprss,gridsp,time,initgrid,reps,map_bfs) 
           !$omp end critical         
 
           call genD_big(bset, mup, muq, restart) !Generates the multi config D  
@@ -452,6 +456,7 @@ Program MainMCE
         x=0
 
         if (gen.eq."N") then
+          !$omp critical          !Critical block to stop inputs getting confused
           if (conjrep == 2) then               ! Stops it looking for a basis set file if conjugate repetition selected 
             write(0,"(a)") "Propagation only selected with conjugate repeats enabled."
             write(0,"(a)") "This error message should not ever be seen, and means something's corrupted"
@@ -494,6 +499,7 @@ Program MainMCE
             nbf = def_stp*in_nbf
             timestrt_loc=time
           end if
+          !$omp end critical
         end if
 
         dt = dtinit                ! The value read from the input stage. In adaptive step theis changes
@@ -578,27 +584,15 @@ Program MainMCE
             write(0,"(a)") "Error in allocating clone arrays"
             errorflag = 1
           end if
-          do j=1,nbf
-            clone(j) = 0
-            clonenum(j) = 0
-          end do
+          if (gen=="N") then
+            call readclone(clonenum, reps, clone)
+          else
+            do j=1,nbf
+              clone(j) = 0
+              clonenum(j) = 0
+            end do
+          end if
         end if
-
-!        if (cloneflg.eq."YES") then
-!          allocate (atrack(1,nbf), stat=ierr)
-!          if (ierr/=0) then
-!            write (0,"(a)") "Error in initially allocating the atrack array"
-!            errorflag = 1
-!          end if
-!          atrack(1,:) = 1.0d0
-!          do j=1,nbf
-!            do r = 1,npes
-!              atrack(1,j) = atrack(1,j) * abs(bset(j)%a_pes(r))
-!            end do
-!            atrack(1,j) = atrack(1,j)**2.0d0
-!            atrack(1,j) = abs(bset(j)%a_pes(1)) - abs(bset(j)%a_pes(2))
-!          end do
-!        end if
 
         write(6,"(a)") "Beginning Propagation"
 
@@ -703,45 +697,12 @@ Program MainMCE
             call outnormpopadap(nrmtmp,acft,extmp,ehrtmp,popt,x,reps,time)
           end if
           
-          if (method/="AIMC1") call outbs(bset, reps, mup, muq, time,x,0)
-        
-!          if (cloneflg.eq."YES") then
-!            allocate (atrack2(size(atrack,1),size(atrack,2)), stat=ierr)
-!            if (ierr/=0) then
-!              write (0,"(a)") "Error in allocating the atrack2 array"
-!              errorflag = 1
-!            end if
-!            do j=1, size(atrack,2)
-!              do l=1, size(atrack,1)
-!                atrack2(l,j) = atrack(l,j)
-!              end do
-!            end do
-!            deallocate (atrack, stat=ierr)
-!            if (ierr==0) allocate (atrack(y,nbf), stat = ierr)
-!            if (ierr/=0) then
-!              write (0,"(a)") "Error in de- and re-allocating the atrack array"
-!              errorflag = 1
-!            end if            
-!            atrack(:,:) = 0.0d0
-!            do j=1, size(atrack2,2)
-!              do l=1, size(atrack2,1)
-!                atrack(l,j) = atrack2(l,j)
-!              end do
-!            end do 
-!            atrack(y,:) = 1.0d0
-!            do j=1,nbf
-!              do r = 1,npes
-!                atrack(y,j) = atrack(y,j) * abs(bset(j)%a_pes(r))
-!              end do
-!              atrack(y,j) = atrack(y,j)**2.0d0
-!              atrack(y,j) = abs(bset(j)%a_pes(1)) - abs(bset(j)%a_pes(2))
-!            end do
-!            deallocate(atrack2, stat = ierr)
-!            if (ierr/=0) then
-!              write (0,"(a)") "Error in deallocating the atrack2 array"
-!              errorflag = 1
-!            end if
-!          end if
+          if (method/="AIMC1") then
+            call outbs(bset, reps, mup, muq, time,x,0)
+            if (cloneflg == "YES") then
+              call outclones(clonenum, reps, clone)
+            end if
+          end if
 
           !call conservchk(initehr, initnorm, ehrtmp, nrmtmp, reps)  !Checks that all conserved quantites are conserved.
                                               !Disabled to ensure that small fluctuations aren't disruptive
@@ -772,16 +733,6 @@ Program MainMCE
             write(0,"(a)") "Error in deallocating clone arrays"
             errorflag = 1
           end if
-!          write(rep,"(i3.3)") reps
-!          open (unit=8554,file="atrack"//trim(rep)//".out",status="unknown",iostat=ierr)
-!          if (ierr/=0) then
-!            write (0,"(a,a)") "Error in opening the atrack output file in rep ", trim(rep)
-!            errorflag = 1
-!          end if
-!          do l=1, size(atrack,1)
-!            write(8554,*) atrack(l,:)
-!          end do
-!          close (8554)
         end if
         if (method=="AIMC2") then
           deallocate(map_bfs, stat=ierr)

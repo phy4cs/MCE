@@ -7,7 +7,7 @@ VPATH=../src
 
 # Link step
 
-all: Main avrgpops timehist
+all: Main avrgpops timehist subavrg interpolate
 
 Main:randgen.o dcerf.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o cp.o hh.o outputs.o redirect.o Ham.o Chks.o bsetalter.o readpars.o derivsMCE.o propMCE.o bsetgen.o MainMCE.o 
 	 $(F90) $(FFLAGS) -o MCE.exe randgen.o dcerf.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o cp.o hh.o outputs.o redirect.o Ham.o Chks.o bsetalter.o readpars.o derivsMCE.o propMCE.o bsetgen.o MainMCE.o $(FLINKS)
@@ -15,8 +15,14 @@ Main:randgen.o dcerf.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o cp.o hh.o outp
 avrgpops:avrgpops.f90
 	 $(F90) -O2 -o avrgpops.exe $<
 	 
+subavrg:subavrg.f90
+	 $(F90) -O2 -o subavrg.exe $<
+	 
 timehist:timehist.f90
 	 $(F90) -O2 -o timehist.exe $<
+	 
+interpolate: interpolate.o neville.o
+	 $(F90) -O2 -o interpolate.exe $<
 
 # Compile steps
  
@@ -82,8 +88,13 @@ bsetgen.o:bsetgen.f90 vars.o Ham.o alarrays.o outputs.o Chks.o redirect.o propMC
 
 MainMCE.o:MainMCE.f90 bsetgen.o bsetalter.o Ham.o vars.o readpars.o outputs.o alarrays.o Chks.o propMCE.o redirect.o 
 	 $(F90) $(FFLAGS) -c $<
-
 	 
+neville.o:neville.f90
+	 $(F90) -O2 -c $<
+	 
+interpolate.o:interpolate.f90 neville.o
+	 $(F90) -O2 -c $<
+	  
 # This entry allows you to type " make clean " to get rid of
 # all object and module files 
 

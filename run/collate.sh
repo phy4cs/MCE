@@ -80,8 +80,9 @@ if [[ -f timehist_1.out ]]; then
 fi
 
 if [[ -f normpop_1.out ]]; then
+ cols=$( awk '{print NF}' normpop_1.out | sort -nu | tail -n 1 )
  cp $RUNF/avrgpops.exe .
- ./avrgpops.exe $FOLDERS $2
+ ./avrgpops.exe $FOLDERS $2 $cols
 fi
 
 for i in "${folseq[@]}"; do
@@ -98,10 +99,7 @@ GPL=1
 command -v gnuplot >/dev/null 2>&1 || { echo >&2 "Unable to plot results as gnuplot is missing."; GPL=0; }
 cd "$RESDIR"
 if [[ $GPL -eq 1 ]]; then
- if [[ -f plothist.gpl ]]; then gnuplot plothist.gpl; fi
- if [[ -f plothistall.gpl ]]; then gnuplot plothistall.gpl; fi
- if [[ -f plotpopdiff.gpl ]]; then gnuplot plotpopdiff.gpl; fi
- if [[ -f plotpopres.gpl ]]; then gnuplot plotpopres.gpl; fi
+ for i in *.gpl; do gnuplot $i; done
 fi
 
 cd $RESDIR

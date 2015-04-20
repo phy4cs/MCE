@@ -8,7 +8,7 @@ VPATH=../src
 
 # Link step
 
-all: Main avrgpops timehist
+all: Main avrgpops timehist subavrg interpolate
 
 Main:BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o dcerf.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o cp.o hh.o outputs.o redirect.o Ham.o Chks.o bsetalter.o readpars.o derivsMCE.o propMCE.o bsetgen.o MainMCE.o 
 	 $(F90) $(FFLAGS) -o MCE.exe BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o dcerf.o vars.o alarrays.o sb.o hp.o fp.o mp.o iv.o cp.o hh.o outputs.o redirect.o Ham.o Chks.o bsetalter.o readpars.o derivsMCE.o propMCE.o bsetgen.o MainMCE.o $(FLINKS)
@@ -16,8 +16,14 @@ Main:BLAS.o zgesv_with_dpndnss.o zheev_with_dpndnss.o randgen.o dcerf.o vars.o a
 avrgpops:avrgpops.f90
 	 $(F90) $(FFLAGS) -o avrgpops.exe $<
 	 
+subavrg:subavrg.f90
+	 $(F90) -O2 -o subavrg.exe $<
+	 
 timehist:timehist.f90
 	 $(F90) $(FFLAGS) -o timehist.exe $<
+	 
+interpolate:neville.o interpolate.o
+	 $(F90) -O2 -o interpolate.exe neville.o interpolate.o
 
 # Compile steps
  
@@ -92,6 +98,12 @@ bsetgen.o:bsetgen.f90 vars.o Ham.o alarrays.o outputs.o Chks.o redirect.o propMC
 
 MainMCE.o:MainMCE.f90 bsetgen.o bsetalter.o Ham.o vars.o readpars.o outputs.o alarrays.o Chks.o propMCE.o redirect.o 
 	 $(F90) $(FFLAGS) -c $<
+	 
+neville.o:neville.f90
+	 $(F90) -O2 -c $<
+	 
+interpolate.o:interpolate.f90 neville.o
+	 $(F90) -O2 -c $<
 	 
 clean:
 	rm -rf f_{files,modd}* *.o *.mod *.exe *~ ../run/*.exe ../run/*~ ../src/*~
