@@ -29,7 +29,7 @@ method MCEv2
 Repeats 1
 
 #Conjugate repeats flag. Allows even number repeats to start at the complex conjugate of the previous runs initial position [YES/NO]
-Conjugate_Repeats YES
+Conjugate_Repeats NO
 
 # Number of basis functions 
 in_nbf 420
@@ -86,7 +86,7 @@ max_cloning 4
 clon_freq 250
 
 # spacing between trajectories for train type basis set. Used for trains/swarm-trains
-trainsp 25
+trainsp 50
 
 # default steps per train. Used for swarm-trains only. This is sometimes increased/decreased by 1.
 def_stp 21

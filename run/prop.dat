@@ -7,7 +7,7 @@ dtmax 2.0d-01
 #Starting stepsize of adaptive / Constant stepsize for Static stepsize
 dtinit 0.05d-01
 #End Time of propagation
-time_end 0.10d+02
+time_end 0.15d+02
 #Start time of propagation
 time_start 0.0d+00
 #Propagation size - either "static" or "adaptive"

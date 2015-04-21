@@ -278,6 +278,24 @@ for a in "${methseq[@]}"; do
      exit 1
     fi
    fi
+   clone=`grep -i "^Cloning" input.dat`
+   if [[ $? == 1 || $? == 2 ]]; then
+    echo "Could not read the cloning flag from input.dat. Exitting"
+    exit 1
+   fi
+   clone=${clone#* }
+   if [[ $clone == "yes" ]]; then
+    if [[ -f "clonearr-001_$i.out" ]]; then 
+     echo "clonearr-001_$i.out found in $PWD"
+     for x in clonearr-*_$i.out; do
+      cp $x $SUBDIR/${x%_$i.out}.out
+     done
+    else
+     echo "clonearr-001_$i.out not found in $PWD"
+     echo "For cloned propagation to occur without basis set generation, prior cloning information is needed"
+     exit 1
+    fi
+   fi 
   fi
   if [ $HSTFLG -eq 0 ]; then
    cd $SUBDIR/

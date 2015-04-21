@@ -1,5 +1,11 @@
 #! /bin/bash
 
+# This script combines the normpop files from multiple partial runs, requiring a list of the required folders
+# WHICH SHOULD BE IN ORDER! The script calls an averaging program <<subavrg.exe>> for static stepsizes, and
+# the interpolation program <<interpolate.exe>> to result in a final normpop.out file for each folder as would be
+# needed by the collate.sh script (which is called at the end). The folderlist.dat file is built gradually by the
+# restart.sh script
+
 if [[ ! -f folderlist.dat ]]; then
   echo "Folder list is missing! Aborting"
   exit 1

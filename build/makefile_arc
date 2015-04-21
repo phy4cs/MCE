@@ -21,8 +21,8 @@ subavrg:subavrg.f90
 timehist:timehist.f90
 	 $(F90) -O2 -o timehist.exe $<
 	 
-interpolate: interpolate.o neville.o
-	 $(F90) -O2 -o interpolate.exe $<
+interpolate:neville.o interpolate.o
+	 $(F90) -O2 -o interpolate.exe neville.o interpolate.o
 
 # Compile steps
  
