@@ -30,6 +30,7 @@ MODULE globvars
   integer:: errorflag  ! The global fatal error flag. Stops operation
   integer:: debug      ! Debug flag. Not currently used.
   integer:: conjflg    ! Flag to determine whether Conjugate repetition will occur
+  integer:: restrtflg  ! Flag for restarting a previous run for when time has run out
   integer:: reptot     ! Total number of repeats to be carried out in program
   integer:: qsizex     ! size of grid in q,x coordinate
   integer:: psizex     ! size of grid in p,x coordinate
@@ -97,8 +98,8 @@ MODULE globvars
   character(LEN=5) :: cloneflg    ! Flag for cloning
   character(LEN=5) :: matfun      ! Which matrix calcualtion function (zgesv/zheev) used for linear algebra
   character(LEN=5) :: method      ! MCEv1 or MCEv2 used. Later versions to have other methods available
-  character(LEN=2) :: sys          ! System to be simulated. Currently only Spin Boson allowed
-  character(LEN=1) :: gen          ! Flag to determine if basis set generation needed
+  character(LEN=2) :: sys         ! System to be simulated. Currently only Spin Boson allowed
+  character(LEN=1) :: gen         ! Flag to determine if basis set generation needed (global variant)
   character(LEN=1) :: prop        ! Flag to determine if basis set propagation needed
   character(LEN=1) :: step        ! Flag to determine whether adaptive or static stepsize propagation needed
   character(LEN=1) :: cmprss      ! Flag to determine if automatic tweaking of the compression parameter needed

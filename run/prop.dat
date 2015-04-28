@@ -12,3 +12,4 @@ time_end 0.15d+02
 time_start 0.0d+00
 #Propagation size - either "static" or "adaptive"
 step static
+

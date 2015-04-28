@@ -165,6 +165,7 @@ Program MainMCE
   integer(kind=8) :: ranseed
   integer:: tnum, cols, genflg, istat, intvl, rprj, n, nsame, nchange
   character(LEN=100) :: LINE, CWD
+  character(LEN=1) :: genloc
   
   call CPU_TIME(starttime) !used to calculate the runtime, which is output at the end
   
@@ -253,7 +254,7 @@ Program MainMCE
   !$omp                    initnorm, initnorm2, alcmprss, clone, clonenum, map_bfs, &
   !$omp                    j, k, r, y, l, x, m, nbf, recalcs, conjrep, restart,     &
   !$omp                    reps, ierr, timestpunit, stepback, dum_in1, dum_in2,     &
-  !$omp                    finbf, dum_in3, dum_re1, dum_re2, rep                    )
+  !$omp                    finbf, dum_in3, dum_re1, dum_re2, rep, genloc            )
   
   !$omp do reduction (+:acf_t, extra, pops, absnorm, absnorm2, absehr)
   
@@ -267,7 +268,19 @@ Program MainMCE
     call flush(6)
     call flush(0)
     
+    if (errorflag .ne. 0) cycle   ! errorflag is the running error catching system
+    
     ierr = 0
+    conjrep = 1
+    genloc = gen
+    restart=0
+    
+    if (restrtflg==1) then
+      call restartnum(k,genloc,restart)
+      if (restart==1) then
+        cycle
+      end if
+    end if
     
     if ((basis=="GRID").or.(basis=="GRSWM")) then
       allocate (initgrid(in_nbf,ndim), stat=ierr)
@@ -277,15 +290,13 @@ Program MainMCE
       end if
     end if
   
-    if (errorflag .ne. 0) cycle   ! errorflag is the running error catching system
-
     allocate (popt(npes), stat=ierr)
     if (ierr/=0) then
       write(0,"(a)") "Error in allocating the temporary population array in Main"
       errorflag=1
     end if
-
-    if (gen.eq."Y") then
+    
+    if (genloc.eq."Y") then
       allocate (mup(ndim), stat=ierr)
       if (ierr == 0) allocate (muq(ndim), stat=ierr)
       if (ierr/=0) then
@@ -295,8 +306,6 @@ Program MainMCE
       mup = 0.0d0
       muq = 0.0d0
     end if
-
-    conjrep = 1  
 
     do while (conjrep .lt. 3) ! conjugate repetitions. If equal to 3 then both 
                               ! have been completed.
@@ -325,9 +334,9 @@ Program MainMCE
 
       !**********Basis Set Generation Section Begins**************************!
       
-      if ((method=="AIMC2").and.(gen.eq."Y")) gen="N"
+      if ((method=="AIMC2").and.(genloc.eq."Y")) genloc="N"
 
-      if (gen.eq."Y") then     ! begin the basis set generation section.
+      if (genloc.eq."Y") then     ! begin the basis set generation section.
  
         restart = 1            ! a flag for if the basis set needs recalculating
 
@@ -455,7 +464,7 @@ Program MainMCE
         
         x=0
 
-        if (gen.eq."N") then
+        if (genloc.eq."N") then
           !$omp critical          !Critical block to stop inputs getting confused
           if (conjrep == 2) then               ! Stops it looking for a basis set file if conjugate repetition selected 
             write(0,"(a)") "Propagation only selected with conjugate repeats enabled."
@@ -463,9 +472,8 @@ Program MainMCE
             errorflag=1                       ! as these two conditions are incompatible and should be disallowed at 
           else if (method.ne."AIMC2") then    ! the run conditions input stage.
             call allocbs(bset,nbf)
-            call readbasis(bset, mup, muq, reps, time) ! reads and assigns the basis set parameters and values, ready for propagation.
+            call readbasis(bset, mup, muq, reps, time, nbf) ! reads and assigns the basis set parameters and values, ready for propagation.
             timestrt_loc=time
-            nbf = in_nbf
             write(6,"(a,i0,a)") "Starting from previous file. ", &
                         int(real(abs((timeend_loc-timestrt_loc)/dtinit))), " steps remaining."
           else
@@ -584,7 +592,7 @@ Program MainMCE
             write(0,"(a)") "Error in allocating clone arrays"
             errorflag = 1
           end if
-          if (gen=="N") then
+          if (genloc=="N") then
             call readclone(clonenum, reps, clone)
           else
             do j=1,nbf

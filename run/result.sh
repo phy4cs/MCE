@@ -1,1 +1,1 @@
-./collate.sh /nobackup/phy4cs/MCEv2-SB-10507 100 50 10507 $0
+./collate.sh /home/ds/phy4cs/Dropbox/PhysChem/MCE/EXEC/MCEv2-SB-31197 3 1 31197 $0

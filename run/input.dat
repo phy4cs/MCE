@@ -14,10 +14,13 @@ Runfolder default
 debug 0
 
 #Basis Set Generation flag [YES/NO for generating the basis set]
-gen YES
+gen NO
 
-#Basis Set Propagation flag [YES/NO for prop YES
+#Basis Set Propagation flag [YES/NO for propagating the basis set]
 prop YES
+
+#Restart flag [1/0 for restarting a previously timed out simulation. This should be automatically set by the restart script]
+restart 1
 
 #Flag for adaptive altering of the compression parameter in swarms/grid-swarms/train-swarms or the grid spacing for grids. [YES/NO]
 cmprss YES
@@ -26,13 +29,13 @@ cmprss YES
 method MCEv2
 
 #Number of repeats. Do not need to set manually - this is set by the run command.
-Repeats 1
+Repeats 2
 
 #Conjugate repeats flag. Allows even number repeats to start at the complex conjugate of the previous runs initial position [YES/NO]
 Conjugate_Repeats NO
 
 # Number of basis functions 
-in_nbf 420
+in_nbf 220
 
 # Number of dimensions
 ndim 50
@@ -83,13 +86,13 @@ Cloning yes
 max_cloning 4
 
 # Minimum cloning frequency (ie how many timesteps since last cloning is new cloning event allowed)
-clon_freq 250
+clon_freq 50
 
 # spacing between trajectories for train type basis set. Used for trains/swarm-trains
-trainsp 50
+trainsp 25 
 
 # default steps per train. Used for swarm-trains only. This is sometimes increased/decreased by 1.
-def_stp 21
+def_stp 11
 
 # Matrix function (zgesv - linear algebra, zheev - matrix inversion)
 matfun zgesv

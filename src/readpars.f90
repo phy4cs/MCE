@@ -96,7 +96,19 @@ contains
         else
           write(0,"(a,a)") "Error. prop value must be YES/NO. Read ", trim(LINE2)
         end if
-        n=n+1              
+        n=n+1   
+      else if (LINE=='restart') then
+        backspace(140)
+        read(140,*,iostat=ierr)LINE,restrtflg
+        if (ierr.ne.0) then
+          write(0,"(a)") "Error reading basis set propagation status"
+          errorflag = 1
+          return
+        end if
+        if ((restrtflg.ne.0).and.(restrtflg.ne.1)) then
+          write(0,"(a,a)") "Error. Restart flag must be 1/0. Read ", trim(LINE2)
+        end if
+        n=n+1             
       else if (LINE=='cmprss') then
         backspace(140)
         read(140,*,iostat=ierr)LINE,LINE2
@@ -187,8 +199,9 @@ contains
       return
     end if
 
-    if (n.ne.7) then
+    if (n.ne.8) then
       write(0,"(a)") "Not all required variables read in readrunconds subroutine"
+      write(0,"(a,i0,a)") "Read a total of ", n, "of an expected 8 parameters"
       errorflag = 1
       return
     end if
@@ -651,6 +664,8 @@ contains
   
     implicit none
     
+    if (errorflag.ne.0) return
+    
     !!!!!! Basis specific checks !!!!!!!
     
     if (basis.eq."GRID") then
@@ -1085,13 +1100,14 @@ contains
 !          Reading Subroutines for Basis Set Propagation
 !*************************************************************************************************!
 
-  subroutine readbasis(bs, mup, muq, rep, t)   !   Level 1 Subroutine
+  subroutine readbasis(bs, mup, muq, rep, t, nbf)   !   Level 1 Subroutine
 
     implicit none
     type(basisfn), dimension (:), allocatable, intent(inout) :: bs
     integer::ierr, n, j, k, m, r, cflg, bsunit
     real(kind=8), dimension(:), allocatable, intent(out) :: mup, muq 
     real(kind=8), intent(inout) :: t
+    integer, intent(inout) :: nbf
     integer, intent(in) :: rep  
     character(LEN=100)::LINE
     character(LEN=13)::filename
@@ -1145,13 +1161,13 @@ contains
         n = n+1
       else if (LINE=="nbasisfns") then
         backspace(bsunit)
-        read(bsunit,*,iostat=ierr)LINE,in_nbf
+        read(bsunit,*,iostat=ierr)LINE,nbf
         if(ierr.ne.0) then
-          write(0,"(a)")  "Error reading in_nbf"
+          write(0,"(a)")  "Error reading nbf"
           errorflag = 1
           return
         end if
-        write(6,"(a,i0)") "in_nbf     = ", in_nbf
+        write(6,"(a,i0)") "nbf     = ", nbf
         n = n+1
       else if (LINE=="initial_PES") then
         backspace(bsunit)
@@ -1227,13 +1243,13 @@ contains
 
     backspace(bsunit)
 
-    if (size(bs).ne.in_nbf) then
+    if (size(bs).ne.nbf) then
       write(6,"(a)") "Basis set size has changed. Reallocating basis set."
       call deallocbs(bs)
-      call allocbs(bs, in_nbf)
+      call allocbs(bs, nbf)
     end if
 
-    do j=1,in_nbf
+    do j=1,nbf
       read(bsunit,*,iostat=ierr)LINE,k
       if(k.ne.j) then
         write(0,"(a,i2,a,i2)") "Error. Expected basis function ", j, " but got ", k
@@ -1300,10 +1316,12 @@ contains
         bs(j)%z(m)=cmplx(rl,im,kind=8)
       end do
     end do
+    
+    close(bsunit)
 
     if (t==0.0d0) then
       if (method.eq."MCEv1") then
-        do j=1,in_nbf
+        do j=1,nbf
           do r=1,npes
             bs(j)%d_pes(r) = bs(j)%d_pes(r) * bs(j)%D_big
             bs(j)%a_pes(r) = bs(j)%d_pes(r) * cdexp(i*bs(j)%s_pes(r))
@@ -1311,7 +1329,7 @@ contains
           bs(j)%D_big = (1.0d0,0.0d0)
         end do
       else
-        do j=1,in_nbf
+        do j=1,nbf
           dsum1 = (0.0d0,0.0d0)
           do r=1,npes
             dsum1 = dsum1 + bs(j)%d_pes(r)
@@ -1326,7 +1344,7 @@ contains
         end do       
       end if
     else
-      do j=1,in_nbf
+      do j=1,nbf
         if ((dble(bs(j)%D_big) /= 1.0d0).and.(method.eq."MCEv1")) then
           write(0,"(a)") "The D_big amplitudes are not compatible with MCEv1 propagation for t/=0"
           errorflag=1
@@ -1340,6 +1358,57 @@ contains
     end if   
        
   end subroutine readbasis
+  
+!------------------------------------------------------------------------------------
+
+  subroutine restartnum(rep,gen,restart)
+  
+    implicit none
+    
+    integer, intent (inout) :: restart
+    integer, intent(in) :: rep
+    character(LEN=1), intent(inout) :: gen
+
+    real(kind=8) :: time    
+    integer :: ierr,fileun
+    character(LEN=100) :: LINE
+    character(LEN=13)::filename
+    logical :: file_exists
+    
+    if (errorflag.ne.0) return
+    
+    fileun=25433+rep
+    write(filename, "(a,i3.3,a)") "Outbs-",rep,".out"
+    inquire(file=filename,exist=file_exists)
+    
+    if (file_exists.eqv..false.) then
+      gen="Y"
+    else
+      open(unit=fileun,file=filename,status="old",iostat=ierr)
+      if (ierr/=0) then
+        write (0,"(3a,i0)") "Error opening the ", trim(filename), " file. Ierr = ", ierr
+        errorflag = 1
+        return
+      end if
+      
+      read(fileun,*,iostat=ierr)LINE
+
+      do while ((LINE.ne."time").and.(ierr==0)) 
+        read(fileun,*,iostat=ierr)LINE
+      end do
+      backspace(fileun)
+      
+      read(fileun,*,iostat=ierr) LINE, time
+      
+      if (time==timeend) then
+        restart = 1
+      else
+        gen = "N"
+      end if
+      close(fileun)
+    end if      
+    
+  end subroutine restartnum  
   
 !--------------------------------------------------------------------------------------------------
 
