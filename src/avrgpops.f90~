@@ -1,33 +1,19 @@
 Program avrgnorm
 
-  ! This program averages a set of normpop.out files from different instances of the
-  ! program, outputting cumulativly averaged files (used to check for convergence)
-  ! and also residuals. The program also creates a set of gnuplot files which are
-  ! used to plot the combined results. This program should be called from the 
-  ! <<collate.sh>> script, and should be used with care if called manually.
-  
-  ! The arguments for the program are:
-  !     1: The number of seed folders
-  !     2: The total number of repeats
-  !     3: The total number of columns in the normpop.out files
-
   implicit none
-
-  real(kind=8), dimension(:,:), allocatable :: pops
-  real(kind=8), dimension(:), allocatable :: pop1, pop2, popsum, popdiff, nrm, rlacf 
-  real(kind=8), dimension(:), allocatable :: popsav, imacf, abacf, ehr, time, rlex
-  real(kind=8), dimension(:), allocatable :: imex, abex
+  integer::ierr, i=1, j=1, k=1, l=1, n, m, tot=0,folders, folreps, totreps, cols
+  real(kind=8), dimension (:,:), allocatable :: pops
+  real(kind=8),dimension(:),allocatable::pop1, pop2, popsum, popdiff, nrm, rlacf, popsav
+  real(kind=8),dimension(:),allocatable::imacf, abacf, ehr, time, rlex, imex, abex
   real(kind=8)::pop1av, pop2av, popsumav, popdiffav, nrmav, rlacfav, imacfav
   real(kind=8)::abacfav, rlexav, imexav, abexav, ehrav, timeav
-  integer, dimension(:), allocatable :: valid, lines
-  integer::ierr, i=1, j=1, k=1, l=1, n, m, tot=0, folders, folreps, totreps, cols
-  character(LEN=50000)::lngchar, lngchar2
   character(LEN=100)::LINE, filename
   character(LEN=19)::myfmt
   character(LEN=6)::repstr, lstr, timestp
+  character(LEN=5000)::lngchar, lngchar2
+  integer, dimension(:),allocatable::valid, lines
   logical :: file_exists
-  
-  ! Read in the preprocessor arguments
+           
   call getarg(0,filename)
   call getarg(1,LINE)
   if (ierr==-1) then
@@ -92,7 +78,7 @@ Program avrgnorm
   do i=1,folders
     if ((lines(i).ne.lines(1)).and.(lines(i).ne.0)) then
       write (0,"(a,i0)") "Error - Line number mismatch in repeat ", i
-      write (0,"(a,i0,a,i0)") "Expected ", lines(1), " lines, but got ", lines(i) 
+      write (0,"(a,i0,a,i0)") "Expected ", lines(1), " lines, but got ", lines(i)
       stop
     end if
   end do
@@ -167,11 +153,11 @@ Program avrgnorm
     end if
 
     if (cols==13) then
-      write (m,"(2a)") "Time Norm Re(ACF(t)) Im(ACF(t) |ACF(t)| Re(Extra) ", &
-                          "Im(Extra) |Extra| Sum(HEhr) Pop1 Pop2 Pop1+Pop2 Pop2-Pop1"
+      write (m,"(2a)") "Time Norm Re(ACF(t)) Im(ACF(t) |ACF(t)| Re(Extra) Im(Extra)", &
+                           " |Extra| Sum(HEhr) Pop1 Pop2 Pop1+Pop2 Pop2-Pop1"
     else
-      write (m,"(2a)") "Time Norm Re(ACF(t)) Im(ACF(t) |ACF(t)| Re(Extra) ", &
-                          "Im(Extra) |Extra| Sum(HEhr) Pops(1..n)"
+      write (m,"(2a)") "Time Norm Re(ACF(t)) Im(ACF(t) |ACF(t)| Re(Extra) Im(Extra)", &
+                           " |Extra| Sum(HEhr) Pops(1..n)"
     end if
     write (m,*) ""
     write (m,*) ""
@@ -307,8 +293,8 @@ Program avrgnorm
         read(n,*,iostat=ierr)time(i),nrm(i),rlacf(i),imacf(i),abacf(i),rlex(i),&
                       imex(i),abex(i),ehr(i),pop1(i),pop2(i),popsum(i),popdiff(i)
         if (time(i).ne.time(1)) then
-          write (0,"(a,a,es16.8e3,a,i0)"),"File synchronisation error when reading",&
-                               " at time ", time(1) ," in unit ", n
+          write (0,"(a,a,es16.8e3,a,i0)"),"File synchronisation error when reading at",&
+                               "time ", time(1) ," in unit ", n
           write (0,"(a,i0,a,i0,a,i0)") "i = ", i, " n = ", n
           stop
         end if

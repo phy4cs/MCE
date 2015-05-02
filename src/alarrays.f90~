@@ -27,15 +27,11 @@ contains
 !               Array Allocation/Deallocation Subroutines
 !***********************************************************************************!
 
-  subroutine allocbs(bs, nbf)
-  
-    ! Allocates the top level of the variable of the basisfn defined type
+  subroutine allocbs(bs, nbf)   !   Level 1 Subroutine
 
     implicit none
-    
     type(basisfn),dimension(:),allocatable, intent(inout)::bs
     integer, intent (in) :: nbf
-    
     integer:: j, ierr
     logical :: is_alloc
 
@@ -61,14 +57,10 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  subroutine allocbf(bf)
-  
-    ! Allocates the elements of the variable of the basisfn defined type
+  subroutine allocbf(bf)   !   Level 2 Subroutine
 
     implicit none
-    
     type(basisfn),intent(inout)::bf
-    
     integer :: ierr
 
     if (errorflag .ne. 0) return
@@ -92,7 +84,7 @@ contains
     bf%z    (1:ndim) = (0.0d0,0.0d0)
     bf%d_pes(1:npes) = (0.0d0,0.0d0)
     bf%a_pes(1:npes) = (0.0d0,0.0d0)
-    bf%s_pes(1:npes) =  0.0d0
+    bf%s_pes(1:npes) = 0.0d0
     bf%D_big         = (0.0d0,0.0d0)
 
     return
@@ -101,14 +93,10 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  subroutine deallocbf(bf)
-  
-    ! Deallocates the elements of the variable of the basisfn defined type
+  subroutine deallocbf(bf)   !   Level 2 Subroutine
 
     implicit none
-    
     type(basisfn),intent(inout)::bf
-    
     integer :: ierr
 
     if (errorflag .ne. 0) return
@@ -135,15 +123,12 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  subroutine deallocbs(bs)
-  
-    ! Deallocates the top level of the variable of the basisfn defined type
+  subroutine deallocbs(bs)   !   Level 1 Subroutine
 
     implicit none
-    
     type(basisfn),dimension(:), allocatable, intent(inout)::bs
-    
-    integer:: j, ierr
+    integer:: j
+    integer :: ierr
 
     if (errorflag .ne. 0) return
 
@@ -170,14 +155,10 @@ contains
 !------------------------------------------------------------------------------------
 
   subroutine allocham(H, nbf)
-  
-    ! Allocates the top level of the variable of the hamiltonian defined type
 
     implicit none
-    
     type(hamiltonian),dimension(:,:),allocatable,intent (inout)::H
     integer, intent (in) :: nbf
-    
     integer::k, j, ierr
 
     if (errorflag .ne. 0) return
@@ -205,13 +186,9 @@ contains
 !------------------------------------------------------------------------------------
 
   subroutine allochamjk(Hsing)
-  
-    ! Allocates the elements of the variable of the hamiltonian defined type
 
     implicit none
-    
     type(hamiltonian),intent(inout) :: Hsing
-    
     integer :: ierr
     
     if (errorflag .ne. 0) return
@@ -236,14 +213,11 @@ contains
 !------------------------------------------------------------------------------------
 
   subroutine deallocham(H)
-  
-    ! Deallocates the top level of the variable of the hamiltonian defined type
 
     implicit none
-    
     type(hamiltonian),dimension(:,:),allocatable,intent (inout)::H
-    
-    integer::k, j, ierr
+    integer::k, j
+    integer :: ierr
 
     if (errorflag .ne. 0) return
 
@@ -270,13 +244,9 @@ contains
 !------------------------------------------------------------------------------------
 
   subroutine deallochamjk(Hsing)
-  
-    ! Deallocates the elements of the variable of the hamiltonian defined type
 
     implicit none
-    
     type(hamiltonian),intent(inout) :: Hsing
-    
     integer :: ierr
     
     if (errorflag .ne. 0) return

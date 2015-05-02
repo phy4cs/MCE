@@ -198,12 +198,6 @@ contains
       errorflag=1
       return
     end if
-    
-    if ((conjflg==1).and.(restrtflg==1)) then
-      write(0,"(a)")"Error! Conjugate repetition is not compatible for restarted simulations"
-      errorflag=1
-      return
-    end if
 
     if (n.ne.8) then
       write(0,"(a)") "Not all required variables read in readrunconds subroutine"

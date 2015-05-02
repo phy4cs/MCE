@@ -2,7 +2,7 @@ Program MainMCE
 
 !***********************************************************************************!
 !                                                                                   !
-!  MCE program - by Chris Symonds     Version 0.985              Date : 04/03/15    !
+!  MCE program - by Chris Symonds     Version 0.980              Date : 04/03/15    !
 !                                                                                   !
 !  This Program performs simulations using the Multi-Configurational Ehrenfest      !
 !  method with the formulations given in D. Shalashilin's 2010 (MCEv2) and          !
@@ -172,7 +172,7 @@ Program MainMCE
   write(6,"(a)") " ________________________________________________________________ "
   write(6,"(a)") "|                                                                |"
   write(6,"(a)") "|                                                                |"
-  write(6,"(a)") "|                  MCE Simulation Program v0.985                 |"
+  write(6,"(a)") "|                  MCE Simulation Program v0.980                 |"
   write(6,"(a)") "|                                                                |"
   write(6,"(a)") "|________________________________________________________________|"
   write(6,"(a)") ""
