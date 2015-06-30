@@ -47,7 +47,7 @@ elif [[ $(( $1%($2*$3) )) -ne 0 ]]; then
   exit 1
 else
   folder=$PWD
-  exec=${folder%/}
+  exec=${folder%/*}
   runf=${0%/restart.sh}                 
   folnum=$( ls -lR | grep ^d | wc -l )  # Find the number of folders in the folder
   

@@ -117,6 +117,8 @@ done
 # Move the combined normpop file to the final partial folder, and find number of
 # columns in the normpop file (used as an argument for averaging)
 n=0
+path=${lines[max_index]}
+cp -rf $path ${path}_bak
 for k in `seq -f "%03g" $num2`; do
   for i in `seq $folders`; do
     if [ -f normpop-${k}_${i}.out ]; then
@@ -148,6 +150,8 @@ for i in `seq $folders`; do
     cp subavrg.exe $path/$i-run
     cd $path/$i-run
     ./subavrg.exe $num2 $cols     # Averages normpop-*.out files in the subfolder
+    line=$( cat normpop.out | wc -l )
+    if [ $line -eq 3 ]; then rm normpop.out; fi
     cd $runf
   fi
 done

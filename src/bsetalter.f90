@@ -471,7 +471,7 @@ contains
 
     if (errorflag==1) return
 
-    clonetype = 1 ! 1=conditional cloning, 2=blind cloning
+    clonetype = 2 ! 1=conditional cloning, 2=blind cloning
 
     allocate (clonehere(nbf), stat=ierr)
     if (ierr==0) allocate(clonecopy(nbf), stat=ierr)
@@ -498,11 +498,15 @@ contains
         clonecopy2(k) = clonenum(k)
       end do
     else if (clonetype==2) then
-      if ((mod(x,300)==0).and.(clonenum(k).lt.clonemax)) then
+      if (mod(x,clonefreq)==0) then
+        write (0,"(2(a,i0))") "Cloning of ", nbf, " basis functions started in step ", x
+        write (0,*) "Clonefreq = ", clonefreq, " and clonemax = ", clonemax
         do k=1,nbf
-          if (clone(k)==0) then
+          if (clonenum(k).lt.clonemax) then
             clone(k) = x
             clonehere(k) = 1
+          else
+            write (0,"(2(a,i0))") "Check failed. Clonenum(",k,") was ", clonenum(k)
           end if 
           clonecopy(k) = clone(k)
           clonecopy2(k) = clonenum(k)

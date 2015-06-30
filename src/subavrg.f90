@@ -13,7 +13,7 @@ Program subavrg
   character(LEN=5000)::lngchar, lngchar2
   integer, dimension(:),allocatable::valid, lines
   logical :: file_exists
-           
+        
   call getarg(0,filename)
   call getarg(1,LINE)
   if (ierr==-1) then
@@ -65,11 +65,13 @@ Program subavrg
     close (128)
     lines(i) = lines(i) - 1
   end do
-
+ 
+  call getcwd(LINE)
   do i=1,reps
     if ((lines(i).ne.lines(1)).and.(lines(i).ne.0)) then
       write (0,"(a,i0)") "Error - Line number mismatch in repeat ", i
       write (0,"(a,i0,a,i0)") "Expected ", lines(1), " lines, but got ", lines(i)
+      write (0,"(2a)") "This occured in ", trim(LINE)
       stop
     end if
   end do
@@ -109,7 +111,6 @@ Program subavrg
       write (0,"(a,a,a)") 'Error in opening ', trim(filename), ' file'
       stop
     end if
-
     do
       read (n,*,iostat=ierr)LINE
       if (ierr.ne.0) then
@@ -126,7 +127,7 @@ Program subavrg
 
   end do
 
-  filename= "normpop.out"
+  filename="normpop.out"
 
   open (unit=m, file=trim(filename), status='unknown', iostat=ierr)
 
@@ -155,7 +156,7 @@ Program subavrg
       else
         read(n,*,iostat=ierr)time(i),nrm(i),rlacf(i),imacf(i),abacf(i),rlex(i),&
                         imex(i),abex(i),ehr(i),pops(:,i)
-      end if        
+      end if     
       if (time(i).ne.time(1)) then
         write (0,"(a,e15.8,a,i0)") "File synchronisation error when reading at ", & 
                                     "time ", time(1) ," in unit ", n
@@ -193,6 +194,8 @@ Program subavrg
                       imexav,abexav,ehrav,popsav
     end if
   end do
+  
+  close (m)
 
   stop
 

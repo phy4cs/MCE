@@ -243,7 +243,7 @@ for a in "${methseq[@]}"; do
   fi
   
   # Create the job submission file
-  echo "#$ -cwd -V -m e" > $FILE        # Run in CWD, email at end of run
+  echo "#$ -cwd -V -m e" > $FILE        # Run in CWD, to email at end of run add "-m e"
   if [[ $CORES -ne 1 ]]; then 
     echo "#$ -pe smp $CORES" >> $FILE   # Use shared memory parallel environment
   fi
