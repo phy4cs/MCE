@@ -4,7 +4,7 @@
 
 # System (Currently can be SB [Spin Boson], HP [Harmonic Potential], FP [Free Particle],
 #    MP [Morse Potential], IV [Inverted Gaussian], CP [Coulomb Potential], or HH [Henon-Heiles]. SB works only with MCE, all others with CCS. 
-System: SB
+System: IV
 
 #Name of running folder [Default : <method>-<system>-<random number> ie CCS-HP-31254 (input "default", case insensitive)
 #                       Otherwise:  <method>-<system>-<runfolder string> ie CCS-HP-withgrids]
@@ -16,7 +16,7 @@ debug 0
 #Basis Set Generation flag [YES/NO for generating the basis set]
 gen YES
 
-#Basis Set Propagation flag [YES/NO for propagation of the basis set]
+#Basis Set Propagation flag [YES/NO for propagating the basis set]
 prop YES
 
 #Restart flag [1/0 for restarting a previously timed out simulation. This should be automatically set by the restart script]
@@ -26,7 +26,7 @@ restart 0
 cmprss YES
 
 #Propagation method [can be CCS, MCEv1, MCEv2, AIMC-MCE1 (first pass), AIMC-MCE2 (Second pass) or MCE12 (uses both MCE methods). No support for vMCG, F-CCS or 2L-CCS yet.]
-method MCEv2
+method CCS
 
 #Number of repeats. Do not need to set manually - this is set by the run command.
 Repeats 1
@@ -35,64 +35,64 @@ Repeats 1
 Conjugate_Repeats NO
 
 # Number of basis functions 
-in_nbf 50
+in_nbf 100
 
 # Number of dimensions
-ndim 50
+ndim 1
 
 #determine which PES you are on initially
 in_PES 1
 
 #determine n.o of configurations for MCE
-npes 2
+npes 1
 
 # determines shape of the initial basis [SWARM/SWTRN/TRAIN/GRID/GRSWM]
-basis SWARM
+basis GRID
 
 # Compression parameter (can be tweaked to allow better norm value, or altered automatically)   Used for swarms/swarm-trains/grid-swarms
 ALCMP 55.0
 
 # Flag for adaptive basis set size (yes/no) [Selecting No will give a constant basis set size. This is default behaviour] Used for Grids/grid-swarms
-nbfadapt no
+nbfadapt yes
 
 # Basis set trimming parameter. If overlap is less than this value, basis function is removed. Used when nbfadapt = yes
-nbfepsilon 1.0d-06
+nbfepsilon 1.0d-03
 
 # gives grid spacing. If grid is not selected (previous parameter) this parameter will be read, but not used. Used for grids/grid-swarms
-gridsp 1.40
+gridsp 1.75
 
 # the size of the grid in the q,x coordinate. Used for 3d grids
-qsizex 4
+qsizex 0
 
 # the size of the grid in the p,x coordinate. Used for 3d grids
-psizex 4
+psizex 0
 
 # the size of the grid in the q,y coordinate. Used for 3d grids
-qsizey 4
+qsizey 0
 
 # the size of the grid in the p,y coordinate. Used for 3d grids
-psizey 4
+psizey 0
 
 # the size of the grid in the q,z coordinate. Used for grids/grid-swarms
-qsizez 100
+qsizez 80
 
 # the size of the grid in the p,z coordinate. Used for grids/grid-swarms
-psizez 26
+psizez 20
 
 # Flag for cloning basis functions (yes/no)
-Cloning yes
+Cloning no
 
 # Maximum number of Cloning events allowed
-max_cloning 8
+max_cloning 4
 
 # Minimum cloning frequency (ie how many timesteps since last cloning is new cloning event allowed)
-clon_freq 150
+clon_freq 50
 
 # spacing between trajectories for train type basis set. Used for trains/swarm-trains
-trainsp 40
+trainsp 20
 
 # default steps per train. Used for swarm-trains only. This is sometimes increased/decreased by 1.
-def_stp 41
+def_stp 100
 
 # Matrix function (zgesv - linear algebra, zheev - matrix inversion)
 matfun zgesv

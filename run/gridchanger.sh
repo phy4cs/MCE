@@ -13,12 +13,13 @@
 # is enabled. This behaviour can be easily modified.
 
 qsize=140
-psize=35
+psize=25
 i=0
 
 if [ ! -d calibinputs ]; then mkdir calibinputs; else cd calibinputs; rm *; cd ..; fi
+if [ ! -f input2.dat ]; then cp input.dat input2.dat; fi
 
-for grsp in `seq 0.80 0.01 1.00`; do
+for grsp in 1.75; do
  dim1=$(perl -w -e "use POSIX; print ceil($qsize/$grsp), qq{\n}")     #Make integer
  dim2=$(perl -w -e "use POSIX; print ceil($psize/$grsp), qq{\n}")
  if [ $(( $dim1 % 2 )) == 1 ]; then dim1=$[$dim1+1]; fi  #Create even grid dimensions
@@ -28,7 +29,7 @@ for grsp in `seq 0.80 0.01 1.00`; do
  sed -i "s/^psizez.*/psizez $dim2/g" input2.dat
  sed -i "s/^gridsp.*/gridsp $grsp/g" input2.dat
  sed -i "s/^in_nbf.*/in_nbf $dim3/g" input2.dat 
- for j in 1000; do
+ for j in 500; do
   sed -i "s/^ALCMP.*/ALCMP $j/g" input2.dat
   sed -i "s/^Runfolder.*/Runfolder ${dim1}x${dim2}-$grsp-$j/g" input2.dat
    i=$[$i+1]

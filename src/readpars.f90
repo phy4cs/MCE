@@ -417,6 +417,17 @@ contains
           return
         end if
         n = n+1
+      else if (LINE=="randfunc") then
+        backspace(127)
+        read(127,*,iostat=ierr)LINE,randfunc
+        if(ierr.ne.0) then
+          write(0,"(a)")  "Error reading random number function"
+          call flush(0)
+          errorflag = 1
+          return
+        end if
+        call flush(6)
+        n = n+1
       else if (LINE=="npes") then
         backspace(127)
         read(127,*,iostat=ierr)LINE,npes
@@ -444,6 +455,24 @@ contains
           return
         end if
         n = n+1
+      else if (LINE=="wfn_init") then
+        backspace(127)
+        read(127,*,iostat=ierr)LINE,wfn_init
+        if(ierr.ne.0) then
+          write(0,"(a)")  "Error reading initial wavefunction structure option"
+          errorflag = 1
+          return
+        end if
+        n = n+1
+      else if (LINE=="symm") then
+        backspace(127)
+        read(127,*,iostat=ierr)LINE,symm
+        if(ierr.ne.0) then
+          write(0,"(a)")  "Error reading basis set symmetry option"
+          errorflag = 1
+          return
+        end if
+        n = n+1      
       else if (LINE=="gridsp") then
         backspace(127)
         read(127,*,iostat=ierr)LINE,initsp
@@ -562,8 +591,14 @@ contains
           cloneflg = "YES"
         else if ((LINE2(1:1).eq.'n').or.(LINE2(1:1).eq.'N')) then
           cloneflg = "NO"
+        else if ((LINE2(1:1).eq.'b').or.(LINE2(1:1).eq.'B')) then
+          if (LINE2(6:6).eq.'+') then
+            cloneflg = "BLIND+"
+          else
+            cloneflg = "BLIND"
+          end if
         else
-          write(0,"(a,a)") "Error. cloneflg value must be YES/NO. Read ", trim(LINE2)
+          write(0,"(a,a)") "Error. cloneflg value must be YES/NO/BLIND/BLIND+. Read ", trim(LINE2)
         end if
         n = n+1
       else if (LINE=="max_cloning") then
@@ -643,6 +678,29 @@ contains
     else if ((basis.eq.'GRSWM').or.(basis.eq.'grswm'))then
       basis = 'GRSWM'
     end if
+    
+    if ((wfn_init.ne."WHOLE").and.(wfn_init.ne."whole").and.(wfn_init.ne."SPLIT").and.(wfn_init.ne."split")) then
+      write(0,"(a,a)") "Invalid value for wfn_init. Must be WHOLE/SPLIT and all upper/lower case. Value is ", wfn_init
+      errorflag = 1
+      return
+    else if (wfn_init.eq."whole") then
+      wfn_init = "WHOLE"
+    else if (wfn_init.eq."split") then
+      wfn_init = "SPLIT"
+    end if
+    
+    if ((symm.ne."YES").and.(symm.ne."yes").and.(symm.ne."Y").and.(symm.ne."y").and.(symm.ne."NO").and.(symm.ne."no")&
+      .and.(symm.ne."N").and.(symm.ne."n").and.(symm.ne."ANTI").and.(symm.ne."anti").and.(symm.ne."A").and.(symm.ne."a")) then
+      write(0,"(a,a)") "Invalid value for symm. Must be YES/NO/ANTI and all upper/lower case. Value is ", symm
+      errorflag = 1
+      return
+    else if ((symm.eq."yes").or.(symm.eq."Y").or.(symm.eq."y")) then
+      symm = "YES"
+    else if ((symm.eq."no").or.(symm.eq."n").or.(symm.eq."N")) then
+      symm = "NO"
+    else if ((symm.eq."anti").or.(symm.eq."A").or.(symm.eq."a")) then
+      symm = "ANTI"
+    end if
 
     if ((matfun.ne.'zgesv').and.(matfun.ne.'ZGESV').and.(matfun.ne.'zheev').and.(matfun.ne.'ZHEEV')) then
       write(0,"(a,a)") "Invalid value for matrix function. Must be ZGESV/zgesv or ZHEEV/zheev. Value is ", matfun
@@ -654,7 +712,17 @@ contains
       matfun = 'zheev'
     end if
     
-    if (n.ne.20) then
+    if ((randfunc.ne.'ZBQL').and.(randfunc.ne.'zbql').and.(randfunc.ne.'gaus').and.(randfunc.ne.'GAUS')) then
+      write(0,"(a,a)") "Invalid value for random number function. Must be ZBQL/zbql or GAUS/gaus. Value is ", randfunc
+      errorflag = 1
+      return
+    else if ((randfunc.ne.'ZBQL').or.(randfunc.ne.'zbql')) then
+      randfunc = 'ZBQL'
+    else
+      randfunc = 'GAUS'
+    end if      
+    
+    if (n.ne.23) then
       write(0,"(a,i0)") "Not all required variables read in readbsparams subroutine. n=", n
       errorflag = 1
       return
@@ -818,22 +886,22 @@ contains
         write(0,"(2(a,i0))") "For AIMC-MCE, def_stp should be odd. Changed from ", def_stp, " to ", def_stp+1
         def_stp = def_stp+1
       end if
-!      if (gen.eq."Y") then
-!        write (0,"(a,a)") "Error! The AIMC-MCE second pass relies on precalculated basis functions, but",&
-!                        " generation flag set to Y"
-!        errorflag = 1
-!        return
-!      end if
+      if (gen.eq."Y") then
+        write (0,"(a,a)") "Error! The AIMC-MCE second pass relies on precalculated basis functions, but",&
+                        " generation flag set to Y"
+        errorflag = 1
+        return
+      end if
     end if
     
     !!!!!! Basis set change parameter check!!!!!!
 
-    if (cloneflg.eq.'YES') then
-      if ((method.ne."MCEv2").and.(method.ne."AIMC1")) then
-        write (0,"(a)") "Cloning can only work with MCEv2 or AIMC-MCE (first pass)"
+    if (cloneflg.ne.'NO') then
+      if ((method.ne."MCEv2").and.(method.ne."AIMC1").and.(method.ne."MCEv1")) then
+        write (0,"(a)") "Cloning can only work with MCEv2, MCEv1 or AIMC-MCE (first pass)"
         errorflag = 1
         return
-      else if (method.eq."MCEv2") then
+      else if ((method.eq."MCEv2").or.(method.eq."MCEv1")) then
         if ((basis.ne."SWARM").and.(basis.ne."SWTRN").and.(basis.ne."TRAIN")) then
           write (0,"(a)") "Cloning with MCEv2 can only work on a swarm, a train or a swarm of trains"
           errorflag = 1
@@ -851,10 +919,15 @@ contains
         write(0,"(a)") "These conditions are incompatible"
         errorflag = 1
         return
-      else if (clonemax.gt.10) then
-        write(0,"(a)") "Maximum number of clones allowed is greater than 10!"
-        write(0,"(a)") "This will mean that over 1024 clones could be made from EACH member of the initial basis set"
-        write(0,"(a)") "Try again with a lower number (6 should be enough for anyone)"
+      else if (clonemax.gt.20) then
+        write(0,"(a)") "Maximum number of clones allowed is 20!"
+!        write(0,"(a)") "This will mean that over 1024 clones could be made from EACH member of the initial basis set"
+        write(0,"(a)") "Try again with a lower number (8 should be enough for anyone)"
+        errorflag = 1
+        return
+      end if
+      if ((sys.ne."SB").and.(sys.ne."DL").and.(sys.ne."VP")) then
+        write(0,"(a)") "Cloning can only be performed on multi-PES systems, currently SB, DL or VP"
         errorflag = 1
         return
       end if
@@ -886,6 +959,43 @@ contains
     !!!!!!!! Check the System!!!!!!  
     
     select case (sys)
+      case ("VP")
+        if (npes.lt.2) then
+          write(0,"(a)") "Spin Boson model must have at least 2 pes'"
+          errorflag = 1
+          return
+        end if
+        if ((method.ne."MCEv1").and.(method.ne."MCEv2").and.(method.ne."AIMC1").and.(method.ne."AIMC2")) then
+          write(0,"(a)") "Spin Boson model can only be simulated by MCEv1 or MCEv2, or through AIMC-MCE"
+          errorflag = 1
+          return
+        end if
+        if (basis.eq."GRID") then
+          write(0,"(a)") "This method must not use a static grid."
+          errorflag = 1
+          return
+        end if 
+        if (ndim.ne.1) then
+          write(0,"(a)") "This is currently only set up to deal with a single degree of freedom. Please set ndim to 1"
+          errorflag = 1
+          return
+        end if                  
+      case ("DL")
+        if (npes.lt.2) then
+          write(0,"(a)") "Debye Spin Boson model must have at least 2 pes'"
+          errorflag = 1
+          return
+        end if
+        if ((method.ne."MCEv1").and.(method.ne."MCEv2").and.(method.ne."AIMC1").and.(method.ne."AIMC2")) then
+          write(0,"(a)") "Debye Spin Boson model can only be simulated by MCEv1 or MCEv2, or through AIMC-MCE"
+          errorflag = 1
+          return
+        end if
+        if (basis.eq."GRID") then
+          write(0,"(a)") "This method must not use a static grid."
+          errorflag = 1
+          return
+        end if 
       case ("SB")
         if (npes.lt.2) then
           write(0,"(a)") "Spin Boson model must have at least 2 pes'"
@@ -902,6 +1012,7 @@ contains
           errorflag = 1
           return
         end if 
+
       case ("HP")
         if (npes.ne.1) then
           write(0,"(a)") "Harmonic Potential only valid for 1 PES"
@@ -1116,7 +1227,7 @@ contains
     integer, intent(inout) :: nbf
     integer, intent(in) :: rep  
     character(LEN=100)::LINE
-    character(LEN=13)::filename
+    character(LEN=14)::filename
     real(kind=8)::rl, im
     complex(kind = 8) :: dsum1
 
@@ -1127,22 +1238,26 @@ contains
     cflg = 0
 
     write(6,"(a)")"Starting read subroutine"
+    call flush(6)
 
-    write(filename,"(a,i3.3,a)") "Outbs-", rep, ".out"
+    write(filename,"(a,i4.4,a)") "Outbs-", rep, ".out"
 
     write(6,"(a,a)") "Opening file ", trim(filename)
+    call flush(6)
     
     bsunit = 200+rep
 
     open(unit=bsunit, file=filename, status="old", iostat=ierr)
 
     if (ierr .ne. 0) then
-      write(0,"(a)") 'Error in opening Outbs.out file'
+      write(0,"(3a)") 'Error in opening ', trim(filename),' file'
+      call flush(0)
       errorflag = 1
       return
     end if
 
     read(bsunit,*,iostat=ierr)LINE
+    call flush(6)
 
     do while ((LINE.ne."zinit").and.(ierr==0))
       if (LINE=="ndof") then
@@ -1150,70 +1265,88 @@ contains
         read(bsunit,*,iostat=ierr)LINE,ndim
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading ndim"
+          call flush(0)
           errorflag = 1
           return
         end if
         write(6,"(a,i0)") "ndim    = ", ndim
+        call flush(6)
         n = n+1
       else if (LINE=="nconf") then
         backspace(bsunit)
         read(bsunit,*,iostat=ierr)LINE,npes
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading npes"
+          call flush(0)
           errorflag = 1
           return
         end if
         write(6,"(a,i0)") "npes    = ", npes
+        call flush(6)
         n = n+1
       else if (LINE=="nbasisfns") then
         backspace(bsunit)
         read(bsunit,*,iostat=ierr)LINE,nbf
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading nbf"
+          call flush(0)
           errorflag = 1
           return
         end if
         write(6,"(a,i0)") "nbf     = ", nbf
+        call flush(6)
         n = n+1
       else if (LINE=="initial_PES") then
         backspace(bsunit)
         read(bsunit,*,iostat=ierr)LINE,in_pes
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading in_PES"
+          call flush(0)
           errorflag = 1
           return
         end if
         write(6,"(a,i0)") "in_pes  = ", in_pes
+        call flush(6)
         n = n+1
       else if (LINE=="matfun") then
         backspace(bsunit)
         read(bsunit,*,iostat=ierr)LINE,matfun
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading matrix function"
+          call flush(0)
           errorflag = 1
           return
         end if
         write(6,"(a,a)") "matfun  = ", matfun
+        call flush(6)
         n = n+1
       else if (LINE=="time") then
         backspace(bsunit)
         read(bsunit,*,iostat=ierr)LINE,t
         if(ierr.ne.0) then
           write(0,"(a)")  "Error reading time"
+          call flush(0)
           errorflag = 1
           return
         end if
         write(6,"(a,es16.8e3)") "time =", t
+        call flush(6)
         n = n+1
       end if
       read(bsunit,*,iostat=ierr)LINE
     end do
+    
+    call flush(6)
+    call flush(0)
 
     if (n.ne.6) then
       write(0,"(a,i2,a)") "Error in reading parameters. Only ", n, " of 6 parameters read."
       errorflag = 1
       return
     end if 
+    
+    call flush(6)
+    call flush(0)
 
     allocate (mup(ndim), stat=ierr)
     if (ierr == 0) allocate (muq(ndim), stat=ierr)
@@ -1428,7 +1561,6 @@ contains
     integer, intent(in) :: x, reps,rkstp, genflg, nbf
     
     real(kind=8) :: t, rl, im
-    integer, dimension(:,:), allocatable :: temp_map
     integer, dimension (:), allocatable :: bfs
     integer :: carriage, stpback, bsunit, j, k, l, m, n, r, p, q, ierr, nbftrk, nbftrk2, temppar, maxbf
     character(LEN=255) :: LINE

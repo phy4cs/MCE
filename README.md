@@ -16,26 +16,15 @@ which would have a total of 16 parallel threads running simultaneously. This all
 execution to be carried out over many more cores than would be present on a single node, which
 on arc1 has a maximum of 8, on arc 2 a maximum of 16.
 
-If restarts are needed due to server time limits, use the restart.sh script which uses the same 
-arguments as the run.sh script. This file should be called from the running folder of the most recent
-partial run. 
-
 To ensure that you are using the latest version of the code, make sure that you download it from 
 github, using the url
 
-            https://github.com/phy4cs/MCE
+            https://github.com/C-Symonds/MCE
             
-If you are having trouble accessing it, contact me (email : phy4cs@leeds.ac.uk)
+If you are having trouble accessing it, contact me (email : C.C.Symonds@leeds.ac.uk)
 
 The run.sh script creates a second script, called result.sh which when run calls the collate.sh script
 which combines the results from all the completed runs. This script deletes the original output files
 so use with care!
 
-If multiple partial runs are used, the combine.sh script should be used which requires the file 
-<<folderlist.dat>>, a file containing a list of the required folders which should be in order. This file is 
-automatically created by the restart.sh script, however care should be taken to ensure that no confusion 
-occurs when there are multiple simulations happening at the same time. This script calls the collate.sh 
-file so again be aware that the original output files will be deleted.
-
 Any problems, contact me.
-

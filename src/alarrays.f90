@@ -37,7 +37,6 @@ contains
     integer, intent (in) :: nbf
     
     integer:: j, ierr
-    logical :: is_alloc
 
     if (errorflag .ne. 0) return
 

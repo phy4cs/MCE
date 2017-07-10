@@ -74,7 +74,7 @@ contains
       case ("MCEv1")
         dz=zdot(bsin,time)
         ds=sdot(bsin,dz,time)
-        dd=ddotv1(bsin,time)
+        dd=ddotv1(bsin,time,dz)
         dD_big=(0.0d0,0.0d0)
         if (errorflag .ne. 0) return     
         do k = 1,size(bsin)
@@ -95,7 +95,7 @@ contains
         if (((basis=="TRAIN").or.(basis=="SWTRN")).and.(genflg==1)) then
           dD_big=(0.0d0,0.0d0)
         else
-          dD_big=bigDdotv2 (bsin,rkstp,time)
+          dD_big=bigDdotv2 (bsin,rkstp,time,x,reps,dz)
         end if
         if (errorflag .ne. 0) return     
         do k = 1,size(bsin)
@@ -116,7 +116,7 @@ contains
         if (((basis=="TRAIN").or.(basis=="SWTRN")).and.(genflg==1)) then
           dD_big=(0.0d0,0.0d0)
         else
-          dD_big=bigDdotv2 (bsin,rkstp,time)
+          dD_big=bigDdotv2 (bsin,rkstp,time,x,reps,dz)
         end if
         if (errorflag .ne. 0) return     
         do k = 1,size(bsin)
@@ -157,7 +157,7 @@ contains
           errorflag = 1
           return
         end if
-        dD_big=bigDdotv2 (bsin,rkstp,time)
+        dD_big=bigDdotv2 (bsin,rkstp,time,x,reps,dz)
         if (errorflag .ne. 0) return     
         do k = 1,size(bsin)
           do m = 1,ndim
@@ -291,7 +291,7 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  function ddotv1(bsin,time)
+  function ddotv1(bsin,time,dz)
 
     implicit none
 
@@ -302,8 +302,8 @@ contains
     complex(kind=8), dimension (:,:,:),allocatable :: d2H
     complex(kind=8), dimension (:),allocatable :: atemp, ddot_temp, ddot_out, ddot_in
     complex(kind=8), dimension(size(bsin),npes) :: ddotv1
+    complex(kind=8), dimension(:,:), intent(in) :: dz
     real(kind=8), intent (in) :: time
-    real(kind=8) :: absB
     integer :: j,k,r,s,nbf,ierr
 
     if (errorflag .ne. 0) return
@@ -333,7 +333,7 @@ contains
     call allocham(H,nbf)
     call Hord(bsin,H,time)
 
-    zczd = zczdot(bsin, time)
+    zczd = zczdot(bsin, dz)
 
     do r=1,npes
       do j=1,nbf
@@ -461,7 +461,7 @@ contains
       do r=1,npes
         do s=1,npes
           if (r.ne.s) then
-            ddotv2(k,r) = ddotv2(k,r) + Hkk(r,s) * ovrlpij(z,z) * dk(s) &
+            ddotv2(k,r) = ddotv2(k,r) + Hkk(r,s) * dk(s) &!* ovrlpij(z,z) &
                                                  * cdexp(i*(Sk(s)-Sk(r)))
           end if
         end do
@@ -561,22 +561,22 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  function bigDdotv2(bsin,rkstp, time)
+  function bigDdotv2(bsin,rkstp, time,x,reps,dz)
 
     implicit none
 
     type(basisfn), dimension (:), intent (in) :: bsin 
     type(hamiltonian), dimension (:,:), allocatable :: H
-    complex(kind=8), dimension (:,:), allocatable :: ovrlp, ovrlpphi, ovrlpin
+    complex(kind=8), dimension (:,:), allocatable :: ovrlp, ovrlpphi
     complex(kind=8), dimension (:,:), allocatable :: h_av_jj, h_av_jk, zconjzdot
     complex(kind=8), dimension (:,:), allocatable :: d2H, d2H2, d2Hdiff
     complex(kind=8), dimension(:), allocatable::tempD, chk, Ddot, d2HD, Dtemp
     complex(kind=8), dimension(size(bsin)) :: bigDdotv2
-    complex(kind=8) :: ovrlpdif
+    complex(kind=8), dimension(:,:), intent(in) :: dz
+    complex(kind=8) :: ovrlpdif, asum
     real(kind=8), intent(in) :: time
-    integer, intent(in) :: rkstp
-    integer :: j, k, nbf, ierr
-    real(kind=8)::absB
+    integer, intent(in) :: rkstp, x, reps
+    integer :: j, k, nbf, ierr, r
 
     if (errorflag .ne. 0) return
 
@@ -604,15 +604,26 @@ contains
     end if    
 
     ovrlp = ovrlpmat(bsin)
-    ovrlpphi = ovrlpphimat(bsin)
-
+    do k=1,nbf
+      do j=k,nbf
+        asum = (0.0d0,0.0d0)
+        do r=1,npes
+          asum = asum + (dconjg(bsin(j)%a_pes(r))*bsin(k)%a_pes(r))
+        end do
+        ovrlpphi(j,k)=ovrlp(j,k)*asum
+        if (j.ne.k) then
+          ovrlpphi(k,j)=dconjg(ovrlpphi(j,k))
+        end if
+      end do
+    end do
+    
     if ((rkstp.eq.1).and.(time.eq.0.0d0)) then
       do j=1,nbf
         do k=1,nbf
           ovrlpdif = ovrlpphi(j,k) - ovrlp(j,k) 
-          if ((ovrlpdif.ne.0.0d0).and.(basis.ne."TRAIN").and.(basis.ne."SWTRN")) then
+          if ((ovrlpdif.ne.0.0d0).and.(basis.ne."TRAIN").and.(basis.ne."SWTRN").and.(cloneflg.ne."BLIND")) then
             write(0,"(a)") "Error! Initial phi-overlap has disimilarilies to z-overlap"
-            write(0,'(a,a,i0,a,i0,a)'), "These matricies should be identical ",&
+            write(0,'(a,a,i0,a,i0,a)'), "These matrices should be identical ",&
                                   "but differences found at coordinate ", j,",",k,"."
             write(0,'(a,4(e15.8,a))'), "Expected (",dimag(i*ovrlp(j,k)),","&
                                  ,dimag(ovrlp(j,k)),") but got (",&
@@ -626,16 +637,11 @@ contains
 
     call allocham(H, nbf)
     call Hord(bsin, H, time)
-
-    h_av_jj = Hjk_avrg(H,ovrlp,bsin)
-    h_av_jk = phiHphi(H,ovrlp,bsin)
-    zconjzdot = zczdot(bsin,time)
+    
+    h_av_jj = Hjk_avrg(H,bsin)
+    h_av_jk = phiHphi(H,bsin)
+    zconjzdot = zczdot(bsin,dz)
     if (errorflag .ne. 0) return    
-    do j=1,nbf
-      do k=1,nbf
-        zconjzdot(j,k) = zconjzdot(j,k)*ovrlpphi(j,k)
-      end do
-    end do
 
     do k=1,nbf
       Dtemp(k) = bsin(k)%D_big
@@ -646,6 +652,16 @@ contains
           errorflag = 1
           return
         end if
+      end do
+    end do
+    
+    if ((rkstp.eq.1).and.(mod((x-1),100)==0).and.(basis.ne."TRAIN").and.(sys.eq."SB").and.(debug==1)) then
+      call outd2hovrlp(d2H,ovrlp,x,reps)
+    end if
+    
+    do k=1,nbf
+      do j=1,nbf
+        d2H(j,k) = d2H(j,k) * ovrlp(j,k)
       end do
     end do
 
@@ -697,12 +713,11 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  function phiHphi(H,ovrlp,bsin)
+  function phiHphi(H,bsin)
 
     implicit none
     type(basisfn), dimension (:), intent (in) :: bsin
     type(hamiltonian), dimension (:,:), intent(in) :: H
-    complex(kind=8), dimension (:,:), intent (in) :: ovrlp
     complex(kind=8), dimension (size(bsin),size(bsin)) :: phiHphi
     integer :: j, k , r, s
 
@@ -713,7 +728,7 @@ contains
         phiHphi(j,k) = (0.0d0, 0.0d0)
         do r=1,npes
           do s=1,npes
-            phiHphi(j,k) = phiHphi(j,k) + (dconjg(bsin(j)%a_pes(r)) * ovrlp(j,k) * &
+            phiHphi(j,k) = phiHphi(j,k) + (dconjg(bsin(j)%a_pes(r)) * &
                                         H(j,k)%Hjk(r,s) * bsin(k)%a_pes(s))
           end do
         end do
@@ -731,12 +746,11 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  function Hjk_avrg(H,ovrlp,bsin)
+  function Hjk_avrg(H,bsin)
 
     implicit none
     type(basisfn), dimension (:), intent (in) :: bsin
     type(hamiltonian), dimension (:,:), intent(in) :: H
-    complex(kind=8), dimension (:,:), intent (in) :: ovrlp
     complex(kind=8), dimension (size(bsin),size(bsin)) :: Hjk_avrg
     integer :: j, k , r, s
 
@@ -747,11 +761,10 @@ contains
         Hjk_avrg(j,k) = (0.0d0, 0.0d0)
         do r=1,npes
           do s=1,npes
-            Hjk_avrg(j,k) = Hjk_avrg(j,k) + (dconjg(bsin(j)%a_pes(r)) * ovrlp(k,k)*&
-                                              H(k,k)%Hjk(r,s) * bsin(k)%a_pes(s))
+            Hjk_avrg(j,k) = Hjk_avrg(j,k) + (dconjg(bsin(j)%a_pes(r)) * bsin(k)%a_pes(s) *&
+                                              H(k,k)%Hjk(r,s))
           end do
         end do
-        Hjk_avrg(j,k) = Hjk_avrg(j,k) * ovrlp(j,k)
         if (Hjk_avrg(j,k)/=Hjk_avrg(j,k)) then
           write(0,"(a,i4,a,i4,a)") "Hjk_avrg(", j, ",", k, ") is NaN. Terminating"
           errorflag = 1
@@ -766,25 +779,17 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  function zczdot(bsin,t)
+  function zczdot(bsin,dz)
 
     type(basisfn), dimension (:), intent (in) :: bsin 
     complex(kind=8), dimension (size(bsin),size(bsin)) :: zczdot
-    complex(kind=8), dimension (:,:), allocatable :: dz
-    integer :: j, k, m, ierr
-    real(kind=8), intent (in) :: t
+    complex(kind=8), dimension (:,:), intent(in) :: dz
+    complex(kind=8) :: asum
+    integer :: j, k, m, r, ierr
 
     if (errorflag .ne. 0) return
 
     ierr = 0
-    allocate(dz(size(bsin),ndim), stat = ierr)
-    if (ierr/=0) then
-      write(0,"(a)") "Error in allocation of dz arrays in zczdot"
-      errorflag=1
-      return
-    end if   
-
-    dz = zdot(bsin, t)
 
     do k=1,size(zczdot,2)
       do j=1,size(zczdot,1)
@@ -792,21 +797,22 @@ contains
         do m=1,ndim
           zczdot(j,k) = zczdot(j,k) + ((dconjg(bsin(j)%z(m)-bsin(k)%z(m)))*dz(k,m))
         end do
+        asum = (0.0d0,0.0d0)
+        do r=1,npes
+          asum = asum + (dconjg(bsin(j)%a_pes(r)) * bsin(k)%a_pes(r))
+        end do                                        
         if (zczdot(j,k)/=zczdot(j,k)) then
           write(0,"(a,i4,a,i4,a)") "zczdot(", j, ",", k, ") is NaN. Terminating"
           errorflag = 1
           return
         end if
-        zczdot(j,k) = i*zczdot(j,k)
+        if (method == "MCEv1") then
+          zczdot(j,k) = i * zczdot(j,k)
+        else
+          zczdot(j,k) = i * zczdot(j,k) * asum
+        end if
       end do
-    end do
-
-    deallocate(dz, stat = ierr)
-    if (ierr/=0) then
-      write(0,"(a)") "Error in deallocation of dz arrays in zczdot"
-      errorflag=1
-      return
-    end if   
+    end do 
 
     return
 

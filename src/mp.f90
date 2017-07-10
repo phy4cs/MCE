@@ -133,10 +133,9 @@ contains
     implicit none
     complex(kind=8), dimension (:), intent(in)::z1,z2
     complex(kind=8), dimension(:,:), intent (inout)::H
-    integer :: m, ierr
+    integer :: m
     complex(kind=8), dimension (:), allocatable :: Htemp
     complex(kind=8) :: zcomb
-    real (kind=8) :: rt2
 
     if (errorflag .ne. 0) return
 
@@ -167,7 +166,7 @@ contains
     complex(kind=8),dimension(npes,npes,ndim) :: dh_dz_mp
     complex(kind=8),dimension(:),intent(in)::z
     complex(kind=8) :: dhdztmp, zcomb
-    real(kind=8) :: rt2, fact
+    real(kind=8) :: fact
     integer :: m
 
     if (errorflag .ne. 0) return

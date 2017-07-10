@@ -1,5 +1,5 @@
-GFORTRAN module version '0' created from ../src/outputs.f90 on Tue Jun 30 14:20:34 2015
-MD5:0ea8f3900999de8b353e2b582aed4861 -- If you edit this, you'll get what you deserve.
+GFORTRAN module version '0' created from ../src/outputs.f90 on Tue Jul  7 13:55:19 2015
+MD5:7287373cf9686ae1e027b297e2004bed -- If you edit this, you'll get what you deserve.
 
 (() () ()
 () () () () () () () () () () () () () () () () () () () () () () () ())
@@ -305,11 +305,11 @@ INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
 55 'filename' '' 'filename' 52 ((VARIABLE IN UNKNOWN-PROC UNKNOWN
 UNKNOWN DUMMY) (CHARACTER 1 0 0 CHARACTER ((CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '10'))) 0 0 () () 0 () () () 0 0)
+61 'n' '' 'n' 59 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DUMMY) (
+INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
 62 'filename' '' 'filename' 59 ((VARIABLE IN UNKNOWN-PROC UNKNOWN
 UNKNOWN DUMMY) (CHARACTER 1 0 0 CHARACTER ((CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '12'))) 0 0 () () 0 () () () 0 0)
-61 'n' '' 'n' 59 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DUMMY) (
-INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
 60 'a' '' 'a' 59 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 ASSUMED_SHAPE (CONSTANT (INTEGER 4
 0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)

@@ -36,10 +36,7 @@ MODULE Ham
     implicit none
     type(basisfn), dimension (:), intent(in)::bs
     complex(kind=8), dimension(size(bs),size(bs))::ovrlpmat
-    complex(kind=8), dimension(ndim) :: z1, z2
-    complex(kind=8) :: diagsum
-    real(kind=8) :: diff, diffsum
-    integer::k,j, nonherm, n, m
+    integer::k,j,n
 
     if (errorflag .ne. 0) return
 
@@ -48,36 +45,16 @@ MODULE Ham
     n = size(bs)
 
     do k=1,n
-      do j=1,n
-        do m=1,ndim
-          z1(m) = bs(j)%z(m)
-          z2(m) = bs(k)%z(m)
-        end do
-        ovrlpmat(j,k)=ovrlpij(bs(j)%z,bs(k)%z)
-      end do
-    end do
-
-    diffsum = 0.0d0
-    nonherm=0
-
-    do k=1,n
-      do j=1,k-1
-        diff = abs(dconjg(ovrlpmat(k,j))-ovrlpmat(j,k))
-        if (diff.gt.1.0d-6) then
-          diffsum = diffsum + diff
-          nonherm = nonherm + 1
+      do j=k,n
+        if (j==k) then
+          ovrlpmat(j,k)=(1.0d0,0.0d0)
+        else
+          ovrlpmat(j,k)=ovrlpij(bs(j)%z,bs(k)%z)
+          ovrlpmat(k,j)=dconjg(ovrlpmat(j,k))
         end if
       end do
     end do
-
-    if (nonherm.ne.0) then
-      write(0,"(a,i5,a,i5,a,i5)")"Error! Overlap matrix is Non-Hermitian. ",2*nonherm,&
-            " unmatched off-diagonal elements found in a ",n,"x",n," matrix"
-      write(0,"(a,es16.8e3)") "Diffsum = ", diffsum
-      errorflag = 1
-      return
-    end if
-
+    
     return
 
   end function ovrlpmat
@@ -88,7 +65,7 @@ MODULE Ham
 
     implicit none
     complex(kind=8), dimension (:), intent(in)::z1,z2
-    complex(kind=8)::ovrlpij, ovrlpchk
+    complex(kind=8)::ovrlpij
     real(kind=8)::chk
     integer :: m
 
@@ -97,27 +74,14 @@ MODULE Ham
     chk = sum((abs(z1(1:ndim)-z2(1:ndim)))**2)
 
     ovrlpij = (0.0d0,0.0d0)
-    ovrlpchk= (0.0d0,0.0d0)
 
     if (chk.le.20000) then
       do m=1,ndim
         ovrlpij  = ovrlpij  + ((dconjg(z1(m))*z2(m))-(0.5d0*dconjg(z1(m))*z1(m))&
                   -(0.5d0*dconjg(z2(m))*z2(m)))
-        ovrlpchk = ovrlpchk + ((dconjg(z2(m))*z1(m))-(0.5d0*dconjg(z2(m))*z2(m))&
-                    -(0.5d0*dconjg(z1(m))*z1(m)))
       end do
       ovrlpij  = cdexp(ovrlpij )
-      ovrlpchk = cdexp(ovrlpchk)
     end if
-
-    if (abs(ovrlpchk-dconjg(ovrlpij)).gt.1.0d-10) then
-      write(0,"(a)") "Error in ovrlpij function. Reversing arrays does not conjugate them"
-      write(0,"(2(a,2(es20.12e3)))")"Ovrlpij value is ",ovrlpij,&
-                            " while check value is ",ovrlpchk
-      write(0,"(a,es20.12e3)") "Difference is ", abs(ovrlpchk-dconjg(ovrlpij))
-      errorflag = 1
-      return
-    end if    
 
     return
 
@@ -130,88 +94,54 @@ MODULE Ham
     implicit none
     type(basisfn), dimension (:), intent(in)::bs
     complex(kind=8), dimension(size(bs),size(bs))::ovrlpphimat
-    complex(kind=8), dimension(ndim) :: z1, z2
-    complex(kind=8)::asum, diagsum
-    real(kind=8) :: diff, diffsum
-    integer::k,j,r,nonherm, n, m
+    complex(kind=8)::asum
+    integer::k,j,r,n
 
     if (errorflag .ne. 0) return
 
     n = size(bs)
 
     do k=1,n
-      do j=1,n
-        do m=1,ndim
-          z1(m) = bs(j)%z(m)
-          z2(m) = bs(k)%z(m)
-        end do
-        asum = (0.0d0,0.0d0)
-        do r=1,npes
+      do j=k,n
+          asum = (0.0d0,0.0d0)
+          do r=1,npes
             asum = asum + (dconjg(bs(j)%a_pes(r))*bs(k)%a_pes(r))
-        end do
-        ovrlpphimat(j,k)=ovrlpij(bs(j)%z,bs(k)%z)*asum
-      end do
-    end do
-
-    nonherm = 0
-
-    do k=1,size(ovrlpphimat,2)
-      do j=1,k-1
-        diff = abs(dconjg(ovrlpphimat(k,j))-ovrlpphimat(j,k))
-        if (diff.gt.1.0d-6) then
-          diffsum = diffsum + diff
-          nonherm = nonherm + 1
+          end do
+          ovrlpphimat(j,k)=ovrlpij(bs(j)%z,bs(k)%z)*asum
+        if (k.ne.j) then
+          ovrlpphimat(k,j)=dconjg(ovrlpphimat(j,k))
         end if
       end do
     end do
-
-    if (nonherm.ne.0) then
-      write(0,"(a,i5,a,i5,a,i5)")"Error! Phi overlap is Non-Hermitian. ",2*nonherm,&
-            " unmatched off-diagonal elements found in a ", n,"x",n," matrix"
-      write(0,"(a,es16.8e3)") "Diffsum = ", diffsum
-      errorflag = 1
-      return
-    end if
-
+    
   end function ovrlpphimat
 
 !***********************************************************************************!
 !             Norm and Population Functions
 !***********************************************************************************!
 
-  function norm(bs)   !   Level 1 Function
+  function norm(bs,ovrlp)   !   Level 1 Function
 
     implicit none
-    type(basisfn),dimension(:),intent(in)::bs    
+    type(basisfn),dimension(:),intent(in)::bs
+    complex(kind=8), dimension(:,:), intent(in) :: ovrlp    
     complex(kind=8)::norm, asum
-    complex(kind=8), dimension(:), allocatable::zj,zk 
     real(kind=8)::absnorm
-    integer::k, j, r, m, ierr
+    integer::k, j, r, ierr
 
     if (errorflag .ne. 0) return
 
     ierr = 0
 
     norm = (0.0d0, 0.0d0)
-
-    allocate(zj(ndim), zk(ndim), stat=ierr)
-    if (ierr/=0) then
-      write(0,"(a)") "Error allocating z arrays"
-      errorflag = 1
-      return
-    end if
-    
+   
     do k=1,size(bs)
       do j=1,size(bs)
         asum = (0.0d0, 0.0d0)
-        do m=1,ndim
-          zj(m)=bs(j)%z(m)
-          zk(m)=bs(k)%z(m)
-        end do
         do r=1,npes
           asum = asum + (dconjg(bs(j)%a_pes(r))*bs(k)%a_pes(r))
         end do
-        norm = norm + dconjg(bs(j)%D_big)*ovrlpij(zj,zk)*asum*bs(k)%D_big
+        norm = norm + dconjg(bs(j)%D_big)*ovrlp(j,k)*asum*bs(k)%D_big
       end do
     end do
 
@@ -280,13 +210,13 @@ MODULE Ham
 
 !------------------------------------------------------------------------------------
 
-  function pop(bs, pes)   !   Level 1 Function
+  function pop(bs, pes, ovrlp)   !   Level 1 Function
 
     implicit none
     type(basisfn),dimension(:),intent(in)::bs
-    complex(kind=8), dimension(:), allocatable::zj,zk 
+    complex(kind=8), dimension(:,:), intent(in) :: ovrlp
     complex(kind=8)::cpop
-    integer::k,j,ierr, m
+    integer::k,j,ierr
     integer, intent(in):: pes
     real(kind=8)::pop
 
@@ -295,21 +225,10 @@ MODULE Ham
     ierr = 0
 
     cpop = (0.0d0, 0.0d0)
-
-    allocate(zj(ndim), zk(ndim), stat=ierr)
-    if (ierr/=0) then
-      write(0,"(a)") "Error allocating z arrays"
-      errorflag = 1
-      return
-    end if
-    
+  
     do k=1,size(bs)
       do j=1,size(bs)
-        do m=1,ndim
-          zj(m)=bs(j)%z(m)
-          zk(m)=bs(k)%z(m)
-        end do
-        cpop = cpop + dconjg(bs(j)%D_big) * ovrlpij(zj,zk) * bs(k)%D_big &
+        cpop = cpop + dconjg(bs(j)%D_big) * ovrlp(j,k) * bs(k)%D_big &
                 * dconjg(bs(j)%d_pes(pes)) * bs(k)%d_pes(pes) &
                 * cdexp(i*(bs(k)%s_pes(pes)-bs(j)%s_pes(pes)))
       end do
@@ -365,11 +284,11 @@ MODULE Ham
 
     absnorm=sqrt(dble(innorm*dconjg(innorm)))
 
-    if ((absnorm.gt.1.2d0).and.(cmprss=="N")) then
-      write(0,"(a,a)") "Norm is greater than 1.2. Simulation has failed and trajectories ",&
-                "are likely to explode"
-      errorflag = 1
-    end if
+!    if ((absnorm.gt.1.2d0).and.(cmprss=="N")) then
+!      write(0,"(a,a)") "Norm is greater than 1.2. Simulation has failed and trajectories ",&
+!                "are likely to explode"
+!      errorflag = 1
+!    end if
 
     deallocate(zj, zk, stat=ierr)
     if (ierr/=0) then
@@ -583,10 +502,9 @@ MODULE Ham
   subroutine Hord(bs, H, t)
 
     implicit none
-    integer::k, j, m, r, s, ierr
+    integer::k, j, r, s, ierr
     type(basisfn),dimension(:),intent(in)::bs
     type (hamiltonian), dimension (:,:), allocatable, intent(inout) :: H
-    complex(kind=8), dimension (:), allocatable :: z1, z2
     complex(kind=8), dimension (:,:), allocatable :: Hjk_mat
     real(kind=8), intent (in) :: t
 
@@ -599,8 +517,6 @@ MODULE Ham
     end if
 
     allocate(Hjk_mat(npes,npes), stat = ierr)
-    if (ierr==0) allocate (z1(ndim), stat = ierr)
-    if (ierr==0) allocate (z2(ndim), stat = ierr)
     if (ierr/=0) then
       write(0,"(a)") "Error in allocation of Hjk_mat matrix in Hord"
       errorflag=1
@@ -608,20 +524,19 @@ MODULE Ham
     end if
 
     do k=1,size(H,2)
-      do j=1,size(H,1)
-        do m=1,size(z1)
-          z1(m)=bs(j)%z(m)
-          z2(m)=bs(k)%z(m)
-        end do
-        call Hij(Hjk_mat,z1,z2,t)
+      do j=k,size(H,1)
+        call Hij(Hjk_mat,bs(j)%z,bs(k)%z,t)
         do s=1,size(Hjk_mat,2)
           do r=1,size(Hjk_mat,1)
             H(j,k)%Hjk(r,s) = Hjk_mat(r,s)
+            if (j.ne.k) then
+              H(k,j)%Hjk(r,s) = dconjg(H(j,k)%Hjk(r,s))
+            end if
           end do
         end do
       end do
     end do
-
+    
     deallocate (Hjk_mat, stat = ierr)
     if (ierr/=0) then
       write(0,"(a)") "Error in deallocation of Hjk_mat matrix in Hord"

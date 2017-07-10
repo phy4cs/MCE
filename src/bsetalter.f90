@@ -15,6 +15,8 @@ MODULE bsetalter
 !*      2) Leaking the basis set, used for large q values in the Hennon-Heiles model
 !*      3) Cloning subroutine, which increases the basis set, used mainly for the
 !*              spin boson model
+!*      4) Retriving cloning information from previous calculations when using the
+!*              AIMC-MCE propagation system
 !*      
 !***********************************************************************************!
 
@@ -28,21 +30,19 @@ contains
     implicit none
 
     type(basisfn), dimension(:), allocatable, intent(inout) :: bs
-    complex(kind=8), dimension(:,:), intent(in) :: z0
+    complex(kind=8), dimension(:,:), intent(in) :: z0   ! This is the initial grid.
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(in) :: time, gridsp
     integer, intent(inout) :: nbf, x
+    
     type(basisfn) :: bf
-    complex(kind=8), dimension (:), allocatable :: bigA,cnew,dnew,dnew2,Btemp,C_k
-    complex(kind=8), dimension (:,:), allocatable :: ovrlp_mat, chkmat, zt, znew
-    complex(kind=8) :: nrm
+    complex(kind=8), dimension (:,:), allocatable :: ovrlp_mat, zt, znew    
+    complex(kind=8), dimension (:), allocatable :: bigA,cnew,dnew,C_k
     real(kind=8), dimension (:), allocatable :: DC, qstrt, pstrt
-    real(kind=8) :: absB, realz, imagz
+    real(kind=8) :: realz, imagz
     integer, dimension (:,:), allocatable :: coordinates
     integer, dimension (:), allocatable :: qsize,psize,columnsize,columnrep,remove
-    integer :: j, k, p, q, l, m, n, z, y, ierr, nbfnew, nbfgrd
-    character (LEN=15) :: filenm
-    character (LEN=5)  :: step
+    integer :: j, k, p, q, l, m, n, z, y, ierr
 
     if (errorflag .ne. 0) return
 
@@ -52,10 +52,10 @@ contains
       return
     end if
 
-    !!!!!!z0 is the initial grid
-
-    !!!!!!! Create a smaller grid for the first step, max size 1600 bfs 
-
+    ! Create a smaller grid for the first step, max size 1600 bfs.     
+    ! This section has been disabled, and should be used with care as it will cause
+    ! errors if used with the coulomb potential and not using the even grid+1 layout
+    ! due to the absence of D values for the basis set
     if ((x==1).and.(basis=="GRID").and.(.false.)) then
 
       allocate (qstrt(ndim), stat=ierr)
@@ -67,6 +67,8 @@ contains
         errorflag=1
         return
       end if
+      
+      ! Set the grid dimensions for the smaller initial grid
       if (ndim==3) then
         qsize(1) = 4
         qsize(2) = 2
@@ -78,11 +80,13 @@ contains
         qsize(1) = 4
         psize(1) = 4
       else
-        write (0,"(a)") "Using a grid of neither 3 nor 1 dimensions! How did that happen?"
+        write (0,"(a)") "Using a grid of neither 3 nor 1 dimensions!"
         errorflag=1
         return
       end if
-      nbf = product(qsize(1:ndim))*product(psize(1:ndim))
+
+      nbf = product(qsize(1:ndim))*product(psize(1:ndim))+1
+      if ((mod(qsizez,2)==0).and.(sys.ne."CP")) nbf = nbf + 1   ! Adds central point at end   
       allocate (coordinates(nbf,ndim*2), stat=ierr)
       if (ierr==0) allocate (columnsize(ndim*2), stat=ierr)
       if (ierr==0) allocate (columnrep(ndim*2), stat=ierr)
@@ -91,8 +95,20 @@ contains
         errorflag=1
         return
       end if
+      coordinates(:,:) = 0
+      
+      ! Once the number of basis functions has been changed, the basis set is
+      ! de- and re-allocated to the correct new size
       call deallocbs(bs)
       call allocbs(bs,nbf)
+      
+      ! A set of coordinates are set up to convert the grid dimensions into a single
+      ! array of values to be used to assign the correct positions in phase space to
+      ! each member of the new smaller initial basis set, with columns assigned in 
+      ! order of dimension and in (q,p) pairs, ie q_x, p_x, q_y, p_y, q_z, p_z.
+      ! The columnreps array determines how many times the coordiantes for a
+      ! particular dimension are repeated over the entire coordinates array in
+      ! order to list all coordinates systematically
       n=0
       do m=1,ndim*2
         if (mod(m,2)==1) then
@@ -108,14 +124,10 @@ contains
           end do
         end if
       end do
-      do m=1,ndim*2
-        columnrep(m) = 1
-        if (m/=1) then
-          do l=1,m-1
-            columnrep(m) = columnrep(m)*columnsize(l)
-          end do
-        end if
-      end do
+      
+      ! Write to the coordinates array all the coordinates in order.
+      ! These are the grid point numbers, not the values themselves, with each
+      ! block in each column listing from 1 to the size of that particular dimension
       do m=1,ndim*2
         z=nbf/(columnrep(m)*columnsize(m))
         y=nbf/columnrep(m)     
@@ -133,10 +145,17 @@ contains
           end if
         end do
       end do
+      
+      ! Calculate the bottom left corner of the grid in actual position
+      ! and momentum coordinates
       do m=1,ndim
          qstrt(m) = muq(m)-((dble(qsize(m))-1.0d0)*sigq*gridsp/2.0d0)
          pstrt(m) = mup(m)-((dble(psize(m))-1.0d0)*sigp*gridsp/2.0d0)
       end do
+      
+      ! Uses the coordinates array to calculate the positions in phase space of each
+      ! basis function, and writes that position along with the initial values for 
+      ! the other quantities to the basis set array (D is calculated later)
       do k=1,nbf
         bf=bs(k)
         do m=1,ndim
@@ -150,7 +169,12 @@ contains
         end do
         bs(k)=bf
       end do 
-      if (mod(qsizez,2)==0) then
+      
+      ! Adds the central point of the grid to the basis set if needed.
+      ! It should be noted that this will not work for the coulomb potential
+      ! as the centre of the grid is over the singularity, hence why this
+      ! possibility is not allowed by the condional
+      if ((mod(qsizez,2)==0).and.(sys.ne."CP")) then
         do m=1,ndim
           bf%z(m)=cmplx(muq(m),mup(m),kind=8)
           bf%s_pes(1) = 0.0d0
@@ -160,6 +184,7 @@ contains
         end do
         bs(nbf)=bf
       end if
+      
       deallocate (qstrt, stat=ierr)
       if (ierr==0) deallocate (pstrt, stat=ierr)
       if (ierr==0) deallocate (qsize, stat=ierr)
@@ -173,7 +198,10 @@ contains
         errorflag=1
         return
       end if
+      
     end if
+
+    !!!!!!!! Beginning of the reprojection section!!!!!!!
 
     allocate (zt(nbf,ndim), stat=ierr)
     if (ierr==0) allocate (bigA(nbf), stat=ierr)
@@ -185,6 +213,7 @@ contains
       return
     end if 
 
+    ! Build the arrays containing all needed basis set information
     do j=1,nbf
       zt(j,1:ndim)=bs(j)%z(1:ndim)
       bigA(j) = bs(j)%D_big * bs(j)%d_pes(1) * exp(i*bs(j)%s_pes(1))
@@ -192,6 +221,7 @@ contains
 
     call deallocbs(bs)
 
+    ! Ovrlp_mat is the overlap with the initial wavepacket
     do j=1,nbf
       do k=1,in_nbf
         cnew(k) = (0.0d0, 0.0d0)
@@ -212,7 +242,7 @@ contains
       return
     end if
  
-    remove=0
+    remove=0   ! Array of flags to say whether or not a grid point needs removing
 
     if ((nbfadapt.eq."YES")) then 
       do k=1,in_nbf
@@ -464,20 +494,34 @@ contains
     integer, dimension(:), allocatable, intent(inout) :: clone, clonenum
     integer, intent (inout) :: nbf
     integer, intent (in) :: x, reps
-    real(kind=8) :: brforce
+    real(kind=8) :: brforce, normar
     integer, dimension(:), allocatable :: clonehere, clonecopy, clonecopy2 
     integer :: k, m, j, n, nbfnew, ierr, r, clonetype
     character(LEN=3)::rep
 
     if (errorflag==1) return
 
-    clonetype = 2 ! 1=conditional cloning, 2=blind cloning
+    if ((cloneflg=="YES").or.((cloneflg=="BLIND+").and.(x.ne.0))) then
+      clonetype = 1 ! 1=conditional cloning, 2=blind cloning
+    else if ((cloneflg=="BLIND").or.((cloneflg=="BLIND+").and.(x.eq.0))) then
+      clonetype = 2
+    else
+      write (0,"(2a)") "Cloneflg is invalid. Should be 'YES' or 'BLIND', but was ", cloneflg
+      errorflag = 1
+      return
+    end if
 
     allocate (clonehere(nbf), stat=ierr)
     if (ierr==0) allocate(clonecopy(nbf), stat=ierr)
     if (ierr==0) allocate(clonecopy2(nbf), stat=ierr)
     if (ierr/=0) then
       write (0,"(a)") "Error allocating the clonehere array"
+      errorflag = 1
+      return
+    end if
+    
+    if (npes.ne.2) then
+      write(6,*) "Error. Cloning currently only valid for npes=2"
       errorflag = 1
       return
     end if
@@ -489,7 +533,11 @@ contains
 
     if (clonetype==1) then
       do k=1,nbf
-        brforce = ((abs(bs(k)%a_pes(1))*abs(bs(k)%a_pes(2)))**2.0)
+        normar = 0.0d0
+        do r=1,npes
+          normar = normar + dconjg(bs(k)%a_pes(r))*bs(k)%a_pes(r)
+        end do
+        brforce = ((abs(bs(k)%a_pes(1)*bs(k)%a_pes(2))**2.0)/(normar**2.0))
         if ((brforce.gt.0.249).and.(clone(k)==0).and.(clonenum(k).lt.clonemax)) then
           clone(k) = x
           clonehere(k) = 1
@@ -499,19 +547,17 @@ contains
       end do
     else if (clonetype==2) then
       if (mod(x,clonefreq)==0) then
-        write (0,"(2(a,i0))") "Cloning of ", nbf, " basis functions started in step ", x
-        write (0,*) "Clonefreq = ", clonefreq, " and clonemax = ", clonemax
         do k=1,nbf
           if (clonenum(k).lt.clonemax) then
             clone(k) = x
             clonehere(k) = 1
-          else
-            write (0,"(2(a,i0))") "Check failed. Clonenum(",k,") was ", clonenum(k)
           end if 
-          clonecopy(k) = clone(k)
-          clonecopy2(k) = clonenum(k)
         end do 
       end if
+      do k=1,nbf
+        clonecopy(k) = clone(k)
+        clonecopy2(k) = clonenum(k)
+      end do
     end if          
 
     nbfnew = nbf + sum(clonehere(:))
@@ -558,25 +604,46 @@ contains
           clone(nbf+j) = x
           clonenum(k) = clonenum(k) + 1
           clonenum(nbf+j) = clonenum(k)
-          bsnew(k)%D_big = bs(k)%D_big * abs(bs(k)%a_pes(1))
-          bsnew(k)%d_pes(1) = bs(k)%d_pes(1)/abs(bs(k)%a_pes(1))
-          do r=2,npes
-            bsnew(k)%d_pes(r) = (0.0d0,0.0d0)
-            bsnew(k)%s_pes(r) = bs(k)%s_pes(r)
+          if (method=="MCEv1") then
+            bsnew(k)%D_big = bs(k)%D_big
+            bsnew(k)%d_pes(in_pes) = bs(k)%d_pes(in_pes)
+          else
+            bsnew(k)%D_big = bs(k)%D_big * abs(bs(k)%a_pes(in_pes))
+            bsnew(k)%d_pes(in_pes) = bs(k)%d_pes(in_pes)/abs(bs(k)%a_pes(in_pes))
+          end if
+          do r=1,npes
+            if (r.ne.in_pes) then
+              bsnew(k)%d_pes(r) = (0.0d0,0.0d0)
+              bsnew(k)%s_pes(r) = bs(k)%s_pes(r)
+            end if
           end do
-          bsnew(nbf+j)%D_big = bs(k)%D_big * &
-                                sqrt(1.-(dconjg(bs(k)%a_pes(1))*bs(k)%a_pes(1)))
-          bsnew(nbf+j)%d_pes(1) = (0.0d0,0.0d0)
-          bsnew(nbf+j)%s_pes(1) = bs(k)%s_pes(1)
-          do r=2,npes
-            bsnew(nbf+j)%d_pes(r) = bs(k)%d_pes(r)/&
-                                sqrt(1.-(dconjg(bs(k)%a_pes(1))*bs(k)%a_pes(1)))
-            bsnew(nbf+j)%s_pes(r) = bs(k)%s_pes(r)
+          if (method=="MCEv1") then
+            bsnew(nbf+j)%D_big = bs(k)%D_big
+          else
+            bsnew(nbf+j)%D_big = bs(k)%D_big * &
+                                  sqrt(1.-(dconjg(bs(k)%a_pes(in_pes))*bs(k)%a_pes(in_pes)))
+          end if
+          bsnew(nbf+j)%d_pes(in_pes) = (0.0d0,0.0d0)         
+          bsnew(nbf+j)%s_pes(in_pes) = bs(k)%s_pes(in_pes)   
+          do r=1,npes
+            if (r.ne.in_pes) then
+              if (x.eq.0) then
+                bsnew(nbf+j)%d_pes(r) = (1.0d0,0.0d0)
+              else
+                if (method=="MCEv1") then
+                  bsnew(nbf+j)%d_pes(r) = bs(k)%d_pes(r)
+                else
+                  bsnew(nbf+j)%d_pes(r) = bs(k)%d_pes(r)/&
+                                  sqrt(1.-(dconjg(bs(k)%a_pes(1))*bs(k)%a_pes(1)))
+                end if                  
+              end if
+              bsnew(nbf+j)%s_pes(r) = bs(k)%s_pes(r)
+            end if
           end do
           do m=1,ndim
             bsnew(nbf+j)%z(m) = bs(k)%z(m)
           end do
-          write(47756,"(3i5,2es25.17e3)") x, k, nbf+j, abs(bs(k)%a_pes(1)), sqrt(1.-((abs(bs(k)%a_pes(1))**2.0d0)))
+          write(47756,"(3i5,2es25.17e3)") x, k, nbf+j, abs(bs(k)%a_pes(1)), abs(bs(k)%a_pes(2))
           j = j+1
         else
           bsnew(k)%D_big = bs(k)%D_big
@@ -601,7 +668,9 @@ contains
         do m=1,ndim
           bs(k)%z(m) = bsnew(k)%z(m)
         end do
-      end do          
+      end do
+      
+      call deallocbs(bsnew)          
    
       n = nbfnew-nbf
    
@@ -629,12 +698,12 @@ contains
   
 !------------------------------------------------------------------------------------
 
-  subroutine retrieveclon (dummybs, bset, reps, x, time, nbf, initnorm, map_bfs)   ! Currently only works for 2pes.
+  subroutine retrieveclon (dummybs, bset, reps, x, time, nbf, map_bfs)   ! Currently only works for 2pes.
                                                      ! and for swarm trains - no aimce for swarms
     implicit none
   
     type(basisfn), dimension (:), intent(inout), allocatable :: bset, dummybs 
-    real(kind=8), intent(in) :: time, initnorm
+    real(kind=8), intent(in) :: time
     integer, dimension(:,:), intent(in) :: map_bfs
     integer, intent(inout) :: nbf
     integer, intent (in) :: reps, x

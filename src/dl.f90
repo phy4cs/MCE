@@ -1,4 +1,4 @@
-MODULE sb
+MODULE dl
 
   use globvars
 
@@ -28,7 +28,7 @@ MODULE sb
 
 !*************************************************************************************************!
 !*
-!*         Spin Boson Module
+!*         Spin Boson Module with drude lorentz spectral density
 !*           
 !*   Contains subroutines for:
 !*
@@ -54,7 +54,7 @@ contains
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine readparams_sb
+  subroutine readparams_dl
   
     !   This subroutine reads the system specific parameters from the inham.dat file
   
@@ -79,61 +79,61 @@ contains
 
     do while (ierr==0)
 
-      if(LINE=='SBDelta') then
+      if(LINE=='DLDelta') then
         backspace(128)
-        read(128,*,iostat=ierr)LINE,delta_sb
+        read(128,*,iostat=ierr)LINE,delta_dl
         if (ierr.ne.0) then
           write(0,"(a)") "Error reading Delta value"
           errorflag = 1
           return
         end if
         n = n+1
-      else if (LINE=='SBEps') then
+      else if (LINE=='DLEps') then
         backspace(128)
-        read(128,*,iostat=ierr)LINE,eps_sb
+        read(128,*,iostat=ierr)LINE,eps_dl
         if (ierr.ne.0) then
           write(0,"(a)") "Error reading Epsilon value"
           errorflag = 1
           return
         end if
         n = n+1
-      else if (LINE=='SBw') then
+      else if (LINE=='DLw') then
         backspace(128)
-        read(128,*,iostat=ierr)LINE,wc_sb
+        read(128,*,iostat=ierr)LINE,wc_dl
         if (ierr.ne.0) then
           write(0,"(a)") "Error reading wc value"
           errorflag = 1
           return
         end if
         n = n+1
-      else if (LINE=='SBkondo') then
+      else if (LINE=='DLlambda') then
         backspace(128)
-        read(128,*,iostat=ierr)LINE,kondo_sb
+        read(128,*,iostat=ierr)LINE,lambda_dl
         if (ierr.ne.0) then
-          write(0,"(a)") "Error reading kondo parameter value"
+          write(0,"(a)") "Error reading lambda parameter value"
           errorflag = 1
           return
         end if
         n = n+1
-      else if (LINE=='SBwmax') then
+      else if (LINE=='DLwmax') then
         backspace(128)
-        read(128,*,iostat=ierr)LINE,wmax_sb
+        read(128,*,iostat=ierr)LINE,wmax_dl
         if (ierr.ne.0) then
           write(0,"(a)") "Error reading wmax value"
           errorflag = 1
           return
         end if
         n = n+1
-      else if (LINE=='SBBeta') then
+      else if (LINE=='DLBeta') then
         backspace(128)
-        read(128,*,iostat=ierr)LINE,beta_sb
+        read(128,*,iostat=ierr)LINE,beta_dl
         if (ierr.ne.0) then
           write(0,"(a)") "Error reading beta value"
           errorflag = 1
           return
         end if
         n = n+1
-      else if(LINE=='SBupnorm') then
+      else if(LINE=='DLupnorm') then
         backspace(128)
         read(128,*,iostat=ierr)LINE,uplimnorm
         if (ierr.ne.0) then
@@ -142,7 +142,7 @@ contains
           return
         end if
         n = n+1
-      else if(LINE=='SBdownnorm') then
+      else if(LINE=='DLdownnorm') then
         backspace(128)
         read(128,*,iostat=ierr)LINE,lowlimnorm
         if (ierr.ne.0) then
@@ -157,64 +157,69 @@ contains
 
     end do
 
-!    if (wmax_sb .ne. 5.0d0 * wc_sb) then
-!      wmax_sb = wc_sb * 5.0d0
+!    if (wmax_dl .ne. 5.0d0 * wc_dl) then
+!      wmax_dl = wc_dl * 5.0d0
 !    end if
 
     close (128)
 
     if (n.ne.8) then
-      write(0,"(a)") "Not all required variables read in readparams_sb subroutine"
+      write(0,"(a)") "Not all required variables read in readparams_dl subroutine"
       errorflag = 1
       return
     end if
 
     return
 
-  end subroutine readparams_sb
+  end subroutine readparams_dl
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine genwm_sb(wm_sb)   !   Level 2 Subroutine
+  subroutine genwm_dl(wm_dl)   !   Level 2 Subroutine
 
     !   Generates the array of discretised frequencies over M degrees of freedom
 
     implicit none
     integer::m, ierr
-    real(kind=8), dimension(:), allocatable, intent(inout) :: wm_sb
+    real(kind=8), dimension(:), allocatable, intent(inout) :: wm_dl
+    real(kind=8) :: pi_rl
 
     if (errorflag .ne. 0) return
     ierr = 0
+    
+    pi_rl = sqrtpi**2.0d0
 
     if (ndim.le.0) then
       write(0,"(a)") "Number of dimensions not correctly read or stored"
       errorflag = 1
       return
-    else if (.not.allocated(wm_sb)) then
+    else if (.not.allocated(wm_dl)) then
       write(0,"(a)") "genwm subroutine called but wm not allocated"
       errorflag=1
       return
     else
-      do m=1,size(wm_sb)
-        wm_sb(m)=-1.0d0*wc_sb*dlog(1.0d0-((dble(m)*(1.0d0-dexp(-1.0d0*wmax_sb/wc_sb)))/dble(ndim)))    ! Ohmic bath
+      do m=1,size(wm_dl)
+!        wm_dl(m)=wmax_dl*((dble(m)/dble(ndim))**2.)                        ! Wang1999
+!        wm_dl(m)=wc_dl*dtan((pi_rl/2.)*dble(m)/(dble(ndim+1)))             ! Craig2007
+        wm_dl(m)=wc_dl*dtan((dble(m)/dble(ndim))*datan(wmax_dl/wc_dl))     ! SelfDerived 
       end do
     end if
 
     return
 
-  end subroutine genwm_sb
+  end subroutine genwm_dl
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine genCm_sb(Cm_sb, wm_sb)   !   Level 2 Subroutine
+  subroutine genCm_dl(Cm_dl, wm_dl)   !   Level 2 Subroutine
   
     ! Generates the array of coupling strengths, which are dependant upon the frequencies, also over M degrees of freedom
 
     implicit none
     real(kind=8) :: pi_rl
     integer::m, ierr
-    real(kind=8), dimension(:), intent(in) :: wm_sb 
-    real(kind=8), dimension(:), allocatable, intent(inout) :: Cm_sb  
+    real(kind=8), dimension(:), intent(in) :: wm_dl 
+    real(kind=8), dimension(:), allocatable, intent(inout) :: Cm_dl  
 
     if (errorflag .ne. 0) return
     ierr = 0
@@ -224,29 +229,34 @@ contains
       write(0,"(a)") 'Number of dimensions not correctly read or stored'
       errorflag = 1
       return
-    else if (.not.allocated(Cm_sb)) then
+    else if (.not.allocated(Cm_dl)) then
       write(0,"(a)") "genCm subroutine called but Cm not allocated"
       errorflag=1
       return
     else
-      do m=1,size(Cm_sb)
-        Cm_sb(m)=wm_sb(m)*sqrt(kondo_sb*wc_sb*(1.0d0-dexp(-1.0d0*wmax_sb/wc_sb))/dble(ndim))     !Ohmic bath
+      do m=1,size(Cm_dl)
+!        Cm_dl(m)=wm_dl(m)*sqrt((8.*lambda_dl*wc_dl/(pi_rl*dble(ndim)))*sqrt(wmax_dl*wm_dl(m))/(wm_dl(m)**2.+wc_dl**2.))
+        ! ^^^ Wang1999
+!        Cm_dl(m)=wm_dl(m)*sqrt((2.0d0*lambda_dl)/(dble(ndim)+1.0d0))
+        ! ^^^ Craig2007
+        Cm_dl(m)=wm_dl(m)*sqrt((4.0d0*lambda_dl/(pi_rl*dble(ndim)))*datan(wmax_dl/wc_dl))
+        ! ^^^ SelfDerived
       end do
     end if
 
     return
 
-  end subroutine genCm_sb
+  end subroutine genCm_dl
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine gensig_sb(sig_sb, wm_sb)   !   Level 2 Subroutine
+  subroutine gensig_dl(sig_dl, wm_dl)   !   Level 2 Subroutine
 
     ! Generates the distribution of states over the M degrees of freedom in the initial gaussian.
 
     implicit none
-    real(kind=8), dimension (:), allocatable, intent (inout) :: sig_sb
-    real(kind=8), dimension (:), intent (in) :: wm_sb
+    real(kind=8), dimension (:), allocatable, intent (inout) :: sig_dl
+    real(kind=8), dimension (:), intent (in) :: wm_dl
     integer::m, ierr
 
     if (errorflag .ne. 0) return
@@ -256,33 +266,33 @@ contains
       write(0,"(a)") 'Number of dimensions not correctly read or stored'
       errorflag = 1
       return
-    else if (.not.allocated(sig_sb)) then
+    else if (.not.allocated(sig_dl)) then
       write(0,"(a)") 'Allocation error in sig'
       errorflag = 1
       return
     else
-      do m=1,size(sig_sb)
-        sig_sb(m) = 1.0d0/sqrt(dexp(beta_sb*wm_sb(m))-1.0d0)
+      do m=1,size(sig_dl)
+        sig_dl(m) = 1.0d0/sqrt(dexp(beta_dl*wm_dl(m))-1.0d0)
       end do
     end if
 
     return
 
-  end subroutine gensig_sb
+  end subroutine gensig_dl
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine genzinit_sb(mup, muq)   !   Level 1 Subroutine
+  subroutine genzinit_dl(mup, muq)   !   Level 1 Subroutine
 
     ! Generates the initial Gaussian, used as a central point for the larger basis set (which is calculated in a different function)
     
-    ! z_in is defined as being subject to the distribution rho(zin) = sigma_sb(m)*exp(-1.0*sigma_sb(m)*abs(zin(m)))
+    ! z_in is defined as being subject to the distribution rho(zin) = sigma_dl(m)*exp(-1.0*sigma_dl(m)*abs(zin(m)))
 
     implicit none
     integer::m, n, recalc, ierr
     real(kind=8) :: Ezin
     real(kind=8), dimension(:), allocatable, intent(inout) :: mup, muq
-    real(kind=8), dimension(:), allocatable :: sig_sb, wm_sb, Cm_sb
+    real(kind=8), dimension(:), allocatable :: sig_dl, wm_dl, Cm_dl
     complex(kind=8), dimension (:), allocatable:: zin
     complex(kind=8),dimension(:,:), allocatable::H
 
@@ -312,32 +322,32 @@ contains
       return
     end if
 
-    allocate (sig_sb(ndim), stat = ierr)
-    if (ierr==0) allocate (wm_sb(ndim), stat=ierr)
-    if (ierr==0) allocate (Cm_sb(ndim), stat=ierr)
+    allocate (sig_dl(ndim), stat = ierr)
+    if (ierr==0) allocate (wm_dl(ndim), stat=ierr)
+    if (ierr==0) allocate (Cm_dl(ndim), stat=ierr)
     if (ierr/=0) then
       write(0,"(a)") "Error in sig or wm allocation in genzinit"
       errorflag=1
       return
     end if
 
-    call genwm_sb(wm_sb)
-    call gensig_sb(sig_sb, wm_sb)    
+    call genwm_dl(wm_dl)
+    call gensig_dl(sig_dl, wm_dl)    
 
     do while (recalc == 1)
       do m=1,ndim
-        if (randfunc.eq."ZBQL") then
-          mup(m)=ZBQLNOR(mu,sig_sb(m)*sigp)
-          muq(m)=ZBQLNOR(mu,sig_sb(m)*sigq)
+        if (randfunc == "ZBQL") then
+          mup(m)=ZBQLNOR(mu,sig_dl(m)*sigp)
+          muq(m)=ZBQLNOR(mu,sig_dl(m)*sigq)
           zin(m)=cmplx(muq(m),mup(m),kind=8)
         else
-          zin(m)=gauss_random_sb(sig_sb(m),mu,mu)
+          zin(m)=gauss_random_dl(sig_dl(m),mu,mu)
           muq(m)=dble(zin(m))
           mup(m)=dimag(zin(m))
         end if
       end do
       if (ECheck.eq."YES") then
-        call Hij_sb(H,zin,zin)
+        call Hij_dl(H,zin,zin)
         Ezin = dble(H(in_pes,in_pes))
         if ((Ezin.gt.Ebfmax).or.(Ezin.lt.Ebfmin)) then
           if (n.lt.Ntries) then
@@ -360,7 +370,7 @@ contains
       end if
     end do
 
-    deallocate(zin, H, sig_sb, wm_sb, stat = ierr)
+    deallocate(zin, H, sig_dl, wm_dl, stat = ierr)
     if (ierr/=0) then
       write(0,"(a)") "Error in deallocation of zin, H, wm or sig in genzinit"
       errorflag=1
@@ -369,17 +379,17 @@ contains
 
     return
 
-  end subroutine genzinit_sb
+  end subroutine genzinit_dl
 
 !--------------------------------------------------------------------------------------------------
 
-  subroutine Hij_sb(H,z1,z2)
+  subroutine Hij_dl(H,z1,z2)
 
     implicit none
     complex(kind=8), dimension (:), intent(in)::z1,z2
     complex(kind=8), dimension(:,:), intent (inout)::H
     complex(kind=8):: Hbath, Hcoup
-    real(kind=8), dimension(:), allocatable :: wm_sb, Cm_sb
+    real(kind=8), dimension(:), allocatable :: wm_dl, Cm_dl
     real(kind=8) :: chk
     integer :: ierr
 
@@ -387,32 +397,32 @@ contains
 
     ierr = 0
 
-    allocate (wm_sb(ndim), stat=ierr)
-    if (ierr==0) allocate (Cm_sb(ndim), stat=ierr)
+    allocate (wm_dl(ndim), stat=ierr)
+    if (ierr==0) allocate (Cm_dl(ndim), stat=ierr)
     if (ierr/=0) then
       write(0,"(a)") "Error in wm or Cm allocation in Hij"
       errorflag=1
       return
     end if
 
-    call genwm_sb(wm_sb)
-    call genCm_sb(Cm_sb, wm_sb)
+    call genwm_dl(wm_dl)
+    call genCm_dl(Cm_dl, wm_dl)
 
-    Hbath = Hb_sb(z1,z2,wm_sb)
-    Hcoup = Hc_sb(z1,z2,wm_sb, Cm_sb)
+    Hbath = Hb_dl(z1,z2,wm_dl)
+    Hcoup = Hc_dl(z1,z2,wm_dl, Cm_dl)
 
     chk = sum((abs(z1(1:ndim)-z2(1:ndim)))**2)
 
     if (chk.le.20000) then
-      H(1,1) = Hbath+eps_sb+Hcoup
-      H(1,2) = cmplx(delta_sb,0.0d0,kind=8)!+Hcoup
-      H(2,1) = cmplx(delta_sb,0.0d0,kind=8)!+Hcoup
-      H(2,2) = Hbath-eps_sb-Hcoup
+      H(1,1) = Hbath+eps_dl+Hcoup
+      H(1,2) = cmplx(delta_dl,0.0d0,kind=8)!+Hcoup
+      H(2,1) = cmplx(delta_dl,0.0d0,kind=8)!+Hcoup
+      H(2,2) = Hbath-eps_dl-Hcoup
     else
       H = (0.0d0, 0.0d0)
     end if
 
-    deallocate(wm_sb, Cm_sb, stat=ierr)
+    deallocate(wm_dl, Cm_dl, stat=ierr)
     if (ierr/=0) then
       write(0,"(a)") "Error in deallocation of wm or Cm in Hij"
       errorflag=1
@@ -421,60 +431,60 @@ contains
 
     return   
 
-  end subroutine Hij_sb
+  end subroutine Hij_dl
 
 !--------------------------------------------------------------------------------------------------
 
-  function Hb_sb(z1,z2,wm_sb)
+  function Hb_dl(z1,z2,wm_dl)
 
     implicit none
     complex(kind=8), dimension (:), intent(in)::z1,z2
-    real(kind=8), dimension(:), intent(in) :: wm_sb
-    complex(kind=8)::Hb_sb
+    real(kind=8), dimension(:), intent(in) :: wm_dl
+    complex(kind=8)::Hb_dl
     integer :: m
 
     if (errorflag .ne. 0) return
 
-    Hb_sb = (0.0d0, 0.0d0)
+    Hb_dl = (0.0d0, 0.0d0)
 
     do m=1,ndim
-      Hb_sb = Hb_sb + (wm_sb(m)*(dconjg(z1(m))*z2(m)+0.5d0))
+      Hb_dl = Hb_dl + (wm_dl(m)*(dconjg(z1(m))*z2(m)+0.5d0))
     end do
 
     return
 
-  end function Hb_sb
+  end function Hb_dl
     
 !--------------------------------------------------------------------------------------------------
 
-  function Hc_sb(z1,z2,wm_sb, Cm_sb)
+  function Hc_dl(z1,z2,wm_dl, Cm_dl)
 
     implicit none
     complex(kind=8), dimension (:), intent(in)::z1,z2
-    real(kind=8), dimension(:), intent(in) :: wm_sb, Cm_sb
-    complex(kind=8)::Hc_sb
+    real(kind=8), dimension(:), intent(in) :: wm_dl, Cm_dl
+    complex(kind=8)::Hc_dl
     integer :: m
 
     if (errorflag .ne. 0) return
 
-    Hc_sb = (0.0d0, 0.0d0)
+    Hc_dl = (0.0d0, 0.0d0)
 
     do m=1,ndim
-      Hc_sb = Hc_sb + ((Cm_sb(m)/sqrt(2.0d0*wm_sb(m)))*(dconjg(z1(m))+z2(m)))
+      Hc_dl = Hc_dl + ((Cm_dl(m)/sqrt(2.0d0*wm_dl(m)))*(dconjg(z1(m))+z2(m)))
     end do
 
     return
 
-  end function Hc_sb
+  end function Hc_dl
 
 !--------------------------------------------------------------------------------------------------
 
-  function dh_dz_sb(z)
+  function dh_dz_dl(z)
 
     implicit none
-    complex(kind=8),dimension(npes,npes,ndim) :: dh_dz_sb
+    complex(kind=8),dimension(npes,npes,ndim) :: dh_dz_dl
     complex(kind=8),dimension(:),intent(in)::z
-    real(kind=8), dimension(:), allocatable :: wm_sb, Cm_sb
+    real(kind=8), dimension(:), allocatable :: wm_dl, Cm_dl
     integer :: ierr
 
     if (errorflag .ne. 0) return
@@ -485,28 +495,28 @@ contains
       return
     end if
 
-    allocate (wm_sb(ndim), stat=ierr)
-    if (ierr==0) allocate (Cm_sb(ndim), stat=ierr)
+    allocate (wm_dl(ndim), stat=ierr)
+    if (ierr==0) allocate (Cm_dl(ndim), stat=ierr)
     if (ierr/=0) then
       write(0,"(a)") "Error in wm or Cm allocation in dh_dz"
       errorflag=1
       return
     end if 
 
-    call genwm_sb(wm_sb)
-    call genCm_sb(Cm_sb, wm_sb)
+    call genwm_dl(wm_dl)
+    call genCm_dl(Cm_dl, wm_dl)
 
-    dh_dz_sb(1,1,:) = dhdz_sb_11(z,wm_sb,Cm_sb)
-    dh_dz_sb(1,2,:) = dhdz_sb_12(wm_sb,Cm_sb)
-    dh_dz_sb(2,1,:) = dhdz_sb_21(wm_sb,Cm_sb)
-    dh_dz_sb(2,2,:) = dhdz_sb_22(z,wm_sb,Cm_sb)
+    dh_dz_dl(1,1,:) = dhdz_dl_11(z,wm_dl,Cm_dl)
+    dh_dz_dl(1,2,:) = dhdz_dl_12(wm_dl,Cm_dl)
+    dh_dz_dl(2,1,:) = dhdz_dl_21(wm_dl,Cm_dl)
+    dh_dz_dl(2,2,:) = dhdz_dl_22(z,wm_dl,Cm_dl)
 
-!    dh_dz_sb(1,1,:) = dhdz_sb_11(z,wm_sb)
-!    dh_dz_sb(1,2,:) = dhdz_sb_12(wm_sb,Cm_sb)
-!    dh_dz_sb(2,1,:) = dhdz_sb_21(wm_sb,Cm_sb)
-!    dh_dz_sb(2,2,:) = dhdz_sb_22(z,wm_sb)
+!    dh_dz_dl(1,1,:) = dhdz_dl_11(z,wm_dl)
+!    dh_dz_dl(1,2,:) = dhdz_dl_12(wm_dl,Cm_dl)
+!    dh_dz_dl(2,1,:) = dhdz_dl_21(wm_dl,Cm_dl)
+!    dh_dz_dl(2,2,:) = dhdz_dl_22(z,wm_dl)
 
-    deallocate (wm_sb, Cm_sb, stat=ierr)
+    deallocate (wm_dl, Cm_dl, stat=ierr)
     if (ierr/=0) then
       write(0,"(a)") "Error in wm or Cm allocation in dh_dz"
       errorflag=1
@@ -515,96 +525,96 @@ contains
 
     return
 
-  end function dh_dz_sb
+  end function dh_dz_dl
 
 !--------------------------------------------------------------------------------------------------
 
-  function dhdz_sb_11(z,wm_sb, Cm_sb)
+  function dhdz_dl_11(z,wm_dl, Cm_dl)
 
     implicit none
-    complex(kind=8),dimension(ndim)::dhdz_sb_11
+    complex(kind=8),dimension(ndim)::dhdz_dl_11
     complex(kind=8),dimension(:),intent(in)::z
-    real(kind=8),dimension(:),intent(in)::wm_sb, Cm_sb
+    real(kind=8),dimension(:),intent(in)::wm_dl, Cm_dl
     integer::m
 
     if (errorflag .ne. 0) return
 
     do m=1,ndim
-!      dhdz_sb_11(m) = wm_sb(m)*z(m)
-      dhdz_sb_11(m) = wm_sb(m)*z(m) + (Cm_sb(m)/sqrt(2.0d0*wm_sb(m)))
+!      dhdz_dl_11(m) = wm_dl(m)*z(m)
+      dhdz_dl_11(m) = wm_dl(m)*z(m) + (Cm_dl(m)/sqrt(2.0d0*wm_dl(m)))
     end do
 
     return
 
-  end function dhdz_sb_11
+  end function dhdz_dl_11
 
 !--------------------------------------------------------------------------------------------------
 
-  function dhdz_sb_12(wm_sb,Cm_sb)
+  function dhdz_dl_12(wm_dl,Cm_dl)
 
     implicit none
-    complex(kind=8),dimension(ndim)::dhdz_sb_12
-    real(kind=8),dimension(:),intent(in)::wm_sb, Cm_sb
+    complex(kind=8),dimension(ndim)::dhdz_dl_12
+    real(kind=8),dimension(:),intent(in)::wm_dl, Cm_dl
     integer::m
 
     if (errorflag .ne. 0) return
 
     do m=1,ndim
-!      dhdz_sb_12(m) = (Cm_sb(m)/sqrt(2.0d0*wm_sb(m)))
-      dhdz_sb_12(m) = (0.0d0,0.0d0)
+!      dhdz_dl_12 = (Cm_dl(m)/sqrt(2.0d0*wm_dl(m)))
+      dhdz_dl_12 = (0.0d0,0.0d0)
     end do
 
     return
 
-  end function dhdz_sb_12
+  end function dhdz_dl_12
 
 !--------------------------------------------------------------------------------------------------
 
-  function dhdz_sb_21(wm_sb,Cm_sb)
+  function dhdz_dl_21(wm_dl,Cm_dl)
 
     implicit none
-    complex(kind=8),dimension(ndim)::dhdz_sb_21
-    real(kind=8),dimension(:),intent(in)::wm_sb, Cm_sb
+    complex(kind=8),dimension(ndim)::dhdz_dl_21
+    real(kind=8),dimension(:),intent(in)::wm_dl, Cm_dl
     integer::m
 
     if (errorflag .ne. 0) return
 
     do m=1,ndim
-!      dhdz_sb_21(m) = (Cm_sb(m)/sqrt(2.0d0*wm_sb(m)))
-      dhdz_sb_21(m) = (0.0d0,0.0d0)
+!      dhdz_dl_21(m) = (Cm_dl(m)/sqrt(2.0d0*wm_dl(m)))
+      dhdz_dl_21(m) = (0.0d0,0.0d0)
     end do
 
     return
 
-  end function dhdz_sb_21
+  end function dhdz_dl_21
 
 !--------------------------------------------------------------------------------------------------
 
-  function dhdz_sb_22(z,wm_sb,Cm_sb)
+  function dhdz_dl_22(z,wm_dl,Cm_dl)
 
     implicit none
-    complex(kind=8),dimension(ndim)::dhdz_sb_22
+    complex(kind=8),dimension(ndim)::dhdz_dl_22
     complex(kind=8),dimension(:),intent(in)::z
-    real(kind=8),dimension(:),intent(in)::wm_sb, Cm_sb
+    real(kind=8),dimension(:),intent(in)::wm_dl, Cm_dl
     integer::m
 
     if (errorflag .ne. 0) return
 
     do m=1,ndim
-      dhdz_sb_22(m) = wm_sb(m)*z(m) - (Cm_sb(m)/sqrt(2.0d0*wm_sb(m)))
-!      dhdz_sb_22(m) = wm_sb(m)*z(m)
+      dhdz_dl_22(m) = wm_dl(m)*z(m) - (Cm_dl(m)/sqrt(2.0d0*wm_dl(m)))
+!      dhdz_dl_22(m) = wm_dl(m)*z(m)
     end do
 
     return
 
-  end function dhdz_sb_22
+  end function dhdz_dl_22
 
 !*************************************************************************************************!
 
-  function gauss_random_sb (width, muq, mup)
+  function gauss_random_dl (width, muq, mup)
   
     implicit none
-    complex(kind=8) :: gauss_random_sb
+    complex(kind=8) :: gauss_random_dl
     real(kind=8), intent(in) :: width, mup, muq
     integer :: iset
     real(kind=8) :: fac,rsq,v1,v2,ran_1,xz,yz
@@ -620,9 +630,9 @@ contains
       if (rsq.ge.1.0d0.or.rsq.eq.0.0d0) cycle
       fac=sqrt(-2.0d0*log(rsq)/rsq)
       if (iset == 0) then
-        xz=v2*fac*sigq
+        xz=v2*fac/sqrt(2.0d0)
       else if (iset == 1) then
-        yz=v2*fac*sigp
+        yz=v2*fac/sqrt(2.0d0)
       end if    
       iset=iset + 1
     end do
@@ -630,12 +640,12 @@ contains
     xz = muq + (xz * width)
     yz = mup + (yz * width)
     
-    gauss_random_sb = cmplx(xz,yz,kind=8)
+    gauss_random_dl = cmplx(xz,yz,kind=8)
     
     return
     
-  end function gauss_random_sb   
+  end function gauss_random_dl   
 
 !*************************************************************************************************!
 
-end module sb
+end module DL

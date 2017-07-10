@@ -35,26 +35,55 @@ contains
 !        Output Subroutines
 !*************************************************************************************************!
 
-   subroutine histogram(A, n, filename, cutup, cutdown)   !   Disused
+   subroutine histogram(bs, n, time, cutdown_in, cutup_in, nbf)
 
     implicit none
 
-    integer:: n_box_p, n_box_q, boxn, u, ierr
+    integer:: n_box_p, n_box_q, boxn, u, v, ierr
     integer, dimension(:), allocatable::p_dist, q_dist
     real:: boxn_rl
-    real(kind=8),intent(inout)::cutup, cutdown
-    complex(kind=8),dimension(:),intent(in)::A
-    integer,intent(in)::n
-    character(LEN=10),intent(in)::filename
+    real(kind=8) :: cutup, cutdown
+    real(kind=8), dimension(:), allocatable :: bin
+    real(kind=8),intent(in)::cutup_in, cutdown_in, time
+    type(basisfn), dimension (:), intent(in) :: bs
+    complex(kind=8),dimension(:),allocatable::A
+    integer,intent(in)::n, nbf
+    character(LEN=19) :: myfmt
+    logical :: file_exists
 
     if (errorflag .ne. 0) return
 
     ierr = 0
-    boxn = 200
+    
+    cutup = cutup_in
+    cutdown = cutdown_in
+    
+    allocate(A(nbf*ndim), stat = ierr)
+    if (ierr/=0) then
+      write(0,"(a)") "Error in flattened q,p array allocation for histogram"
+      errorflag=1
+      return
+    end if 
+    
+    do v = 1,ndim
+      do u = 1,nbf
+         A(((v-1)*ndim)+u) = bs(u)%z(v)
+      end do
+    end do    
+    
+    if (n.ge.size(A)*0.05) then
+      write(0,"(a)") "Too many bins specified for the number of points"
+      write(0,*) n, " bins requested for array of ", size(A), "elements"
+      errorflag = 1
+      return
+    else    
+      boxn = n
+    end if
 
     boxn_rl = real(boxn)
     allocate(p_dist(boxn), stat = ierr)
     allocate(q_dist(boxn), stat = ierr)
+    allocate(bin(boxn), stat = ierr)
     if (ierr/=0) then
       write(0,"(a)") "Error in p or q distribution allocation for histogram"
       errorflag=1
@@ -62,7 +91,7 @@ contains
     end if
 
 
-    if ((cutup == 0.0).and.(cutdown == 0.0)) then
+    if ((cutup == 0.0d0).and.(cutdown == 0.0d0)) then
       if (maxval(dble(A)).gt.maxval(dimag(A))) then
         cutup = maxval(dble(A))
       else
@@ -75,19 +104,41 @@ contains
         cutdown = minval(dimag(A))
       end if
     end if
-
-    open(unit=135,file=filename,status='unknown',iostat=ierr)
+    
+    inquire(file="qhistogram.out", exist=file_exists)
+    if (file_exists) then
+      open(unit=18535,file="qhistogram.out",status="old",position="append",iostat=ierr)
+    else
+      open(unit=18535,file="qhistogram.out",status="new",iostat=ierr)
+      do u = 1,boxn
+        bin(u) = ((cutup-cutdown)*real(u)/boxn_rl)+cutdown
+      end do
+      write(myfmt,'(a,i0,a)') '(a,', boxn, '(1x,e13.5e3))'  
+      write(18535,myfmt), 'Time\Bin', bin(1:size(bin)) 
+    end if
+    
+    inquire(file="phistogram.out", exist=file_exists)
+    if (file_exists) then
+      open(unit=18536,file="phistogram.out",status="old",position="append",iostat=ierr)
+    else
+      open(unit=18536,file="phistogram.out",status="new",iostat=ierr)
+      do u = 1,boxn
+        bin(u) = ((cutup-cutdown)*real(u)/boxn_rl)+cutdown
+      end do
+      write(myfmt,'(a,i0,a)') '(a,', boxn, '(1x,e13.5e3))'  
+      write(18536,myfmt), 'Time\Bin', bin(1:size(bin)) 
+    end if
 
     do u=1,boxn
       p_dist(u) = 0
       q_dist(u) = 0
     end do
 
-    do u=1,n
+    do u=1,size(A)
       n_box_p = 0
       n_box_q = 0       
-      if ((dimag(A(u)).ge.(cutdown-((cutup-cutdown)/(2*boxn_rl)))) &
-         .and.(dimag(A(u)).le.(cutup+((cutup-cutdown)/(2*boxn_rl))))) then
+      if ((dimag(A(u)).ge.(cutdown-((cutup-cutdown)/(2.0*boxn_rl)))) &
+         .and.(dimag(A(u)).le.(cutup+((cutup-cutdown)/(2.0*boxn_rl))))) then
         n_box_p=int((((dimag(A(u))-cutdown)*(boxn_rl-1.0))/(cutup-cutdown))+1.5)
         if ((n_box_p.gt.boxn).or.(n_box_p.lt.0)) then
           write(0,"(a,i0)")"Error! Invalid Box Calculated. n_box_p = ", n_box_p
@@ -95,8 +146,8 @@ contains
           p_dist(n_box_p)=p_dist(n_box_p) + 1
         end if
       end if
-      if ((dble(A(u)).ge.(cutdown-((cutup-cutdown)/(2*boxn_rl)))) &
-         .and.(dble(A(u)).le.(cutup+((cutup-cutdown)/(2*boxn_rl))))) then
+      if ((dble(A(u)).ge.(cutdown-((cutup-cutdown)/(2.0*boxn_rl)))) &
+         .and.(dble(A(u)).le.(cutup+((cutup-cutdown)/(2.0*boxn_rl))))) then
         n_box_q=int((((dble(A(u))-cutdown)*(boxn_rl-1.0))/(cutup-cutdown))+1.5)
         if ((n_box_q.gt.boxn).or.(n_box_q.lt.0)) then
           write(0,"(a,i0)")"Error! Invalid Box Calculated. n_box_q = ", n_box_q
@@ -106,14 +157,15 @@ contains
       end if
     end do
 
-    write (135,*) 'Bin Real_Part Imag_Part'
+    write(myfmt,'(a,i0,a)') '(', boxn+1, '(1x,e13.5e3))'
 
-    do u=1,boxn
-      write (135,"(3(1x,e13.5e3))") ((cutup-cutdown)*real(u)/boxn_rl)+cutdown, &
-                  real(q_dist(u)), real(p_dist(u))
-    end do
+    write (18535,myfmt) time, real(q_dist(1:boxn))
+    write (18536,myfmt) time, real(p_dist(1:boxn))  
+    
+    deallocate(q_dist, p_dist, bin)      
 
-    close(135)
+    close(18535)
+    close(18536)
 
     return
 
@@ -295,16 +347,16 @@ contains
     type(basisfn), dimension (:), intent(in) :: bs
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(in) :: t
-    integer::m, j, r, ierr, bsunit
-    character(LEN=21)::filename
+    integer::m, j, r, k, ierr, bsunit, fileun
+    character(LEN=22)::filename, filenm, filenm2, myfmt
     integer, intent(in) :: reps, x, y
-    character(LEN=3):: rep
+    character(LEN=4):: rep
     character(LEN=5)::step
     character(LEN=1)::rkstp
 
     ierr = 0
 
-    write(rep,"(i3.3)") reps
+    write(rep,"(i4.4)") reps
     if (x.lt.0) then
       write(step,"(i5.4)") x
     else
@@ -370,6 +422,42 @@ contains
       end do
       close(bsunit)
     end if
+    
+!    filenm = "map-final.out"  
+!    fileun = 53690
+
+!    open(unit=fileun,file=filenm,status="new",iostat=ierr)
+!    if (ierr.ne.0) then
+!      write(0,"(a,a)") "Error opening ", filenm
+!      errorflag = 1
+!      return
+!    end if
+!    write(fileun,"(a)") "  k  m  q  p"
+!    do k = 1,size(bs)
+!      do m = 1,ndim
+!        write (fileun,"(2(i4,2x),2(e16.8e3,2x))") k,m,dble(bs(k)%z(m)),dimag(bs(k)%z(m))
+!      end do
+!    end do  
+!    close (fileun)
+!        
+!    filenm2 = "plotmap-final.out"
+!        
+!    open(unit=fileun,file=filenm2,status="new",iostat=ierr)
+!    if (ierr.ne.0) then
+!      write(0,"(a,a)") "Error opening ", filenm2
+!      errorflag = 1
+!      return
+!    end if
+!    write(fileun,"(a)") 'set terminal png'
+!    write(fileun,"(a,a)") 'set output "CSmap-final.png"'
+!    write(fileun,"(a)") 'set title "Scatter plot of coherent state centres in final basis set"'
+!    write(fileun,"(a)") 'set nokey'
+!    write(fileun,"(a)") 'unset key'
+!    write(fileun,"(a)") 'set xlabel "q"'
+!    write(fileun,"(a)") 'set ylabel "p"'
+!    write(fileun,"(a,a,a)") 'p "',trim(filenm),'" u 3:4 w p'
+!        
+!    close (fileun)
 
     return
 
@@ -386,12 +474,12 @@ contains
     
     integer :: j, n, ierr
     character(LEN=255) :: filename
-    character(LEN=3) :: rep
+    character(LEN=4) :: rep
     
     
     if (errorflag .ne. 0) return
     
-    write(rep,"(i3.3)") reps
+    write(rep,"(i4.4)") reps
     filename="clonearr-"//rep//".out"
     
     n = 90254+reps
@@ -500,13 +588,13 @@ contains
     real(kind=8),dimension(:),allocatable::absD
     integer :: ierr,j
     character(LEN=18)::myfmt
-    character(LEN=3):: rep
+    character(LEN=4):: rep
 
     if (errorflag .ne. 0) return
 
     ierr = 0
     
-    write(rep,"(i3.3)") reps
+    write(rep,"(i4.4)") reps
 
     write(myfmt,'(a,i0,a)') '(', 1+in_nbf, '(1x,e16.8e3))'
 
@@ -525,7 +613,41 @@ contains
     close (1443)
 
    end subroutine outD
-      
+   
+!--------------------------------------------------------------------------------------------------
+
+   subroutine outd2hovrlp(d2h,ovrlp,x,reps)
+   
+    implicit none
+    complex(kind=8), dimension(:,:), intent(in) :: d2h, ovrlp
+    integer, intent(in) :: x, reps
+    
+    integer :: ierr, j, k, fileun
+    character(LEN=22) :: filenm
+    character(LEN=5) :: xstr
+    character(LEN=3) :: rep
+    
+    if (errorflag .ne. 0) return
+    
+    ierr = 0
+    
+    write(xstr,"(i5.5)") x
+    write(rep,"(i3.3)") reps
+    
+    fileun = 14043+reps
+    filenm = "d2Hovrlp-"//trim(xstr)//"-"//trim(rep)//".out" 
+    
+    open (unit=fileun,file=filenm,status="new",iostat=ierr)
+
+    do j=1,size(d2h,1)
+      do k=1,size(d2h,2)
+        write(fileun,"(i6,2(1x,es20.12e3))") (j-1)*size(d2h,2)+k, abs(d2h(j,k)), abs(ovrlp(j,k))
+      end do
+    end do
+    
+    close(fileun)
+    
+   end subroutine outd2hovrlp
 
 !--------------------------------------------------------------------------------------------------
 
@@ -533,15 +655,15 @@ contains
 
     implicit none
     integer :: ierr, fileun
-    character(LEN=15)::filenm, filenm2
+    character(LEN=16)::filenm, filenm2
     integer, intent(in) :: reps
-    character(LEN=3):: rep
+    character(LEN=4):: rep
 
     if (errorflag .ne. 0) return
 
     ierr = 0
 
-    write(rep,"(i3.3)") reps
+    write(rep,"(i4.4)") reps
 
     filenm = "normpop-"//trim(rep)//".out"  
 
@@ -561,7 +683,7 @@ contains
       write(fileun,*), ""
       write(fileun,*), ""
     else
-      write(fileun,"(a)") "Time Norm Re(ACF(t)) Im(ACF(t) |ACF(t)| Re(Extra) Im(Extra) |Extra| Sum(HEhr) Pops 1...n"
+      write(fileun,"(a)") "Time Norm Re(ACF(t)) Im(ACF(t) |ACF(t)| Re(Extra) Im(Extra) |Extra| Sum(HEhr) Pops(1...n)"
       write(fileun,*), ""
       write(fileun,*), ""
     end if
@@ -616,14 +738,24 @@ contains
       write(fileun,"(a,a,a)") 'set output "Dipole-',trim(rep),'.png"'
       write(fileun,"(a)") 'set title "Graph of Dipole Acceleration"'
       write(fileun,"(a)") 'set ylabel "Dipole Acceleration"'
+      write(fileun,"(a)") 'set xlabel "Time (au)"'
+      write(fileun,"(a,a,a)") 'plot "', filenm, '" u 1:6 t "Real" w l'
+    else if (sys=="VP") then
+      write(fileun,"(a,a,a)") 'set output "Disp-',trim(rep),'.png"'
+      write(fileun,"(a)") 'set title "Graph of Dispersion"'
+      write(fileun,"(a)") 'set ylabel "<\Delta x>"'
+      write(fileun,"(a)") 'set xlabel "Time (au)"'
+      write(fileun,"(a,a,a)") 'plot "', filenm, '" u 1:6 t "Real" w l'
     else
       write(fileun,"(a,a,a)") 'set output "Extra-',trim(rep),'.png"'
       write(fileun,"(a)") 'set title "Graph of Extra Calculated Quantity"'
       write(fileun,"(a)") 'set ylabel "Extra"'
+      write(fileun,"(a)") 'set xlabel "Time (au)"'
+      write(fileun,"(a,a,a)") 'plot "', filenm, '" u 1:6 t "Real" w l, "" u 1:7 t "Imaginary" w l, "" u 1:8 t "Absolute" w l'
     end if
-    write(fileun,"(a)") 'set xlabel "Time (au)"'
-    write(fileun,"(a,a,a)") 'plot "', filenm, '" u 1:6 t "Real" w l, "" u 1:7 t "Imaginary" w l, "" u 1:8 t "Absolute" w l'
+    
     close(fileun)
+
 
     filenm2="plotdif-"//rep//".gnu"
 
@@ -656,13 +788,13 @@ contains
     integer :: ierr, fileun
     character(LEN=18) :: filenm,myfmt
     integer, intent(in) :: reps
-    character(LEN=3):: rep
+    character(LEN=4):: rep
 
     if (errorflag .ne. 0) return
 
     ierr = 0
 
-    write(rep,"(i3.3)") reps
+    write(rep,"(i4.4)") reps
 
     filenm = "normpop-"//trim(rep)//".out"     
 
@@ -707,7 +839,7 @@ contains
 
     ierr = 0
 
-    write(rep,"(i3.3)") reps
+    write(rep,"(i4.4)") reps
 
     filenm = "ndimacf-"//trim(rep)//".out"  
 
@@ -836,13 +968,13 @@ contains
     integer :: ierr, fileun
     character(LEN=18) :: filenm,myfmt
     integer, intent(in) :: reps
-    character(LEN=3):: rep
+    character(LEN=4):: rep
 
     if (errorflag .ne. 0) return
 
     ierr = 0
 
-    write(rep,"(i3.3)") reps
+    write(rep,"(i4.4)") reps
 
     filenm = "ndimacf-"//trim(rep)//".out"     
 
@@ -872,7 +1004,7 @@ contains
     complex(kind=8), dimension(:), intent (in) :: acft, extra
     real(kind=8),dimension(:,:), intent(in) :: pops
     real(kind=8) :: time
-    integer :: ierr, t
+    integer :: ierr, t, arrend
     character(LEN=11) :: filenm
     character(LEN=17) :: myfmt
 
@@ -896,21 +1028,23 @@ contains
       write(150,*), ""
       write(150,*), ""
     else
-      write(150,"(a)") "Time Norm Re(ACF(t)) Im(ACF(t) |ACF(t)| Re(Extra) Im(Extra) |Extra| Sum(HEhr) Pops 1...n"
+      write(150,"(a)") "Time Norm Re(ACF(t)) Im(ACF(t) |ACF(t)| Re(Extra) Im(Extra) |Extra| Sum(HEhr) Pops(1...n)"
       write(150,*), ""
       write(150,*), ""
       write(myfmt,'(a,i0,a)') '(', 9+npes, '(1x,e16.8e3))'
     end if
     
+    arrend = size(norm) - 1
+    
     if (npes==2) then
-      do t=1,size(norm)
+      do t=1,arrend
         time = dtinit * (t-1)
         write(150,"(13(1x,e16.8e3))") time, norm(t), dble(acft(t)), dimag(acft(t)), abs(acft(t)), &
               dble(extra(t)), dimag(extra(t)), abs(extra(t)), ehr(t), &
               pops(t,1), pops(t,2), pops(t,1)+pops(t,2), pops(t,1)-pops(t,2)
       end do
     else
-      do t=1,size(norm)
+      do t=1,arrend
         time = dtinit * (t-1)
         write(150,myfmt), time, norm(t), dble(acft(t)), dimag(acft(t)), abs(acft(t)), &
               dble(extra(t)), dimag(extra(t)), abs(extra(t)), ehr(t), pops(t,:)
@@ -927,16 +1061,16 @@ contains
 
     implicit none
     integer :: ierr, k, fileun
-    character(LEN=16) :: filenm
+    character(LEN=17) :: filenm
     character(LEN=21) :: filenm2
     integer, intent(in) :: reps, nbf
-    character(LEN=3):: rep
+    character(LEN=4):: rep
     character(LEN=5):: klowstr, khighstr, kstr
     character(LEN=50000):: lngchar, lngchar2
 
     if (errorflag .ne. 0) return
 
-    if (nbfadapt.eq."YES") then
+    if ((nbfadapt.eq."YES").or.(cloneflg.eq."YES")) then
       write(0,"(a)") "Warning! Outvarsheads subroutine called improperly."
       write(0,"(a)") "This output file is incompatible with a non-constant basis set size"
       write(0,"(a)") "File will not be created."
@@ -945,7 +1079,7 @@ contains
       
     ierr = 0
 
-    write(rep,"(i3.3)") reps
+    write(rep,"(i4.4)") reps
 
     filenm = "PropVars-"//rep//".out"
     fileun = 673+reps
@@ -1103,15 +1237,15 @@ contains
     integer, intent (in) :: x
     real(kind=8), dimension(:), allocatable :: s1ar, s2ar, imdbigar, rldbigar, rld1ar, imd1ar, rld2ar, imd2ar
     integer::ierr, k, fileun
-    character(LEN=16) :: filenm
+    character(LEN=17) :: filenm
     character(LEN=18) :: myfmt
-    character(LEN=3):: rep
+    character(LEN=4):: rep
 
     if (errorflag .ne. 0) return
 
-    if (nbfadapt.eq."YES") return
+    if ((nbfadapt.eq."YES").or.(cloneflg.eq."YES")) return
 
-    write(rep,"(i3.3)") reps
+    write(rep,"(i4.4)") reps
 
     filenm = "PropVars-"//trim(rep)//".out" 
     fileun = 6703+reps
@@ -1187,56 +1321,93 @@ contains
     character(LEN=16) :: filenm
     character(LEN=21) :: filenm2
     integer, intent(in) :: reps, nbf
-    character(LEN=3):: rep
+    character(LEN=4):: rep
     character(LEN=5):: klowstr, khighstr, kstr
     character(LEN=50000):: lngchar, lngchar2
 
     if (errorflag .ne. 0) return
-
-    if (nbfadapt.eq."YES") then
-      write(0,"(a)") "Warning! Outtrajheads subroutine called improperly."
-      write(0,"(a)") "This output file is incompatible with a non-constant basis set size"
-      write(0,"(a)") "File will not be created."
-      return
-    end if 
-
+    
     ierr = 0
 
     write(rep,"(i3.3)") reps
 
-    filenm = "Traj-"//trim(rep)//".out"
-    fileun = 1288+reps
+    if ((nbfadapt.eq."YES").or.(cloneflg.eq."YES")) then
+      write(0,"(a)") "Warning! Trying to create trajectories output file."
+      write(0,"(a)") "This output file is incompatible with a non-constant basis set size"
+      write(0,"(a)") "File will not be created."
+    else 
+
+      filenm = "Traj-"//trim(rep)//".out"
+      fileun = 1288+reps
+  
+      open(unit=fileun,file=filenm,status='unknown',iostat=ierr)
+  
+      if (ierr.ne.0) then
+        write(0,"(a)") "Error in initial opening of Traj.dat file"
+        errorflag = 1
+        return
+      end if
+  
+      write(fileun,*), "Time q(k=1..nbf) p(k=1..nbf)"
+      write(fileun,*), ""
+      write(fileun,*), ""
+  
+      close(fileun)
+  
+      do k=1,nbf
+  
+        write(kstr,"(i0)") k
+        write(klowstr,"(i0)") k+1
+        write(khighstr,"(i0)") k+1+nbf
+      
+        if (k==1) then     
+          lngchar = 'plot "'//trim(filenm)//'" u '//trim(klowstr)//':'//trim(khighstr)//' w l'
+        else
+          lngchar2 = lngchar
+          lngchar = trim(lngchar2)//', "" u '//trim(klowstr)//':'//trim(khighstr)//' w l'
+        end if
+     
+      end do
+  
+      filenm2="plot-"//trim(filenm)
+  
+      open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
+      if (ierr .ne. 0) then
+        write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
+        errorflag=1
+        return
+      end if
+  
+      write(fileun,"(a)") 'set terminal png'
+      write(fileun,"(a,a,a)") 'set output "trajectories-',trim(rep),'.png"'
+      write(fileun,"(a)") 'set title "Graph of convergence with different numbers of repetitions"'
+      write(fileun,"(a)") 'set nokey'
+      write(fileun,"(a)") 'unset key'
+      write(fileun,"(a)") 'set xlabel "q(t)"'
+      write(fileun,"(a)") 'set ylabel "p(t)"'
+      write(fileun,"(a)") trim(lngchar)
+      close(fileun)
+
+    end if
+
+    filenm = "Ovrlp-"//trim(rep)//".out"
+    fileun = 1888+reps
 
     open(unit=fileun,file=filenm,status='unknown',iostat=ierr)
 
     if (ierr.ne.0) then
-      write(0,"(a)") "Error in initial opening of Traj.dat file"
+      write(0,"(a)") "Error in initial opening of Ovrlp.dat file"
       errorflag = 1
       return
     end if
 
-    write(fileun,*), "Time q(k=1..nbf) p(k=1..nbf)"
+    write(fileun,*), "Time Av|<zj|zk>| Av|<zj|zk>|_Lower_Triangle"
     write(fileun,*), ""
     write(fileun,*), ""
 
     close(fileun)
 
-    do k=1,nbf
-
-      write(kstr,"(i0)") k
-      write(klowstr,"(i0)") k+1
-      write(khighstr,"(i0)") k+1+nbf
-    
-      if (k==1) then     
-        lngchar = 'plot "'//trim(filenm)//'" u '//trim(klowstr)//':'//trim(khighstr)//' w l'
-      else
-        lngchar2 = lngchar
-        lngchar = trim(lngchar2)//', "" u '//trim(klowstr)//':'//trim(khighstr)//' w l'
-      end if
-   
-    end do
-
-    filenm2="plot-"//trim(filenm)
+    filenm2="plot"//trim(filenm)
 
     open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
@@ -1246,48 +1417,122 @@ contains
     end if
 
     write(fileun,"(a)") 'set terminal png'
-    write(fileun,"(a,a,a)") 'set output "trajectories-',trim(rep),'.png"'
+    write(fileun,"(a,a,a)") 'set output "ovrlp-',trim(rep),'.png"'
     write(fileun,"(a)") 'set title "Graph of convergence with different numbers of repetitions"'
     write(fileun,"(a)") 'set nokey'
     write(fileun,"(a)") 'unset key'
-    write(fileun,"(a)") 'set xlabel "q(t)"'
-    write(fileun,"(a)") 'set ylabel "p(t)"'
-    write(fileun,"(a)") trim(lngchar)
+    write(fileun,"(a)") 'set xlabel "time"'
+    write(fileun,"(a)") 'set ylabel "Average Overlap"'
+    write(fileun,"(a,a,a)") 'p "',trim(filenm),'" u 1:2 w l'
     close(fileun)
+    
+    filenm2="plotlwr"//trim(filenm)
+
+    open (unit=fileun,file=filenm2,status="unknown",iostat=ierr)
+    if (ierr .ne. 0) then
+      write(0,"(a,a,a)") 'Error in opening ', trim(filenm2), ' output file'
+      errorflag=1
+      return
+    end if
+
+    write(fileun,"(a)") 'set terminal png'
+    write(fileun,"(a,a,a)") 'set output "lowerovrlp-',trim(rep),'.png"'
+    write(fileun,"(a)") 'set title "Graph of convergence with different numbers of repetitions"'
+    write(fileun,"(a)") 'set nokey'
+    write(fileun,"(a)") 'unset key'
+    write(fileun,"(a)") 'set xlabel "time"'
+    write(fileun,"(a)") 'set ylabel "Average Overlap (Lower Triangle)"'
+    write(fileun,"(a,a,a)") 'p "',trim(filenm),'" u 1:3 w l'
+    close(fileun)    
 
    end subroutine outtrajheads
 
 !--------------------------------------------------------------------------------------------------
 
-   subroutine outtraj(bs, x, reps, time) 
+   subroutine outtraj(bs, x, reps, time, ovrlp, dt) 
 
     implicit none
     type(basisfn), dimension (:), intent (in) :: bs
-    real(kind=8), intent(in) :: time
+    complex(kind=8), dimension(:,:), intent(in) :: ovrlp
+    real(kind=8), intent(in) :: time, dt
     integer, intent (in) :: x
+    complex(kind=8) :: asum
     real(kind=8), dimension (:), allocatable :: p, q
-    integer::ierr, k, fields, fileun
-    character(LEN=17) :: filenm, myfmt
+    real(kind=8) :: lwrovrlp, ovrlpsum, c
+    integer::ierr, k, j, m, r, fields, fileun
+    character(LEN=21) :: filenm, myfmt
     integer, intent(in) :: reps
-    character(LEN=3):: rep
+    character(LEN=10):: timestr
+    character(LEN=4):: rep
 
     if (errorflag .ne. 0) return
-
-    if (nbfadapt.eq."YES") return    
-
-    allocate (p(size(bs)), q(size(bs)))
-
+    
     ierr = 0
 
     write(rep,"(i3.3)") reps
 
-    filenm = "Traj-"//trim(rep)//".out"  
-    fileun = 5890+reps
+    if ((nbfadapt.ne."YES").and.(cloneflg.ne."YES")) then   
 
+      allocate (p(size(bs)), q(size(bs)))
+
+      filenm = "Traj-"//trim(rep)//".out"  
+      fileun = 5890+reps
+
+      do k=1,size(bs)
+        q(k) = sum(dble(bs(k)%z(1:ndim)))
+        p(k) = sum(dimag(bs(k)%z(1:ndim)))
+      end do
+  
+      open(unit=fileun,file=filenm,status='old',access='append',iostat=ierr)
+  
+      if (ierr.ne.0) then
+        write(0,"(a,a,a,1x,i5)") "Error opening ", filenm, " file for step", x
+        errorflag = 1
+        return
+      end if
+  
+      fields=size(p)+size(q)+1
+      write(myfmt,'(a,i0,a)') '(', fields, '(1x,e13.5e3))'
+  
+      write(fileun,myfmt), time, q(1:size(q)), p(1:size(p))  
+  
+      close(fileun)
+
+    end if
+    
+    ovrlpsum=0.0d0
+    lwrovrlp=0.0d0
+    c=0.0d0
+    
     do k=1,size(bs)
-      q(k) = sum(dble(bs(k)%z(1:ndim)))
-      p(k) = sum(dimag(bs(k)%z(1:ndim)))
+      do j=1,size(bs)
+        asum = (0.0d0,0.0d0)
+        do r=1,npes
+          asum = asum + (dconjg(bs(j)%a_pes(r))*bs(k)%a_pes(r))
+        end do
+        ovrlpsum=ovrlpsum+abs(ovrlp(j,k)*asum)
+        c=c+1.0d0
+      end do
     end do
+    
+    ovrlpsum=ovrlpsum/c
+    c=0.0d0
+    
+    do k=1,size(bs)
+      do j=1,k-1
+        asum = (0.0d0,0.0d0)
+        do r=1,npes
+          asum = asum + (dconjg(bs(j)%a_pes(r))*bs(k)%a_pes(r))
+        end do
+        lwrovrlp=lwrovrlp+abs(ovrlp(j,k)*asum)
+        c=c+1.0d0
+      end do
+    end do 
+    
+    lwrovrlp=lwrovrlp/c   
+    
+    filenm = "Ovrlp-"//trim(rep)//".out"  
+    fileun = 15890+reps
 
     open(unit=fileun,file=filenm,status='old',access='append',iostat=ierr)
 
@@ -1297,12 +1542,35 @@ contains
       return
     end if
 
-    fields=size(p)+size(q)+1
-    write(myfmt,'(a,i0,a)') '(', fields, '(1x,e13.5e3))'
-
-    write(fileun,myfmt), time, q(1:size(q)), p(1:size(p))  
+    write(fileun,"(3(e16.8e3,1x))"), time, ovrlpsum, lwrovrlp  
 
     close(fileun)
+
+    if ((debug==1).and.(reps==1).and.(dmod(time,1.0d0).lt.dt).and.(.false.)) then
+
+      write(timestr,"(i3.3,f0.4)") int(time), time-int(time)
+    
+      filenm = "map-"//trim(rep)//"-"//trim(timestr)//".out"  
+      fileun = 58690+reps
+
+      open(unit=fileun,file=filenm,status="new",iostat=ierr)
+      if (ierr.ne.0) then
+        write(0,"(a,a,a,1x,i5)") "Error opening ", filenm, " file for step", x
+        errorflag = 1
+        return
+      end if
+
+      write(fileun,"(a)") "  k  m  q  p  Re(Dk)  Im(Dk)  Abs(Dk)"
+      do k = 1,size(bs)
+        do m = 1,ndim
+          write (fileun,"(2(i4,2x),5(e16.8e3,2x))") k,m,dble(bs(k)%z(m)),dimag(bs(k)%z(m)),&
+                            dble(bs(k)%D_big),dimag(bs(k)%D_big),abs(bs(k)%D_big)
+        end do
+      end do
+
+      close (fileun)
+      
+    end if
 
    end subroutine outtraj
 
@@ -1318,7 +1586,7 @@ contains
     real(kind=8), dimension (:), allocatable :: fileline
     real(kind=8), dimension (:,:), allocatable :: input, output, output2
     character (LEN=100) :: filename1, filename2, LINE, LINE2, LINE3
-    character (LEN=3) :: repstr, folstr
+    character (LEN=4) :: repstr
     character (LEN=16) :: myfmt
     logical :: file_exists
    
@@ -1349,7 +1617,7 @@ contains
       lines=0
       LINE=""
       
-      write(repstr,"(i3.3)") i  
+      write(repstr,"(i4.4)") i  
    
       filename1 = "normpop-"//trim(repstr)//".out"
       filename2 = "normpop-"//trim(repstr)//"_interp.out"  

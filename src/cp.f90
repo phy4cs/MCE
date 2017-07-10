@@ -119,11 +119,19 @@ contains
 
     implicit none
     real(kind=8), dimension(:), allocatable, intent(inout) :: mup, muq
+    
+    integer :: m
 
     if (errorflag .ne. 0) return
-
-    muq(1:ndim) = 0.0d0*sigp
-    mup(1:ndim) = 0.0d0*sigq
+    
+    do m=1,ndim
+!      if (m==1) then
+!        muq(m) = inten_cp/(freq_cp**2)*sigq
+!      else
+        muq(m) = 0.0d0*sigq
+!      end if
+      mup(m) = 0.0d0*sigp
+    end do    
 
     return
 
@@ -139,8 +147,7 @@ contains
     real(kind=8), intent (in) :: t
     integer :: m, ierr
     complex(kind=8), dimension (:), allocatable :: Htemp, rho
-    complex(kind=8) :: rho2, arho, z1c 
-    real (kind=8) :: rt2, eta
+    complex(kind=8) :: rho2, z1c 
 
     if (errorflag .ne. 0) return
 
@@ -164,20 +171,19 @@ contains
 
     allocate(rho(size(z1)))
     do m=1,ndim
-      rho(m)=(dconjg(z1(m))+z2(m))/sqrt(2.0d0*gam)-Rc_cp
+      rho(m)=((dconjg(z1(m))+z2(m))/sqrt(2.0d0*gam))-Rc_cp
     end do
-    rho2 = sum(dconjg(rho(1:ndim))*rho(1:ndim))
-    arho = sqrt(rho2)
+    rho2 = sum(rho(1:ndim)**2.0d0)
 
     do m=1,ndim
       z1c = dconjg(z1(m))
       Htemp(m) = (0.0d0,0.0d0)
       Htemp(m) = Htemp(m) - (1.0d0/4.0d0)*&
                        (z1c**2.0d0+z2(m)**2.0d0-2.0d0*z1c*z2(m)-1.0d0) !free particle
-      if (abs(arho) < tiny(1.0d0)) then             !checks that not near singularity
-        Htemp(m) = Htemp(m) + 2.0d0*sqrt(gam)/(ndim*sqrtpi)   !empirically determined limit
+      if (abs(rho2) < tiny(1.0d0)) then             !checks that not near singularity
+        Htemp(m) = Htemp(m) + 2.0d0*sqrt(gam)/(sqrtpi)   !empirically determined limit
       else
-        Htemp(m) = Htemp(m) + (c_error_func(sqrt(gam)*arho)/(ndim*arho)) !Atom. Pot.
+        Htemp(m) = Htemp(m) + (c_error_func(sqrt(gam*rho2)/sqrt(rho2))) !Atom. Pot.
       end if
       if (m==1)Htemp(m) = Htemp(m) + inten_cp*rho(m)*dcos(freq_cp*t)    !laser field
     end do
@@ -202,7 +208,7 @@ contains
     complex(kind=8), dimension(:), allocatable :: rho
     real(kind=8), intent (in) :: t
     complex(kind=8) :: dhdztmp, rho2, arho, datpotdz
-    real(kind=8) :: rt2g, eta, eta2
+    real(kind=8) :: rt2g
     integer :: m
 
     if (errorflag .ne. 0) return
@@ -212,7 +218,7 @@ contains
     do m=1,ndim
       rho(m)=(dconjg(z(m))+z(m))/sqrt(2.0d0*gam)-Rc_cp
     end do
-    rho2 = sum(dconjg(rho(1:ndim))*rho(1:ndim))
+    rho2 = sum(rho(1:ndim)**2.0d0)
     arho = sqrt(rho2)
 
     datpotdz = (2.0d0*sqrt(gam)*cdexp(-gam*rho2))/(sqrtpi*rho2)-&
@@ -221,11 +227,11 @@ contains
     do m=1,ndim    
       dhdztmp = (0.0d0,0.0d0) 
       dhdztmp = dhdztmp - (1.0/2.0)*(dconjg(z(m))-z(m))            ! free particle
-      if (abs(arho) > tiny(1.0d0)) then             !checks that not near singularity
+      if (abs(rho2) .ge. tiny(1.0d0)) then             !checks that not near singularity
         if (datpotdz /= datpotdz) then  !check for NaN or Inf from the exponential
           continue                     !take no action
         else
-          dhdztmp = dhdztmp + (1.0d0/(rt2g*ndim))*rho(m)*datpotdz  !atomic potential
+          dhdztmp = dhdztmp + (1.0d0/(rt2g))*rho(m)*datpotdz  !atomic potential
         end if
       end if
       if (m==1) dhdztmp = dhdztmp + (inten_cp/rt2g)*dcos(freq_cp*t)  ! laser field
@@ -238,12 +244,11 @@ contains
 
 !------------------------------------------------------------------------------------
 
-    function dipole_cp(bs, x)   !   Level 1 Function
+    function dipole_cp(bs)   !   Level 1 Function
 
     implicit none
     type(basisfn),dimension(:),intent(in)::bs
-    integer, intent(in) :: x
-    complex(kind=8) :: dipole_cp, zsum, ovrlp, rho2, arho, datpotdz
+    complex(kind=8) :: dipole_cp, ovrlp, rho2, arho, datpotdz
     complex(kind=8), dimension(:), allocatable :: D, Dc, zk, zj, rho
     real(kind=8), dimension (:), allocatable :: s
     integer::k,j,m,ierr
@@ -291,7 +296,7 @@ contains
           zj(m) = bs(j)%z(m)
           rho(m) = (dconjg(zj(m))+zk(m))/sqrt(2.0*gam)-Rc_cp
         end do
-        rho2 = sum(dconjg(rho(1:ndim))*rho(1:ndim))
+        rho2 = sum(rho(1:ndim)**2.0d0)
         arho = sqrt(rho2)
         datpotdz = (2.0d0*sqrt(gam)*cdexp(-gam*rho2))/(sqrtpi*rho2)-&
                                            (c_error_func(sqrt(gam)*arho)/(arho**3.0))

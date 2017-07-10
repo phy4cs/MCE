@@ -24,7 +24,7 @@ Program avrgnorm
   character(LEN=50000)::lngchar, lngchar2
   character(LEN=100)::LINE, filename
   character(LEN=19)::myfmt
-  character(LEN=6)::repstr, lstr, timestp
+  character(LEN=6)::repstr, lstr
   logical :: file_exists
   
   ! Read in the preprocessor arguments
@@ -52,11 +52,12 @@ Program avrgnorm
   read (LINE,*) cols  
 
   folreps = totreps/folders
-
   allocate(valid(folders))
   allocate(lines(folders))
   lines = 0
 
+  ! Check to see which folders have returned valid normpop.out files
+  ! assigning array values for later reference
   do i=1,folders
     write (repstr,"(i0)") i
     filename = "normpop_"//trim(repstr)//".out"    
@@ -68,6 +69,7 @@ Program avrgnorm
     end if
   end do
 
+  ! Open the normpop.out files and count the number of lines each has
   do i=1,folders       
     if (valid(i)==0) then
       cycle
@@ -77,7 +79,7 @@ Program avrgnorm
     filename = "normpop_"//trim(repstr)//".out"
     OPEN(UNIT=128, FILE=trim(filename),STATUS='OLD', iostat=ierr)
     if (ierr .ne. 0) then
-      write (0,"(a,a,a)") 'Error in opening ', trim(filename), ' file'
+      write (0,"(3a,i0)") 'Error in opening ',trim(filename),' file. Ierr was ', ierr
       stop
     end if
     read(128,*,iostat=ierr) LINE
@@ -88,7 +90,11 @@ Program avrgnorm
     close (128)
     lines(i) = lines(i) - 1
   end do
-
+  
+  ! Check that each normpop.out file has the same number of lines
+  ! As any interpolation will have already been carried out at this stage, this
+  ! always be the case for successful executions. Mismatches could indicate that
+  ! the simulations are incomplete and need restarting
   do i=1,folders
     if ((lines(i).ne.lines(1)).and.(lines(i).ne.0)) then
       write (0,"(a,i0)") "Error - Line number mismatch in repeat ", i
@@ -98,7 +104,9 @@ Program avrgnorm
   end do
 
   write (6,"(i0,a,i0,a)") tot, " files of ",folders, " were valid."
-       
+  
+  ! Allocate the arrays for each column. If cols=13 then npes=2, so the population
+  ! sum and population difference will be output also
   allocate(time(tot))
   allocate(nrm(tot))
   allocate(rlacf(tot))
@@ -117,9 +125,11 @@ Program avrgnorm
     allocate(pops(cols-9,tot))
     allocate(popsav(cols-9))
   end if
-  n = 1130
+
+  n = 1130  !For file units
   m = 7150
 
+  ! Open each file again, and advance read pointer to beginning of data
   do i=1,folders
        
     if (valid(i)==0) then
@@ -131,14 +141,15 @@ Program avrgnorm
     OPEN(UNIT=n, FILE=trim(filename),STATUS='OLD', iostat=ierr)
 
     if (ierr .ne. 0) then
-      write (0,"(a,a,a)") 'Error in opening ', trim(filename), ' file'
+      write (0,"(3a,i0)") 'Error in opening ',trim(filename),' file. Ierr was ', ierr
       stop
     end if
 
     do
       read (n,*,iostat=ierr)LINE
       if (ierr.ne.0) then
-        write (0,"(a,a,a)") "Read Error in normpop_", trim(repstr), ".out"
+        write (0,"(3a,i0)") "Read error in normpop_",trim(repstr),".out. Ierr was ",&
+                            ierr
         stop
       end if
       if (LINE=="0.00000000E+000") then
@@ -151,6 +162,7 @@ Program avrgnorm
 
   end do
 
+  ! Open the output files and write the headers
   do l=1,tot
 
     m=7150+l
@@ -162,7 +174,8 @@ Program avrgnorm
     open (unit=m, file=trim(filename), status='unknown', iostat=ierr)
 
     if (ierr .ne. 0) then
-      write (0,"(a,a,a)") 'Error in opening ', trim(filename), ' output file'
+      write (0,"(4a,i0)") 'Error in opening ', trim(filename), ' output file.', &
+                        ' Ierr was ', ierr
       stop
     end if
 
@@ -178,12 +191,19 @@ Program avrgnorm
 
   end do
 
+
   do k = 1,lines(1)
 
+    ! Read a single line from each of the normpop.out files
     do i=1,tot
       n=1130+i
-      read(n,*,iostat=ierr)time(i),nrm(i),rlacf(i),imacf(i),abacf(i),rlex(i),&
+      if (cols==13) then
+        read(n,*,iostat=ierr)time(i),nrm(i),rlacf(i),imacf(i),abacf(i),rlex(i),&
                         imex(i),abex(i),ehr(i),pop1(i),pop2(i),popsum(i),popdiff(i)
+      else
+        read(n,*,iostat=ierr)time(i),nrm(i),rlacf(i),imacf(i),abacf(i),rlex(i),&
+                        imex(i),abex(i),ehr(i),pops(:,i)
+      end if        
       if (time(i).ne.time(1)) then
         write (0,"(a,e15.8,a,i0)") "File synchronisation error when reading at ", & 
                                     "time ", time(1) ," in unit ", n
@@ -193,6 +213,7 @@ Program avrgnorm
       end if
     end do
 
+    ! Calculate the cumulative averages and write them to file
     do i=1,tot
 
       m=7150+i
@@ -221,7 +242,7 @@ Program avrgnorm
         write (m,"(13(1x,es16.8e3))") timeav,nrmav,rlacfav,imacfav,abacfav,rlexav,&
                         imexav,abexav,ehrav,pop1av,pop2av,popsumav,popdiffav
       else
-        write(myfmt,"(a,i0,a)") '"(', cols, '(1x,es16.8e3))"'
+        write(myfmt,'( "(",i0,"(1x,es16.8e3))" )') cols
         write(m,myfmt) timeav,nrmav,rlacfav,imacfav,abacfav,rlexav,&
                         imexav,abexav,ehrav,popsav
       end if
@@ -230,6 +251,7 @@ Program avrgnorm
 
   end do
 
+  ! Create the gnuplot script for comparison of the population differences
   do l=1,tot
 
     write(repstr,"(i0)") folreps*l
@@ -251,7 +273,8 @@ Program avrgnorm
 
   open (unit=175,file="plotpopdiff.gpl",status="unknown",iostat=ierr)
   if (ierr .ne. 0) then
-    write (0,"(a)") 'Error in opening plotpopdiff.gpl output file'
+    write (0,"(2a,i0)") 'Error in opening plotpopdiff.gpl output file.', &
+                              ' Ierr was ', ierr
     stop
   end if
 
@@ -263,26 +286,64 @@ Program avrgnorm
   write(175,"(a)") trim(lngchar)
   close (175)
   
+  ! Create gnuplot script for total averaged population difference
   open (unit=175,file="plottotpopdiff.gpl",status="unknown",iostat=ierr)
   if (ierr .ne. 0) then
-    write (0,"(a)") 'Error in opening plottotpopdiff.gpl output file'
+    write (0,"(2a,i0)") 'Error in opening plottotpopdiff.gpl output file.', &
+                              ' Ierr was ', ierr
     stop
   end if
 
   write(175,"(a)") 'set terminal png'
-  write(175,"(a)") 'set output "popstot.png"'
+  write(175,"(a)") 'set output "popsdifftot.png"'
   write(175,"(a)") 'set title "Graph total population difference"'
   write(175,"(a)") 'set xlabel "Time"'
   write(175,"(a)") 'set ylabel "Population difference"'
   write(175,"(a)") 'plot "normpop_cumul_'//trim(repstr)//'.out" u 1:13 t "' & 
                          //trim(repstr)//' Reps" w l, "" u 1:2 t "Total Av Norm" w l'
   close (175)  
+  
+  ! Create gnuplot script for total averaged populations
+  open (unit=175,file="plottotpops.gpl",status="unknown",iostat=ierr)
+  if (ierr .ne. 0) then
+    write (0,"(2a,i0)") 'Error in opening plottotpops.gpl output file.', &
+                              ' Ierr was ', ierr
+    stop
+  end if
 
+  write(175,"(a)") 'set terminal png'
+  write(175,"(a)") 'set output "popstot.png"'
+  write(175,"(a)") 'set title "Graph total populations"'
+  write(175,"(a)") 'set xlabel "Time"'
+  write(175,"(a)") 'set ylabel "Populations"'
+  write(175,"(a)") 'plot "normpop_cumul_'//trim(repstr)//'.out" u 1:10 t "' & 
+                         //trim(repstr)//' Reps" w l, "" u 1:11 t "'//trim(repstr)//'" w l'
+  close (175) 
+  
+  ! Create gnuplot script for extra calculated quantity (ie dispersion or dipole acceleration)
+  open (unit=175,file="plotext.gpl",status="unknown",iostat=ierr)
+  if (ierr .ne. 0) then
+    write (0,"(2a,i0)") 'Error in opening plotext.gpl output file.', &
+                              ' Ierr was ', ierr
+    stop
+  end if
+
+  write(175,"(a)") 'set terminal png'
+  write(175,"(a)") 'set output "ext.png"'
+  write(175,"(a)") 'set title "Graph total extra quantity"'
+  write(175,"(a)") 'set xlabel "Time"'
+  write(175,"(a)") 'set ylabel "Extra Quantity"'
+  write(175,"(a)") 'plot "normpop_cumul_'//trim(repstr)//'.out" u 1:6 t "' & 
+                         //trim(repstr)//' Reps" w l'
+  close (175)
+
+  ! Create the population difference residuals file
   if ((tot .gt. 1).and.(cols==13)) then
 
     open(unit=180,file="popdiffresiduals.out",status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
-      write (0,"(a)") 'Error in opening popdiffresiduals.out output file'
+      write (0,"(2a,i0)") 'Error in opening popdiffresiduals.out output file.', &
+                              ' Ierr was ', ierr
       stop
     end if
 
@@ -302,6 +363,7 @@ Program avrgnorm
 
     do k = 1,lines(1)
 
+      ! Read in data from the cumulative average files
       do i=1,tot
         n=7150+i
         read(n,*,iostat=ierr)time(i),nrm(i),rlacf(i),imacf(i),abacf(i),rlex(i),&
@@ -314,18 +376,18 @@ Program avrgnorm
         end if
       end do
 
+      ! Calculate residual and write to file
       do i=1,tot
         popdiff(i)=popdiff(tot)-popdiff(i)
       end do
-
       write (myfmt,'(a,i4.4,a)') '(', tot+1, '(1x,es16.8e3))'
-       
       write (180,trim(myfmt)) time(1), popdiff
 
     end do
 
     close (180)
 
+    ! Create the gnuplot script for plotting the population difference residuals
     do l=1,tot
 
       write(repstr,"(i0)") folreps*l
@@ -344,7 +406,7 @@ Program avrgnorm
 
     open (unit=176,file="plotpopres.gpl",status="unknown",iostat=ierr)
     if (ierr .ne. 0) then
-      write (0,"(a)") 'Error in opening plotpopres.gpl output file'
+      write (0,"(a,i0)") 'Error in opening plotpopres.gpl output file. Ierr was',ierr
       stop
     end if
 
@@ -356,6 +418,8 @@ Program avrgnorm
     write(176,"(a)") trim(lngchar)
     close (176)
   end if
+  
+  write (6,*) "Averages completed and gpl files created" 
 
   stop
 

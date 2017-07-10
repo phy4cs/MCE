@@ -140,16 +140,15 @@ Program MainMCE
   !Private variables
   type(basisfn), dimension (:), allocatable :: bset 
   type(basisfn), dimension (:), allocatable :: dummybs
-  complex(kind=8), dimension (:,:), allocatable :: initgrid
+  complex(kind=8), dimension (:,:), allocatable :: initgrid, ovrlp
   complex(kind=8)::normtemp, norm2temp, ehren, acft, extmp
-  real(kind=8), dimension(:,:), allocatable :: atrack, atrack2
-  real(kind=8), dimension(:), allocatable :: mup, muq, popt, ndimacf
+  real(kind=8), dimension(:), allocatable :: mup, muq, popt
   real(kind=8) :: nrmtmp, nrm2tmp, ehrtmp, gridsp, timestrt_loc 
   real(kind=8) :: timeend_loc, timeold, time, dt, dtnext, dtdone, initehr
   real(kind=8) :: initnorm, initnorm2, alcmprss, dum_re1, dum_re2
   integer, dimension(:,:), allocatable :: map_bfs
   integer, dimension(:), allocatable :: clone, clonenum
-  integer :: j, k, l, r, y, x, m, nbf, recalcs, conjrep, restart, reps
+  integer :: j, k, r, y, x, m, nbf, recalcs, conjrep, restart, reps
   integer :: ierr, timestpunit, stepback, dum_in1, dum_in2, dum_in3, finbf
   character(LEN=3):: rep
   
@@ -224,11 +223,11 @@ Program MainMCE
   absnorm2 = 0.0d0      ! Absolute value of the sum of the single config. norms
   acf_t = (0.0d0,0.0d0) ! Auto-correlation function
   extra = (0.0d0,0.0d0)
-  allocate (ndimacf(3*ndim+3), stat=istat)
-  if (istat/=0) then
-    write(0,"(a)") "Error allocatin ndimacf array"
-    errorflag=1
-  end if
+!  allocate (ndimacf(3*ndim+3), stat=istat)
+!  if (istat/=0) then
+!    write(0,"(a)") "Error allocatin ndimacf array"
+!    errorflag=1
+!  end if
 
   if (conjflg==1) then    ! This statement ensures that if conjugate repetition
     intvl = 2             ! is selected the outer repetition loop will increase
@@ -247,12 +246,12 @@ Program MainMCE
   ! the static stepsize system as the array size must be known beforehand to avoid 
   ! memory leaks.
 
-  !$omp parallel private (bset, dummybs, initgrid, atrack, atrack2, normtemp,       &
-  !$omp                    norm2temp, ehren, acft, extmp, muq, mup, popt, ndimacf,  &
+  !$omp parallel private (bset, dummybs, initgrid, ovrlp, normtemp,&
+  !$omp                    norm2temp, ehren, acft, extmp, muq, mup, popt,  &
   !$omp                    nrmtmp, nrm2tmp, ehrtmp, gridsp, timestrt_loc,           &
   !$omp                    timeend_loc, timeold, time, dt, dtnext, dtdone, initehr, &
   !$omp                    initnorm, initnorm2, alcmprss, clone, clonenum, map_bfs, &
-  !$omp                    j, k, r, y, l, x, m, nbf, recalcs, conjrep, restart,     &
+  !$omp                    j, k, r, y, x, m, nbf, recalcs, conjrep, restart,     &
   !$omp                    reps, ierr, timestpunit, stepback, dum_in1, dum_in2,     &
   !$omp                    finbf, dum_in3, dum_re1, dum_re2, rep, genloc            )
   
@@ -294,7 +293,7 @@ Program MainMCE
     if (ierr/=0) then
       write(0,"(a)") "Error in allocating the temporary population array in Main"
       errorflag=1
-    end if
+    end if 
     
     if (genloc.eq."Y") then
       allocate (mup(ndim), stat=ierr)
@@ -327,7 +326,7 @@ Program MainMCE
         conjrep = conjrep + 1
       else
         conjrep = 3
-      end if  
+      end if
 
       time = timestrt         ! It is possible to start at t=/=0, but
       timestrt_loc = timestrt ! precalculated basis should be used
@@ -375,7 +374,7 @@ Program MainMCE
           ! properly. If not, restart is set to 1 so basis is recalculated
           call initnormchk(bset,recalcs,restart,alcmprss,gridsp,initnorm,initnorm2)
 
-          if ((basis.eq."TRAIN").and.(restart.eq.1)) then
+          if (((basis.eq."TRAIN").and.(restart.eq.1))) then
             if ((((conjflg==1).and.(conjrep.eq.2)).or.(conjflg/=1)).and.(recalcs.lt.Ntries)) then
               !$omp critical 
               call genzinit(mup, muq)
@@ -418,6 +417,29 @@ Program MainMCE
           stop
         end if
         
+        if (((method=="MCEv2").or.(method=="MCEv1")).and.((cloneflg=="BLIND").or.(cloneflg=="BLIND+"))) then
+          write(rep,"(i3.3)") reps
+          open(unit=47756,file="Clonetrack-"//trim(rep)//".out",status="new",iostat=ierr)
+          close(47756)
+          allocate (clone(nbf), stat=ierr)
+          if (ierr==0) allocate(clonenum(nbf), stat=ierr)
+          if (ierr/=0) then
+            write(0,"(a)") "Error in allocating clone arrays"
+            errorflag = 1
+          end if
+          if (genloc=="N") then
+            call readclone(clonenum, reps, clone)
+          else
+            do j=1,nbf
+              clone(j) = 0
+              clonenum(j) = 0
+            end do
+          end if
+          write (6,'(a)') "Blind cloning arrays generated and cloning starting"
+          call cloning (bset, nbf, x, time, clone, clonenum, reps)
+          call flush(6)
+        end if        
+              
         if (method.eq."AIMC1") then
 
           timeold = time
@@ -461,16 +483,13 @@ Program MainMCE
       !*************Basis Set Propagation Section Begins*************************!
 
       if (prop.eq."Y") then     ! Propagation of basis set         
-        
-        x=0
-        
+        x=0       
         if (method.eq."AIMC1") then
           if (mod(def_stp,2)==1) timeend_loc = timeend + ((def_stp-1)/2)*trainsp*dt
           if (mod(def_stp,2)==0) timeend_loc = timeend + (((def_stp/2)*trainsp)-(trainsp/2))*dt
         else
           timeend_loc = timeend
         end if
-
         if (genloc.eq."N") then
           !$omp critical          !Critical block to stop inputs getting confused
           if (conjrep == 2) then               ! Stops it looking for a basis set file if conjugate repetition selected 
@@ -479,10 +498,10 @@ Program MainMCE
             errorflag=1                       ! as these two conditions are incompatible and should be disallowed at 
           else if (method.ne."AIMC2") then    ! the run conditions input stage.
             call allocbs(bset,nbf)
-            call readbasis(bset, mup, muq, reps, time, nbf) ! reads and assigns the basis set parameters and values, ready for propagation.
+            call readbasis(bset, mup, muq, reps, time, nbf) ! reads and assigns the basis set parameters and values, ready for propagation.     
             timestrt_loc=time
             write(6,"(a,i0,a)") "Starting from previous file. ", &
-                        int(real(abs((timeend_loc-timestrt_loc)/dtinit))), " steps remaining."
+                        int(real(abs((timeend_loc-timestrt_loc)/dtinit))), " steps remaining."           
           else
             restart = 0
             finbf = 0
@@ -521,7 +540,9 @@ Program MainMCE
         
         !The initial values of the output parameters are calculated here.
 
-        normtemp = norm(bset)
+        allocate (ovrlp(size(bset),size(bset)))
+        ovrlp=ovrlpmat(bset)
+        normtemp = norm(bset,ovrlp)
         initnorm = sqrt(dble(normtemp*dconjg(normtemp)))
         nrmtmp = initnorm
         ehren = (0.0d0, 0.0d0)
@@ -529,15 +550,15 @@ Program MainMCE
           norm2temp = norm2(bset)
           initnorm2 = sqrt(dble(norm2temp*dconjg(norm2temp)))
         end if
-        do j = 1,nbf
-          ehren = ehren + HEhr(bset(j), time)
-        end do            
+!        do j = 1,nbf
+!          ehren = ehren + HEhr(bset(j), time)
+!        end do            
         initehr = abs(ehren)
         acft = acf(bset,mup,muq)
-        ndimacf = acfdim(bset,mup,muq)
-        call extras(extmp, bset, x)
+!        ndimacf = acfdim(bset,mup,muq)
+        call extras(extmp, bset)
         do r=1,npes
-          popt(r) = pop(bset, r)   
+          popt(r) = pop(bset, r,ovrlp)   
         end do
         if (step == "S") then        ! Output parameters only written to arrays if static stepsize
           do r=1,npes
@@ -550,18 +571,19 @@ Program MainMCE
           extra(1) = extra(1) + extmp
           if ((nbfadapt.eq."NO").and.(debug==1)) then
             call outtrajheads(reps, nbf)
-            call outtraj(bset,x,reps,time)
+            call outtraj(bset,x,reps,time,ovrlp,dt)
+!            call histogram(bset, 50, time, -2.46d0, 1.44d0, nbf)
             call outvarsheads (reps, nbf)
             call outvars(bset,x,reps,time)
           end if
-          call outdimacfheads(reps)
-          call outdimacf(time,ndimacf,reps)
+!          call outdimacfheads(reps)
+!          call outdimacf(time,ndimacf,reps)
           call outnormpopadapheads(reps)
           call outnormpopadap(initnorm,acft,extmp,initehr,popt,x,reps,time)
         else                         ! For adaptive stepsize the data is output straight away
           if ((nbfadapt.eq."NO").and.(debug==1)) then
             call outtrajheads(reps, nbf)
-            call outtraj(bset,x,reps,time)
+            call outtraj(bset,x,reps,time,ovrlp,dt)
             call outvarsheads (reps, nbf)
             call outvars(bset,x,reps,time)
           end if
@@ -569,11 +591,12 @@ Program MainMCE
           write(rep,"(i3.3)") reps
           open (unit=timestpunit,file="timesteps-"//trim(rep)//".out",status="unknown",iostat=istat)
           close (timestpunit)
-          call outdimacfheads(reps)
-          call outdimacf(time,ndimacf,reps)
+!          call outdimacfheads(reps)
+!          call outdimacf(time,ndimacf,reps)
           call outnormpopadapheads(reps)
           call outnormpopadap(initnorm,acft,extmp,initehr,popt,x,reps,time)
-        end if
+        end if 
+        deallocate(ovrlp)           
 
         !***********Timesteps***********!
 
@@ -582,7 +605,7 @@ Program MainMCE
           close(4532)
         end if
 
-        if ((sys=="SB").and.((method=="MCEv2").or.(method=="AIMC1")).and.(cloneflg=="YES")) then
+        if (((method=="MCEv2").or.(method=="MCEv1").or.(method=="AIMC1")).and.(cloneflg=="YES")) then
           write(rep,"(i3.3)") reps
           open(unit=47756,file="Clonetrack-"//trim(rep)//".out",status="new",iostat=ierr)
           close(47756)
@@ -600,41 +623,44 @@ Program MainMCE
               clonenum(j) = 0
             end do
           end if
+          write (6,"(a)") "Conditional cloning arrays generated"
         end if
 
         write(6,"(a)") "Beginning Propagation"
+        call flush(6)
 
         do while ((time.lt.timeend_loc).and.(x.le.80000))
  
-          if (errorflag .ne. 0) exit 
+          if (errorflag .ne. 0) exit    
 
           x = x + 1  ! timestep index
-          y = x + 1  ! array index 
+          y = x + 1  ! array index       
 
-          if (sys=="HH") call leaking(bset,nbf,x) ! ensures that high energy trajectories are removed for henon-heiles  
+          if (sys=="HH") call leaking(bset,nbf,x) ! ensures that high energy trajectories are removed for henon-heiles          
 
-          if (basis.ne."GRID") call trajchk(bset) !ensures that the position component of the coherent states are not too widely spaced
+          if (basis.ne."GRID") call trajchk(bset) !ensures that the position component of the coherent states are not too widely spaced   
 
-          if (((basis=="GRID").or.(basis=="GRSWM")).and.(mod((x-1),rprj)==0)) then
+          if (((basis=="GRID").or.(basis=="GRSWM")).and.(mod((x-1),rprj)==0).and.((sys=="IV").or.(sys=="CP"))) then
             call reloc_basis(bset, initgrid, nbf, x, time, gridsp, mup, muq)
-          end if
+          end if      
 
-          if ((sys=="SB").and.((method=="MCEv2").or.(method=="AIMC1")).and.(cloneflg=="YES").and.(time.le.timeend)) then
+          if (allocated(clone).and.(cloneflg.ne."BLIND").and.(time.le.timeend)) then
             call cloning (bset, nbf, x, time, clone, clonenum, reps)
           end if
           
-          if (method=="AIMC1") call outbs(bset, reps, mup, muq, time,x,0)
+!          if (method=="AIMC1") call outbs(bset, reps, mup, muq, time,x,0)
+          call outbs(bset, reps, mup, muq, time,x,0)     
           
           if (method=="AIMC2") then
             call constrtrain (dummybs, x, time, reps, mup, muq,0,0,nbf,map_bfs)
-            call retrieveclon (dummybs, bset, reps, x, time, nbf, nrmtmp, map_bfs)
-          end if
+            call retrieveclon (dummybs, bset, reps, x, time, nbf, map_bfs)
+          end if        
 
           if (timeend_loc.gt.timestrt_loc) then      
             if ((time+dt-timeend_loc).gt.0.0d0) dt = timeend_loc - time
           else
             if ((time+dt-timeend_loc).lt.0.0d0) dt = timeend_loc - time
-          end if
+          end if               
 
           call propstep (bset, dt, dtnext, dtdone, time, genflg, timestrt_loc,x,reps, map_bfs)     ! This subroutine takes a single timestep
 
@@ -657,22 +683,24 @@ Program MainMCE
           ! output variables written to arrays. Note - if and when non-fatal error flag is implemented, the outputs 
           ! will have to be saved over the course of propagation and then added to the main arrays at time==timeend              
 
-          normtemp = norm(bset)
+          allocate (ovrlp(size(bset),size(bset)))
+          ovrlp=ovrlpmat(bset)          
+          normtemp = norm(bset,ovrlp)
           nrmtmp = sqrt(dble(normtemp*dconjg(normtemp)))
           ehren = (0.0d0, 0.0d0)
           if (method=="MCEv2") then
             norm2temp = norm2(bset)
             nrm2tmp=sqrt(dble(norm2temp*dconjg(norm2temp)))
           end if
-          do j = 1,nbf
-            ehren = ehren + HEhr(bset(j), time)
-          end do
+!          do j = 1,nbf
+!            ehren = ehren + HEhr(bset(j), time)
+!          end do
           ehrtmp = abs(ehren)
           acft = acf(bset,mup,muq)
-          ndimacf = acfdim(bset,mup,muq)
-          call extras(extmp, bset, x)
+!          ndimacf = acfdim(bset,mup,muq)
+          call extras(extmp, bset)
           do r=1,npes
-            popt(r) = pop(bset, r)  
+            popt(r) = pop(bset, r, ovrlp)  
           end do
 
           if ((step == "S").and.(time.le.timeend)) then
@@ -685,29 +713,30 @@ Program MainMCE
             acf_t(y) = acf_t(y) + acft
             extra(y) = extra(y) + extmp
             if ((nbfadapt.eq."NO").and.(mod(x,1)==0).and.(debug==1)) then
-              call outtraj(bset,x,reps,time)
+              call outtraj(bset,x,reps,time,ovrlp,dt)
+!              call histogram(bset, 50, time, -2.46d0, 1.44d0, nbf)
               call outvars(bset,x,reps,time)
             end if
-            call outdimacf(time,ndimacf,reps)
+!            call outdimacf(time,ndimacf,reps)
             call outnormpopadap(nrmtmp,acft,extmp,ehrtmp,popt,x,reps,time)
-          else if (step == "A" ) then
+          else if (step == "A") then
             timestpunit=1710+reps
             write(rep,"(i3.3)") reps
             open (unit=timestpunit,file="timesteps-"//trim(rep)//".out",status="old",access="append",iostat=istat)
             write(timestpunit,"(e12.5)") dtdone
             close (timestpunit)
-          else
             if ((nbfadapt.eq."NO").and.(method.ne."MCEv2").and.(debug==1)) then
-              call outtraj(bset,x,reps,time)
+              call outtraj(bset,x,reps,time,ovrlp,dt)
               call outvars(bset,x,reps,time)
             end if
-            call outdimacf(time,ndimacf,reps)
+!            call outdimacf(time,ndimacf,reps)
             call outnormpopadap(nrmtmp,acft,extmp,ehrtmp,popt,x,reps,time)
           end if
+          deallocate(ovrlp)
           
           if (method/="AIMC1") then
             call outbs(bset, reps, mup, muq, time,x,0)
-            if (cloneflg == "YES") then
+            if ((cloneflg == "YES").or.(cloneflg == "BLIND+")) then
               call outclones(clonenum, reps, clone)
             end if
           end if
@@ -734,7 +763,7 @@ Program MainMCE
           write(0,"(a)") "Consider revising timestep parameters"
         end if
 
-        if ((sys=="SB").and.((method=="MCEv2").or.(method=="AIMC1")).and.(cloneflg=="YES")) then
+        if (allocated(clone)) then
           deallocate (clone, stat=ierr)
           if (ierr==0) deallocate(clonenum, stat=ierr)
           if (ierr/=0) then
@@ -791,11 +820,11 @@ Program MainMCE
   !$omp end do
   !$omp end parallel
 
-  deallocate(ndimacf,stat=istat)
-  if (istat/=0) then
-    write(0,"(a)") "Error deallocating ndimacf in main"
-    errorflag=1
-  end if
+!  deallocate(ndimacf,stat=istat)
+!  if (istat/=0) then
+!    write(0,"(a)") "Error deallocating ndimacf in main"
+!    errorflag=1
+!  end if
 
   write(6,"(a)") "Finished Propagation"
 

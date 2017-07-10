@@ -52,7 +52,7 @@ contains
       case ("SWTRN")
         call gen_swtrn(bs,mup,muq,alcmprss,t,reps,map_bfs)
       case ("GRID")
-        call gen_grid(bs,mup,muq,initgrid,gridsp,t)
+        call gen_grid(bs,mup,muq,initgrid,gridsp)
       case ("GRSWM")
         call gen_grswm(bs,mup,muq,alcmprss,initgrid,gridsp,t)
       case default
@@ -75,27 +75,99 @@ contains
     real(kind=8), dimension(:), intent(in) :: mup, muq
     real(kind=8), intent(in) :: alcmprss, t
     type (basisfn) :: bf
-    integer::m, k, n, ierr, redo, x
+    integer::m, k, n, h, ierr, redo
 
     if (errorflag .ne. 0) return
     ierr = 0
     n=0
 
     call allocbf(bf)
-
-    do k=1,size(bs)
-      bf=bs(k)
-      do
-        do m=1,ndim
-          bf%z(m)=cmplx((ZBQLNOR(muq(m),sigq*sqrt(alcmprss))) &
-         ,((1.0d0/hbar)*(ZBQLNOR(mup(m),sigp*sqrt(alcmprss)))),kind=8)
+    
+    
+    if (wfn_init.eq."SPLIT") then
+    
+      h=0.5*size(bs)
+    
+      do k=1,h
+        bf=bs(k)      
+        do
+          do m=1,ndim
+            if (size(bs)==2) then
+              bf%z(m)=cmplx(muq(m),((1.0d0/hbar)*mup(m)),kind=8)
+            else
+              if (randfunc.eq."GAUS") then
+                bf%z(m)=gauss_random(alcmprss,muq(m),mup(m))
+              else
+                bf%z(m)=cmplx((ZBQLNOR(muq(m),sigq*alcmprss)) &
+                ,((1.0d0/hbar)*(ZBQLNOR(mup(m),sigp*alcmprss))),kind=8)
+              end if
+            end if
+          end do
+          call enchk(bf,t,n,redo,k)
+          if (redo==1) cycle
+          if (redo==0) exit
         end do
-        call enchk(bf,t,n,redo,k)
-        if (redo==1) cycle
-        if (redo==0) exit
+        bs(k)=bf    
       end do
-      bs(k)=bf
-    end do
+      
+      if ((symm.eq."YES").or.(symm.eq."ANTI")) then
+        
+        do k=h+1, size(bs)
+          bf=bs(k)
+          do
+            do m=1,ndim
+              bf%z(m)=bs(k-h)%z(m)*(-1.0d0)
+            end do
+            call enchk(bf,t,n,redo,k)
+            if (redo==1) cycle
+            if (redo==0) exit
+          end do
+          bs(k)=bf    
+        end do
+        
+      else
+        
+        do k=h+1, size(bs)
+          bf=bs(k)
+          do
+            do m=1,ndim
+              if (randfunc.eq."GAUS") then
+                bf%z(m)=gauss_random(alcmprss,(muq(m)*(-1.)),mup(m))
+              else
+                bf%z(m)=cmplx((ZBQLNOR(muq(m)*(-1.),sigq*alcmprss)) &
+                ,((1.0d0/hbar)*(ZBQLNOR(mup(m),sigp*alcmprss))),kind=8)
+              end if
+            end do
+            call enchk(bf,t,n,redo,k)
+            if (redo==1) cycle
+            if (redo==0) exit
+          end do
+          bs(k)=bf    
+        end do
+        
+      end if  
+    
+    else
+    
+      do k=1,size(bs)
+        bf=bs(k)
+        do
+          do m=1,ndim
+            if (randfunc.eq."GAUS") then
+              bf%z(m)=gauss_random(alcmprss,muq(m),mup(m))
+            else
+              bf%z(m)=cmplx((ZBQLNOR(muq(m),sigq*alcmprss)) &
+             ,((1.0d0/hbar)*(ZBQLNOR(mup(m),sigp*alcmprss))),kind=8)
+            end if
+          end do
+          call enchk(bf,t,n,redo,k)
+          if (redo==1) cycle
+          if (redo==0) exit
+        end do
+        bs(k)=bf
+      end do
+      
+    end if
 
     call deallocbf(bf)
 
@@ -113,7 +185,7 @@ contains
     integer, intent(in)::reps
     type (basisfn), dimension(:), allocatable :: bf
     real(kind=8) :: dt, dtnext, dtdone, timeold
-    integer::m, k, j, n, ierr, stepback, x, restart, genflg
+    integer::m, n, ierr, stepback, x, genflg
 
     if (errorflag .ne. 0) return
     ierr=0
@@ -141,7 +213,7 @@ contains
       t = t + dt
     end do
 
-    write(6,"(a)") "t at maximum stepback is ", t
+    write(6,"(a,es16.8e3)") "t at maximum stepback is ", t
 
     dt = dtinit
 
@@ -156,7 +228,7 @@ contains
       t = t + dt
     end do
 
-    write(6,"(a)") "t at maximum stepforward is ", t
+    write(6,"(a,es16.8e3)") "t at maximum stepforward is ", t
 
     call deallocbs(bf)
 
@@ -230,8 +302,12 @@ contains
     do k=kcut,size(swrmbf)
       do
         do m=1,ndim
-          bf%z(m)=cmplx((ZBQLNOR(muq(m),sigq*sqrt(alcmprss))) &
-         ,((1.0d0/hbar)*(ZBQLNOR(mup(m),sigp*sqrt(alcmprss)))),kind=8)
+          if (randfunc.eq."GAUS") then
+            bf%z(m)=gauss_random(alcmprss,muq(m),mup(m))
+          else
+            bf%z(m)=cmplx((ZBQLNOR(muq(m),sigq*alcmprss)) &
+            ,((1.0d0/hbar)*(ZBQLNOR(mup(m),sigp*alcmprss))),kind=8)
+          end if
         end do
         call enchk(bf,t,n,redo,k)
         if (redo==1) cycle
@@ -330,19 +406,19 @@ contains
   end subroutine gen_swtrn
 
 !------------------------------------------------------------------------------------
-  subroutine gen_grid(bs,mup,muq,initgrid,gridsp,t)
+  subroutine gen_grid(bs,mup,muq,initgrid,gridsp)
 
     implicit none
     type(basisfn), dimension(:), intent(inout) :: bs
     complex(kind=8), dimension(:,:), intent(inout)::initgrid
     real(kind=8), dimension(:), intent(in) :: mup, muq
-    real(kind=8), intent(in) :: gridsp, t
+    real(kind=8), intent(in) :: gridsp
     type (basisfn) :: bf
     real(kind=8), dimension (:), allocatable ::qstrt, pstrt
     real(kind=8) :: realz, imagz
     integer, dimension (:,:), allocatable :: coordinates
     integer, dimension (:), allocatable :: qsize, psize, columnsize, columnrep
-    integer::m, k, j, l, p, q, n, x, y, ierr, redo
+    integer::m, k, l, n, x, y, ierr
 
     if (errorflag .ne. 0) return
     ierr=0
@@ -422,8 +498,8 @@ contains
     end do
 
     do m=1,ndim
-      qstrt(m) = muq(m)-((dble(qsize(m))-1.0d0)*sigq*gridsp/2.0d0)
-      pstrt(m) = mup(m)-((dble(psize(m))-1.0d0)*sigp*gridsp/2.0d0)
+      qstrt(m) = 0.0d0-((dble(qsize(m))-1.0d0)*sigq*gridsp/2.0d0)
+      pstrt(m) = 0.0d0-((dble(psize(m))-1.0d0)*sigp*gridsp/2.0d0)
     end do
 
     do k=1,in_nbf
@@ -480,7 +556,7 @@ contains
     real(kind=8), intent(in) :: alcmprss, gridsp, t
     type (basisfn) :: bf
     real(kind=8):: qstrt, pstrt
-    integer::m, k, j, p, q, n, ierr, redo
+    integer::m, k, p, q, n, ierr, redo
 
     if (errorflag .ne. 0) return
     ierr=0
@@ -488,8 +564,8 @@ contains
 
     k=0
 
-    qstrt = muq(1)-((dble(qsizez)-1.0d0)*sigq*gridsp/2.0d0)
-    pstrt = mup(1)-((dble(psizez)-1.0d0)*sigp*gridsp/2.0d0)
+    qstrt = 0.0d0-((dble(qsizez)-1.0d0)*sigq*gridsp/2.0d0)
+    pstrt = 0.0d0-((dble(psizez)-1.0d0)*sigp*gridsp/2.0d0)
     do p=1,psizez
       do q=1,qsizez
         k=q+((p-1)*qsizez)
@@ -498,8 +574,12 @@ contains
           bf%z(1)=cmplx((qstrt+(gridsp*(q-1)*sigq)),&
                         (pstrt+(gridsp*(p-1)*sigp)),kind=8)
           do m=2,ndim
-            bf%z(m)=cmplx((ZBQLNOR(muq(m),sigq*sqrt(alcmprss))),&
-            ((1.0d0/hbar)*(ZBQLNOR(mup(m),sigp*sqrt(alcmprss)))),kind=8)
+            if (randfunc.eq."GAUS") then
+              bf%z(m)=gauss_random(alcmprss,muq(m),mup(m))
+            else
+              bf%z(m)=cmplx((ZBQLNOR(muq(m),sigq*alcmprss)),&
+              ((1.0d0/hbar)*(ZBQLNOR(mup(m),sigp*alcmprss))),kind=8)
+            end if
           end do
           call enchk(bf,t,n,redo,k)
           if (redo==1) cycle
@@ -541,10 +621,9 @@ contains
     type(basisfn),dimension(:),intent(inout)::bs
     real(kind=8), dimension(:), intent(in) :: mup, muq
     complex(kind=8),dimension(:,:),allocatable::ovrlp_mat
-    complex(kind=8),dimension(:), allocatable::zinit, zpq
+    complex(kind=8),dimension(:), allocatable::zinit, zinit2, zpq
     complex(kind=8),dimension(:), allocatable:: C_k, D
     integer, intent(inout) :: restart
-    real(kind=8)::absB
     integer::k, j, ierr
 
     if (errorflag .ne. 0) return
@@ -596,11 +675,40 @@ contains
 
       zinit(1:ndim) = cmplx(muq(1:ndim),mup(1:ndim),kind=8)
 
-      do k=1,size(bs)
-        zpq(1:ndim) = bs(k)%z(1:ndim)
-        C_k(k) = ovrlpij(zpq, zinit) * dconjg(bs(k)%d_pes(in_pes)) * &
-                    cdexp (-1.0d0*i*bs(k)%s_pes(in_pes))
-      end do
+      if (wfn_init.eq."SPLIT") then
+      
+        allocate(zinit2(ndim), stat = ierr)
+        if (ierr/=0) then
+          write(0,"(a)") "Error in allocation of zinit2 in genD_big"
+          errorflag=1
+          return
+        end if
+        
+        zinit2(1:ndim) = cmplx(-1.0d0*muq(1:ndim),mup(1:ndim),kind=8)      
+        do k=1,size(bs)
+          zpq(1:ndim) = bs(k)%z(1:ndim)
+          if ((symm.eq."YES").or.(symm.eq."NO")) then
+            C_k(k) = (ovrlpij(zpq, zinit) + ovrlpij(zpq, zinit2))/sqrt(2.0d0)
+          else if(symm.eq."ANTI") then
+            C_k(k) = (ovrlpij(zpq, zinit) - ovrlpij(zpq, zinit2))/sqrt(2.0d0)
+          end if
+        end do
+        
+        if (ierr==0) deallocate(zinit2, stat = ierr)
+        if (ierr/=0) then
+          write(0,"(a)") "Error in zinit2 deallocation in genD_big"
+          errorflag=1
+          return
+       end if
+      
+      else
+      
+        do k=1,size(bs)
+          zpq(1:ndim) = bs(k)%z(1:ndim)
+          C_k(k) = ovrlpij(zpq, zinit)
+        end do
+        
+      end if  
    
       deallocate(zpq, stat = ierr)
       if (ierr==0) deallocate(zinit, stat = ierr)
@@ -686,5 +794,40 @@ contains
 
   end subroutine gend_small 
 
-!***********************************************************************************!
+!*************************************************************************************************!
+
+  function gauss_random (width, muq, mup)
+  
+    implicit none
+    complex(kind=8) :: gauss_random
+    real(kind=8), intent(in) :: width, mup, muq
+    integer :: iset
+    real(kind=8) :: fac,rsq,v1,v2,ran_1,xz,yz
+
+    iset = 0
+    
+    do while (iset .lt. 2)      
+      CALL RANDOM_NUMBER(ran_1) 
+      v1=2.0d0*ran_1-1.0d0
+      CALL RANDOM_NUMBER(ran_1)     
+      v2=2.0d0*ran_1-1.0d0
+      rsq=v1**2.0d0+v2**2.0d0
+      if (rsq.ge.1.0d0.or.rsq.eq.0.0d0) cycle
+      fac=sqrt(-2.0d0*log(rsq)/rsq)
+      if (iset == 0) then
+        xz=v2*fac*sigq
+      else if (iset == 1) then
+        yz=v2*fac*sigp
+      end if    
+      iset=iset + 1
+    end do
+    
+    xz = muq + (xz * width)
+    yz = mup + (yz * width)
+    
+    gauss_random = cmplx(xz,yz,kind=8)
+    
+    return
+    
+  end function gauss_random
 end module bsetgen

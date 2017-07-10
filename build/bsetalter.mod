@@ -1,5 +1,5 @@
-GFORTRAN module version '0' created from ../src/bsetalter.f90 on Tue Jun 30 14:20:37 2015
-MD5:d969299bd6b6d158aadb9daadef5fd55 -- If you edit this, you'll get what you deserve.
+GFORTRAN module version '0' created from ../src/bsetalter.f90 on Tue Jul  7 13:55:21 2015
+MD5:35d04a9b78b7852fe593282698ebcf19 -- If you edit this, you'll get what you deserve.
 
 (() () () ()
 () () () () () () () () () () () () () () () () () () () () () () ())
@@ -659,13 +659,15 @@ UNKNOWN DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
 298 'cutdown' '' 'cutdown' 293 ((VARIABLE INOUT UNKNOWN-PROC UNKNOWN
 UNKNOWN DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
+303 'filename' '' 'filename' 300 ((VARIABLE IN UNKNOWN-PROC UNKNOWN
+UNKNOWN DUMMY) (CHARACTER 1 0 0 CHARACTER ((CONSTANT (INTEGER 4 0 0
+INTEGER ()) 0 '12'))) 0 0 () () 0 () () () 0 0)
 305 'cutdown' '' 'cutdown' 300 ((VARIABLE INOUT UNKNOWN-PROC UNKNOWN
 UNKNOWN DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
 304 'cutup' '' 'cutup' 300 ((VARIABLE INOUT UNKNOWN-PROC UNKNOWN UNKNOWN
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
-303 'filename' '' 'filename' 300 ((VARIABLE IN UNKNOWN-PROC UNKNOWN
-UNKNOWN DUMMY) (CHARACTER 1 0 0 CHARACTER ((CONSTANT (INTEGER 4 0 0
-INTEGER ()) 0 '12'))) 0 0 () () 0 () () () 0 0)
+302 'n' '' 'n' 300 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DUMMY) (
+INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
 316 'timetmp' '' 'timetmp' 313 ((VARIABLE IN UNKNOWN-PROC UNKNOWN
 UNKNOWN DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
 315 'lines' '' 'lines' 313 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN
@@ -707,8 +709,6 @@ CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)
 DUMMY) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
 404 'x' '' 'x' 402 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DUMMY) (
 INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
-405 't' '' 't' 402 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DUMMY) (
-REAL 8 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
 5 'bs' '' 'bs' 4 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (DERIVED 30 0 0 DERIVED ()) 0 0 () (1 ASSUMED_SHAPE (CONSTANT (
 INTEGER 4 0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)
@@ -1120,6 +1120,8 @@ CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)
 479 'bs' '' 'bs' 478 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN
 DIMENSION DUMMY) (DERIVED 30 0 0 DERIVED ()) 0 0 () (1 ASSUMED_SHAPE (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)
+405 't' '' 't' 402 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DUMMY) (
+REAL 8 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
 403 'bs' '' 'bs' 402 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN
 DIMENSION DUMMY) (DERIVED 30 0 0 DERIVED ()) 0 0 () (1 ASSUMED_SHAPE (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)
@@ -1180,8 +1182,6 @@ INTEGER 4 0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)
 301 'a' '' 'a' 300 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 ASSUMED_SHAPE (CONSTANT (INTEGER 4
 0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)
-302 'n' '' 'n' 300 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DUMMY) (
-INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
 314 'timeall' '' 'timeall' 313 ((VARIABLE IN UNKNOWN-PROC UNKNOWN
 UNKNOWN DIMENSION DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 ASSUMED_SHAPE (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)

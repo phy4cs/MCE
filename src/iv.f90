@@ -131,13 +131,13 @@ contains
 
   subroutine Hij_iv(H,z1,z2,t)
 
-    implicit none
+    implicit none 
     complex(kind=8), dimension (:), intent(in)::z1,z2
     complex(kind=8), dimension(:,:), intent (inout)::H
     real(kind=8), intent (in) :: t
     integer :: m, ierr
     complex(kind=8), dimension (:), allocatable :: Htemp, z1c, rho
-    real (kind=8) :: rt2, eta
+    real (kind=8) :: eta, field
 
     if (errorflag .ne. 0) return
 
@@ -162,16 +162,24 @@ contains
     do m=1,ndim
       rho(m) = (z1c(m)+z2(m))/sqrt(2.0*gam)
     end do
+    field = inten_iv*dcos(freq_iv*t)
+!    field = inten_iv*dsin(freq_iv*t)*(dsin(freq_iv*t/4.0d0))**2.0d0 
 
     do m=1,ndim
       Htemp(m) = (0.0d0,0.0d0)
       Htemp(m) = Htemp(m) - ((hbar**2)*gam/(4.0d0*mass_iv))&
                    *(z1c(m)**2.0d0+z2(m)**2.0d0-2.0d0*z1c(m)*z2(m)-1.0d0)
-      Htemp(m) = Htemp(m) - sqrt(eta/lambda_iv)*cdexp(-1.0d0*eta*rho(m)**2.0d0)
-      if (m==1) Htemp(m) = Htemp(m) + inten_iv*rho(m)*dcos(freq_iv*t)
+      if (m==1) Htemp(m) = Htemp(m) + rho(m)*field
     end do
 
     H(1,1) = sum(Htemp(1:ndim))
+    
+    do m=1,ndim
+      Htemp(m) = (0.0d0,0.0d0)
+      Htemp(m) = Htemp(m) - ((sqrt(eta/lambda_iv)))*cdexp(-1.0d0*eta*rho(m)**2.0d0)
+    end do
+    
+    H(1,1) =  H(1,1) + product(Htemp(1:ndim))  
     
     if (H(1,1)/=H(1,1)) then
       write(0,"(a)") "Error! Hamiltonian element NaN"
@@ -194,8 +202,8 @@ contains
     complex(kind=8),dimension(:),intent(in)::z
     complex(kind=8), dimension(:), allocatable :: zc, rho
     real(kind=8), intent (in) :: t
-    complex(kind=8) :: dhdztmp
-    real(kind=8) :: rt2, eta, eta2
+    complex(kind=8) :: dhdztmp, rho2
+    real(kind=8) :: eta, field
     integer :: m
 
     if (errorflag .ne. 0) return
@@ -204,17 +212,21 @@ contains
     allocate (rho(size(z)))
     zc(1:ndim)=dconjg(z(1:ndim))
 
+    rho2=(0.0d0,0.0d0)
     eta = lambda_iv*gam/(gam+lambda_iv)
     do m=1,ndim
       rho(m) = (zc(m)+z(m))/sqrt(2.0*gam)
     end do
+    rho2 = sum(rho(1:ndim)**2.0d0)
+    field = inten_iv*dcos(freq_iv*t)
+!    field = inten_iv*dsin(freq_iv*t)*(dsin(freq_iv*t/4.0d0))**2.0d0
 
     do m=1,ndim    
       dhdztmp = (0.0d0,0.0d0) 
       dhdztmp = dhdztmp - ((hbar**2)*gam/(2.0d0*mass_iv))*(zc(m)-z(m))
-      dhdztmp = dhdztmp + sqrt(2.0*(eta**3.0)*gam/lambda_iv)*rho(m)*&
-                          exp(-1.0d0*eta*rho(m)**2.0)
-      if (m==1) dhdztmp = dhdztmp + inten_iv*(1.0/sqrt(2.0d0*gam))*dcos(freq_iv*t)
+      dhdztmp = dhdztmp + eta*sqrt((2.0/gam)*((eta/lambda_iv)**dble(ndim)))*rho(m)*&
+                          exp(-1.0d0*eta*rho2)
+      if (m==1) dhdztmp = dhdztmp + (1.0/sqrt(2.0d0*gam))*field
       dh_dz_iv (1,1,m) = dhdztmp
     end do
 
@@ -224,15 +236,14 @@ contains
 
 !------------------------------------------------------------------------------------
 
-  function dipole_iv(bs, x)   !   Level 1 Function
+  function dipole_iv(bs)   !   Level 1 Function
 
     implicit none
     type(basisfn),dimension(:),intent(in)::bs
-    integer, intent(in) :: x
-    complex(kind=8) :: dipole_iv, zsum, ovrlp
+    complex(kind=8) :: dipole_iv, ovrlp, rho2
     complex(kind=8), dimension(:), allocatable :: D, Dc, zk, zj, rho
     real(kind=8), dimension (:), allocatable :: s
-    real(kind=8) :: eta, eta2, rt2
+    real(kind=8) :: eta
     integer::k,j,m,ierr
 
     if (errorflag .ne. 0) return
@@ -270,23 +281,23 @@ contains
       D(k)=bs(k)%D_big
       Dc(k)=dconjg(D(k))
       s(k)=bs(k)%s_pes(1)
-    end do     
-
+    end do         
+    
     do k=1,size(bs)
       do j=1,size(bs)
+        rho2 = (0.0d0,0.0d0)
         do m=1,ndim
           zk(m) = bs(k)%z(m)
           zj(m) = bs(j)%z(m)
           rho(m) = (dconjg(zj(m))+zk(m))/sqrt(2.0*gam)
         end do
+        rho2 = sum(rho(1:ndim)**2.0d0)
         ovrlp = product(cdexp((dconjg(zj(1:ndim))*zk(1:ndim))&
               -(0.5d0*dconjg(zj(1:ndim))*zj(1:ndim))&
               -(0.5d0*dconjg(zk(1:ndim))*zk(1:ndim))))
-        do m=1,ndim
-          dipole_iv = dipole_iv + (-1.0d0*Dc(j)*D(k)*cdexp(i*(s(k)-s(j)))* ovrlp*&
-                                    2.0d0*sqrt((eta**3.0d0)/lambda_iv)*rho(m)&
-                                                *cdexp(-1.0d0*eta*(rho(m)**2.0d0)))
-        end do
+        dipole_iv = dipole_iv + (-1.0d0*Dc(j)*D(k)*cdexp(i*(s(k)-s(j)))* ovrlp*&
+                                    2.0d0*eta*sqrt((eta/lambda_iv)**dble(ndim))*rho(1)&
+                                                *cdexp(-1.0d0*eta*rho2))
       end do
     end do
 

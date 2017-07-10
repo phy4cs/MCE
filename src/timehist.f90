@@ -56,7 +56,7 @@ Program timehist
     read (1710,"(a)",iostat=istat) LINE
     n = n+1
   end do
-  write(6,"(a)") "size of timestep array is ", n
+  write(6,"(a,i0)") "size of timestep array is ", n
   rewind(1710)
   allocate(t(n), stat = istat)
   if (istat/=0) then

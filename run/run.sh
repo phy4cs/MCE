@@ -2,7 +2,13 @@
 #####################################################################################
 #
 #    Bash Script for Parallel Open MP execution of the MCE / CCS program           
-#    Written by C. Symonds                                                   21/04/15
+#    Written by C. Symonds                                                   21/03/17
+#
+#    This script has been built to be run using SGE. Use of another job submission
+#    system may require modifications to certain parts of the script. The script is
+#    designed to compile, copy all the required files into an execution folder, and
+#    submit the program as a job. Various checks, output handling, parameter setting
+#    and module loading procedures are also included.
 #
 #    To run, you must give three arguments at execution:
 #       1) The number of repeats
@@ -81,8 +87,8 @@ elif [[ $3 -lt 1 ]]; then
 elif [[ $3 -gt 100 ]]; then
   echo "Too many folders! Maximum of 100 simultaneous job submissions allowed!"
   exit 1
-elif [[ $(( $1/$3 )) -ge 500 ]]; then
-  echo "Too many repeats per folder! Must be less than 500!"
+elif [[ $(( $1/$3 )) -ge 5000 ]]; then
+  echo "Too many repeats per folder! Must be less than 5000!"
   exit 1
 elif [[ $(( $1%(2*$2*$3) )) -ne 0 && $CRchk == 0 ]]; then
   echo "Number of repeats not valid for conjugate repetition"
@@ -243,8 +249,8 @@ for a in "${methseq[@]}"; do
   fi
   
   # Create the job submission file
-  echo "#$ -cwd -V -m e" > $FILE        # Run in CWD, to email at end of run add "-m e"
-  if [[ $CORES -ne 1 ]]; then 
+  echo "#$ -cwd -V" > $FILE        # Run in CWD, to email at end of run add "-m e -M <email@address>"
+  if [[ $CORES -ne 1 && $HPCFLG -eq 1 ]]; then 
     echo "#$ -pe smp $CORES" >> $FILE   # Use shared memory parallel environment
   fi
   if [[ $HPCFLG -eq 1 ]]; then
@@ -253,15 +259,17 @@ for a in "${methseq[@]}"; do
   echo "#$ -l h_vmem=4G" >> $FILE       # Allocated virtual memory
   echo "#$ -t 1-$FOLDERS" >> $FILE      # Set up job array
 #  echo "#$ -tc 40" >> $FILE            # Maximum number of simultaneous running jobs
+  echo "date" >> $FILE
   echo "cd $EXDIR/"'$SGE_TASK_ID'"-run/" >> $FILE
   echo "echo "'"Running on $HOSTNAME in folder $PWD"' >> $FILE 
   if [[ $HPCFLG -eq 1 ]]; then
     echo "module load mkl" >> $FILE     # Load mkl linear algebra set
   fi
-  echo "./MCE.exe" >> $FILE             # Run program
+  echo "time ./MCE.exe" >> $FILE             # Run program
+  echo "date" >> $FILE
   
   # Allow grid altering calibration test on chmlin45 (change hostname to disable)
-  if [[ -n $( echo $HOSTNAME | fgrep -e "chmlin451" ) ]]; then
+  if [[ -n $( echo $HOSTNAME | fgrep -e "arc12" ) ]]; then
     grdalt=1
   else
     grdalt=0
@@ -284,7 +292,7 @@ for a in "${methseq[@]}"; do
     # Copy previously calculated basis set files if needed
     if [[ $gen -eq 0 ]]; then
       if [[ $method == "AIMC-MCE2" ]]; then
-        if [[ -f "Outbs-001-00000-0_$i.out" ]]; then
+        if [[ -f "Outbs-001-00000-0_$i.out" || -f "Outbs-0001-00000-0_$i.out" ]]; then
           echo "Outbs-001-00000-0_$i.out found in $PWD"
           for x in Outbs-*_$i.out; do
             cp $x $SUBDIR/${x%_$i.out}.out
@@ -294,7 +302,7 @@ for a in "${methseq[@]}"; do
           echo "For AIMC-MCE second pass, all relevant input bases must be present"
           exit 1
         fi
-        if [[ -f "Clonetrack-001_$i.out" ]]; then
+        if [[ -f "Clonetrack-001_$i.out" || -f "Clonetrack-0001_$i.out" ]]; then
           echo "Clonetrack-001_$i.out found in $PWD"
           for x in Clonetrack-*_$i.out; do
             cp $x $SUBDIR/${x%_$i.out}.out
@@ -305,7 +313,7 @@ for a in "${methseq[@]}"; do
           exit 1
         fi 
       else
-        if [[ -f "Outbs-001_$i.out" ]]; then 
+        if [[ -f "Outbs-001_$i.out" || -f "Outbs-0001_$i.out" ]]; then 
           echo "Outbs-001_$i.out found in $PWD"
           for x in Outbs-*_$i.out; do
             cp $x $SUBDIR/${x%_$i.out}.out
@@ -326,7 +334,7 @@ for a in "${methseq[@]}"; do
       fi
       clone=${clone#* }
       if [[ $clone == "yes" ]]; then
-        if [[ -f "clonearr-001_$i.out" ]]; then 
+        if [[ -f "clonearr-001_$i.out" || -f "clonearr-0001_$i.out" ]]; then 
           echo "clonearr-001_$i.out found in $PWD"
           for x in clonearr-*_$i.out; do
             cp $x $SUBDIR/${x%_$i.out}.out

@@ -1,1 +1,1 @@
-./collate.sh /nobackup/phy4cs/MCEv2-SB-13845 50 50 13845 $0
+./collate.sh /nobackup/phy4cs/MCEv2-SB-5105 100 50 5105 $0
